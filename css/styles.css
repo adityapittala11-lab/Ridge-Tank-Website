@@ -705,7 +705,10 @@ input[type="number"].input { max-width: 140px; }
   --glow: hsl(var(--hue) 90% 58%);
 }
 
-.spot { position: relative; isolation: isolate; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 60px -30px rgba(0, 0, 0, 0.75), 0 0 calc(var(--o) * 34px) -8px hsl(var(--hue) 90% 58% / calc(var(--o) * 0.65)); }
+.spot { isolation: isolate; }
+.spot-rel { position: relative; }
+/* soft outer glow */
+.card.spot, .podium-slot.spot, .badge-tile.spot { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 60px -30px rgba(0, 0, 0, 0.75), 0 0 calc(var(--o) * 34px) -8px hsl(var(--hue) 90% 58% / calc(var(--o) * 0.65)); }
 /* inner glow that follows the pointer */
 .spot::before {
   content: "";
@@ -1304,3 +1307,6 @@ body.is-member #toasts { bottom: calc(100px + env(safe-area-inset-bottom)); }
   .section { opacity: 1; transform: none; }
   .grain { animation: none; }
 }
+
+/* Everything is square, whatever rule or browser default says otherwise. */
+*, *::before, *::after { border-radius: 0 !important; }
