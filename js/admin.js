@@ -423,18 +423,24 @@
   function tabMembers(pane) {
     const search = h('input', { class: 'input', type: 'search', placeholder: 'Search members', autocomplete: 'off' });
     const addBtn = h('button', { class: 'btn btn-primary btn-sm', type: 'button', onclick: bulkAdd }, icon('plus', 16), 'Add members');
+    // For adding everyone to the group chat: one "Name, number" per line.
+    const phonesBtn = h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => {
+      const rows = A.members.filter(m => m.phone);
+      if (!rows.length) { toast('No phone numbers yet.', 'info'); return; }
+      RT.copyText(rows.map(m => m.name + ', ' + m.phone).join('\n'), rows.length + ' phone numbers copied');
+    } }, icon('copy', 16), 'Copy phone numbers');
     const linked = A.members.filter(m => m.card_status === 'linked').length;
     const withAcct = A.members.filter(m => m.user_id).length;
     pane.append(
       h('div', { class: 'stat-strip' },
         stripStat('Members', A.members.length), stripStat('Cards linked', linked), stripStat('Waiting on card', A.members.length - linked), stripStat('Have accounts', withAcct)),
-      h('div', { class: 'toolbar' }, h('div', { class: 'input-icon grow' }, icon('search', 16), search), addBtn));
+      h('div', { class: 'toolbar' }, h('div', { class: 'input-icon grow' }, icon('search', 16), search), phonesBtn, addBtn));
     const table = h('div', { class: 'card table-card' });
     pane.appendChild(table);
 
     function draw() {
       const q = search.value.trim().toLowerCase();
-      const rows = A.members.filter(m => !q || m.name.toLowerCase().includes(q) || (m.email || '').toLowerCase().includes(q) || (m.login_code || '').toLowerCase().includes(q));
+      const rows = A.members.filter(m => !q || m.name.toLowerCase().includes(q) || (m.email || '').toLowerCase().includes(q) || (m.login_code || '').toLowerCase().includes(q) || (m.phone || '').includes(q));
       clear(table);
       table.appendChild(h('div', { class: 'trow thead' }, h('span', null, 'Name'), h('span', null, 'Grade'), h('span', null, 'Points'), h('span', null, 'Card'), h('span', null, 'Account'), h('span')));
       if (!rows.length) { table.appendChild(h('div', { class: 'empty small' }, h('p', { class: 'muted' }, A.members.length ? 'No matches.' : 'No members yet. Add the club roster to get started.'))); return; }
@@ -450,14 +456,17 @@
     draw();
 
     function bulkAdd() {
-      const ta = h('textarea', { class: 'input textarea', rows: 8, placeholder: 'Jordan Lee, 10\nPriya Shah, 11\nSam Carter' });
+      const ta = h('textarea', { class: 'input textarea', rows: 8, placeholder: 'Jordan Lee, 10, 555-123-4567\nPriya Shah, 11\nSam Carter' });
       const save = h('button', { class: 'btn btn-primary', type: 'button' }, 'Add members');
-      const md = modal({ title: 'Add members', subtitle: 'One person per line. Add their grade after a comma if you know it.', body: ta, actions: [save], wide: true });
+      const md = modal({ title: 'Add members', subtitle: 'One person per line: name, then grade and phone number after commas if you have them. You can paste Google Form results here.', body: ta, actions: [save], wide: true });
       save.addEventListener('click', () => busy(save, async () => {
         const rows = ta.value.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
-          const [n, g] = l.split(',').map(s => s.trim());
+          const [n, g, p] = l.split(/,|\t/).map(s => s.trim());
           const gr = (g || '').replace(/\D/g, '');
-          return { name: n, grade: ['9', '10', '11', '12'].includes(gr) ? gr : null, card_status: 'pending' };
+          const row = { name: n, grade: ['9', '10', '11', '12'].includes(gr) ? gr : null, card_status: 'pending' };
+          const ph = RT.cleanPhone(p);
+          if (ph) row.phone = ph;
+          return row;
         }).filter(r => r.name && r.name.length >= 2);
         if (!rows.length) { toast('Add at least one name.', 'error'); return; }
         const existing = new Set(A.members.map(m => m.name.toLowerCase()));
@@ -507,6 +516,7 @@
           h('div', { class: 'row gap-sm' },
             h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => RT.copyText(m.login_code, 'Code copied') }, icon('copy', 14), 'Copy'),
             h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: newCode }, icon('refresh', 14), 'New code'))),
+        m.phone ? h('p', { class: 'small' }, 'Phone: ', h('a', { href: 'tel:' + m.phone, class: 'mono' }, m.phone)) : null,
         h('p', { class: 'muted small' }, m.user_id ? 'Their account is linked' + (m.email ? ' (' + m.email + ')' : '') + '.' : 'No account yet. They enter this code when they sign up.'));
     }
     async function unlinkCard() {
