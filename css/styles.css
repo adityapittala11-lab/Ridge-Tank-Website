@@ -701,7 +701,7 @@ input[type="number"].input { max-width: 140px; }
 /* Colour shifts from club green (left of the screen) to burgundy (right) as the pointer moves,
    like the "Spotlight Card" it is modeled on. --xp (0-1) is set on <html> by the script. */
 .spot, .spot-field {
-  --hue: calc(150 + var(--xp, 0.5) * 210);
+  --hue: calc(140 + var(--xp, 0.5) * 22);
   --glow: hsl(var(--hue) 90% 58%);
 }
 
