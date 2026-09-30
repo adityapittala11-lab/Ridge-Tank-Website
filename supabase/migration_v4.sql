@@ -175,3 +175,7 @@ begin
   return n;
 end; $$;
 grant execute on function public.apply_decay(text, numeric) to authenticated;
+
+-- 8) Wording: it's a program, not a club
+update public.badges set description = 'One of the program''s first members' where name = 'Founding Shark';
+update public.badges set description = 'Help run the program' where name = 'Crew';

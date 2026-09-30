@@ -444,7 +444,7 @@
       const rows = A.members.filter(m => !q || m.name.toLowerCase().includes(q) || (m.email || '').toLowerCase().includes(q) || (m.login_code || '').toLowerCase().includes(q) || (m.phone || '').includes(q));
       clear(table);
       table.appendChild(h('div', { class: 'trow thead' }, h('span', null, 'Name'), h('span', null, 'Grade'), h('span', null, 'Bites'), h('span', null, 'Card'), h('span', null, 'Account'), h('span')));
-      if (!rows.length) { table.appendChild(h('div', { class: 'empty small' }, h('p', { class: 'muted' }, A.members.length ? 'No matches.' : 'No members yet. Add the club roster to get started.'))); return; }
+      if (!rows.length) { table.appendChild(h('div', { class: 'empty small' }, h('p', { class: 'muted' }, A.members.length ? 'No matches.' : 'No members yet. Add the roster to get started.'))); return; }
       rows.forEach(m => table.appendChild(h('button', { class: 'trow', type: 'button', onclick: () => memberModal(m, draw) },
         h('span', { class: 'cell-name' }, avatar(m.name, 30), h('span', { class: 'ellipsis' }, m.name)),
         h('span', { class: 'muted' }, m.grade ? m.grade + 'th' : '—'),
