@@ -531,6 +531,7 @@
             ? h('a', { class: 'btn btn-primary btn-lg', href: '#/home' }, 'Go to your dashboard', icon('arrowRight', 18))
             : [h('a', { class: 'btn btn-primary btn-lg', href: '#/signup' }, 'Join Ridge Tank', icon('arrowRight', 18)),
                h('a', { class: 'btn btn-ghost btn-lg', href: '#/login' }, 'Log in')]),
+        (!S.me && cfg.promo) ? h('div', { class: 'promo reveal', style: { '--i': 5 } }, h('strong', null, cfg.promo.title), h('span', null, cfg.promo.text)) : null,
         h('div', { class: 'hero-meta reveal', style: { '--i': 5 } },
           h('span', null, icon('nfc', 16), 'Tap in with your card'),
           h('span', null, icon('trophy', 16), 'Season ' + cfg.season.replace('-', '–')),

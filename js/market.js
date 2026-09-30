@@ -139,7 +139,8 @@
     const claimsBox = h('div', { class: 'card' });
     const bountyBox = h('div', { class: 'card' });
     const decayBox = h('div', { class: 'card' });
-    pane.append(h('div', { class: 'two-col' }, bountyBox, claimsBox), decayBox);
+    const rewardBox = h('div', { class: 'card' });
+    pane.append(h('div', { class: 'two-col' }, bountyBox, claimsBox), h('div', { class: 'two-col' }, rewardBox, decayBox));
 
     let bounties = [], claims = [];
     async function load() {
@@ -150,7 +151,32 @@
         return;
       }
       bounties = b.data; claims = c.data;
-      drawBounties(); drawClaims(); drawDecay();
+      drawBounties(); drawClaims(); drawDecay(); drawRewards();
+    }
+
+    // Sign-up rewards: who gets the candy (first 10 to sign up) and a random cash-prize draw.
+    function drawRewards() {
+      const members = [...(A.members || [])].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      const first = members.slice(0, 10);
+      const nextMeeting = (A.meetings || []).filter(m => m.meeting_date >= today()).sort((a, b) => (a.meeting_date < b.meeting_date ? -1 : 1))[0];
+      const cutoff = h('input', { class: 'input', type: 'date', value: nextMeeting ? nextMeeting.meeting_date : today() });
+      const winner = h('div', { class: 'winner', hidden: true });
+      const draw = h('button', { class: 'btn btn-primary', type: 'button' }, icon('sparkle', 16), 'Draw a winner');
+      draw.addEventListener('click', () => {
+        const limit = cutoff.value ? new Date(cutoff.value + 'T23:59:59') : new Date();
+        const pool = members.filter(m => new Date(m.created_at) <= limit);
+        if (!pool.length) { toast('No one signed up by that date.', 'error'); return; }
+        const pick = pool[Math.floor(Math.random() * pool.length)];
+        clear(winner).append(h('div', { class: 'muted small' }, 'Winner (' + pool.length + ' entered)'), h('div', { class: 'winner-name' }, pick.name));
+        winner.hidden = false;
+      });
+      clear(rewardBox).append(
+        h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Sign-up rewards'), h('span', { class: 'muted small' }, 'Candy + cash draw')),
+        h('p', { class: 'muted small' }, 'First 10 sign-ups get candy. Everyone signed up by the cutoff is entered in the cash draw. Do the draw live at the meeting.'),
+        h('div', { class: 'entry-list' }, first.length ? first.map((m, i) => h('div', { class: 'entry' },
+          h('span', { class: 'mono muted', style: { width: '22px' } }, String(i + 1)), avatar(m.name, 26), h('span', { class: 'grow ellipsis' }, m.name),
+          h('span', { class: 'muted small' }, fmtDate(m.created_at, { month: 'short', day: 'numeric' })))) : h('p', { class: 'muted small' }, 'No sign-ups yet.')),
+        h('div', { class: 'stack-sm reward-draw' }, h('label', { class: 'muted small' }, 'Entered if signed up by'), h('div', { class: 'row gap-sm' }, h('div', { class: 'grow' }, cutoff), draw), winner));
     }
 
     function drawBounties() {
