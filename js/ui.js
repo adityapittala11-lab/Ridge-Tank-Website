@@ -185,7 +185,10 @@
   // items: [{ value, label, icon?, badge? }]
   function segmented({ items, value, onChange, className = '', ariaLabel = 'Switch view', vertical = false }) {
     const ind = h('span', { class: 'seg-ind', 'aria-hidden': 'true' });
-    const wrap = h('div', { class: 'seg ' + className + (vertical ? ' seg-vertical' : ''), role: 'tablist', 'aria-label': ariaLabel }, ind);
+    // Hover highlight that slides to whichever tab the pointer is over (desktop only).
+    const hov = h('span', { class: 'seg-hover', 'aria-hidden': 'true' });
+    const wrap = h('div', { class: 'seg ' + className + (vertical ? ' seg-vertical' : ''), role: 'tablist', 'aria-label': ariaLabel }, hov, ind);
+    wrap.addEventListener('pointerleave', () => { hov.style.opacity = '0'; });
     const buttons = new Map();
     let current = value;
     let placed = false;
@@ -199,6 +202,15 @@
         onclick: () => select(it.value, true)
       }, it.icon ? icon(it.icon, vertical ? 20 : 16) : null, h('span', { class: 'seg-label' }, it.label), badge);
       b._badge = badge;
+      b.addEventListener('pointerenter', e => {
+        if (e.pointerType === 'touch') return;
+        if (hov.style.opacity !== '1') hov.classList.add('no-anim');
+        hov.style.left = b.offsetLeft + 'px';
+        hov.style.width = b.offsetWidth + 'px';
+        void hov.offsetWidth;
+        hov.classList.remove('no-anim');
+        hov.style.opacity = '1';
+      });
       buttons.set(it.value, b);
       wrap.appendChild(b);
     });

@@ -12,8 +12,8 @@
   const bottomEl = document.getElementById('bottombar');
   const footerEl = document.getElementById('site-footer');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const MEMBER_ROUTES = new Set(['home', 'leaderboard', 'chat', 'profile']);
-  const MESH_DIM = { landing: 1, auth: 0.9, welcome: 0.85, reset: 0.85, home: 0.78, leaderboard: 0.75, profile: 0.75, chat: 0.65, admin: 0.65 };
+  const MEMBER_ROUTES = new Set(['home', 'about', 'leaderboard', 'chat', 'profile']);
+  const MESH_DIM = { landing: 1, about: 1, auth: 0.9, welcome: 0.85, reset: 0.85, home: 0.78, leaderboard: 0.75, profile: 0.75, chat: 0.65, admin: 0.65 };
 
   RT.views = RT.views || {};
   let current = null; // { key, target, handle }
@@ -190,6 +190,7 @@
   function navItems() {
     const items = [
       { value: 'home', label: 'Home', icon: 'home' },
+      { value: 'about', label: 'About', icon: 'fin' },
       { value: 'leaderboard', label: 'Leaderboard', icon: 'trophy' },
       { value: 'chat', label: 'Chat', icon: 'chat' },
       { value: 'profile', label: 'Profile', icon: 'user' }
@@ -236,13 +237,27 @@
   }
   RT.renderShell = renderShell;
 
+  // Top bar slides away while scrolling down and comes back on any scroll up (or near the top).
+  (function () {
+    let lastY = window.scrollY, ticking = false;
+    function update() {
+      ticking = false;
+      const y = window.scrollY;
+      const menuOpen = menuPanel && !menuPanel.hidden;
+      if (y < 80 || y < lastY - 4 || menuOpen) topEl.classList.remove('nav-hidden');
+      else if (y > lastY + 4) topEl.classList.add('nav-hidden');
+      if (Math.abs(y - lastY) > 4) lastY = y;
+    }
+    window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+  })();
+
   function buildMenu() {
     const items = [];
     const link = (href, label, ic, extra) => h('a', { class: 'menu-item', href, onclick: closeMenu }, icon(ic, 18), h('span', { class: 'grow' }, label), extra || null);
     if (S.me) {
       items.push(h('div', { class: 'menu-user' }, avatar(S.me.name, 40),
         h('div', { class: 'min0' }, h('div', { class: 'menu-name' }, S.me.name), h('div', { class: 'muted small ellipsis' }, S.user.email || ''))));
-      items.push(link('#/home', 'Home', 'home'), link('#/leaderboard', 'Leaderboard', 'trophy'), link('#/chat', 'Club chat', 'chat'), link('#/profile', 'Profile & badges', 'user'));
+      items.push(link('#/home', 'Home', 'home'), link('#/about', 'About the club', 'fin'), link('#/leaderboard', 'Leaderboard', 'trophy'), link('#/chat', 'Club chat', 'chat'), link('#/profile', 'Profile & badges', 'user'));
       if (S.isAdmin) items.push(link('#/admin/checkin', 'Officer tools', 'shield', S.pendingCount ? h('span', { class: 'count-pill' }, String(S.pendingCount)) : null));
       items.push(h('div', { class: 'menu-sep' }));
       items.push(h('button', { class: 'menu-item', type: 'button', onclick: signOut }, icon('logout', 18), h('span', { class: 'grow' }, 'Sign out')));
@@ -461,6 +476,7 @@
   RT.gradeSwitch = gradeSwitch;
 
   // ---------------- landing ----------------
+  // Members reach the same page from the About tab.
   RT.views.landing = function (root) {
     const title = h('h1', { class: 'hero-title' }, 'RIDGE TANK');
 
@@ -470,8 +486,10 @@
         title,
         h('p', { class: 'hero-sub reveal', style: { '--i': 3 } }, 'Mountain Ridge’s Shark Tank club. Pitch your ideas, back other people’s, and climb the leaderboard all year.'),
         h('div', { class: 'hero-cta reveal', style: { '--i': 4 } },
-          h('a', { class: 'btn btn-primary btn-lg', href: '#/signup' }, 'Join Ridge Tank', icon('arrowRight', 18)),
-          h('a', { class: 'btn btn-ghost btn-lg', href: '#/login' }, 'Log in')),
+          S.me
+            ? h('a', { class: 'btn btn-primary btn-lg', href: '#/home' }, 'Go to your dashboard', icon('arrowRight', 18))
+            : [h('a', { class: 'btn btn-primary btn-lg', href: '#/signup' }, 'Join Ridge Tank', icon('arrowRight', 18)),
+               h('a', { class: 'btn btn-ghost btn-lg', href: '#/login' }, 'Log in')]),
         h('div', { class: 'hero-meta reveal', style: { '--i': 5 } },
           h('span', null, icon('nfc', 16), 'Tap in with your card'),
           h('span', null, icon('trophy', 16), 'Season ' + cfg.season.replace('-', '–')),
@@ -532,7 +550,7 @@
         h('div', { class: 'card officer lift', style: { '--i': i } }, avatar(o.name, 52),
           h('div', null, h('div', { class: 'officer-name' }, o.name), h('div', { class: 'muted small' }, o.role + (o.note ? ' · ' + o.note : '')))))));
 
-    root.append(hero, how, tiers, badges, locked, officers);
+    root.append(hero, how, tiers, badges, ...(S.me ? [] : [locked]), officers);
 
     // Fade sections in as they scroll into view.
     const io = new IntersectionObserver(entries => {
@@ -541,6 +559,8 @@
     root.querySelectorAll('.section').forEach(s => io.observe(s));
     return { cleanup: () => io.disconnect() };
   };
+
+  RT.views.about = RT.views.landing;
 
   // ---------------- log in / sign up ----------------
   RT.views.auth = function (root, t) {
