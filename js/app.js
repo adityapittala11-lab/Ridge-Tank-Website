@@ -267,7 +267,7 @@
       else document.documentElement.removeAttribute('data-theme');
       try { localStorage.setItem('rt_theme', t); } catch (e) { /* storage blocked */ }
       const meta = document.querySelector('meta[name="theme-color"]');
-      if (meta) meta.setAttribute('content', t === 'light' ? '#eef3ee' : '#030705');
+      if (meta) meta.setAttribute('content', t === 'light' ? '#cfdcd3' : '#030705');
       window.dispatchEvent(new CustomEvent('rt:theme', { detail: t }));
     },
     toggle() {

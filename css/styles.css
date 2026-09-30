@@ -1411,16 +1411,16 @@ body.has-footer #app { padding-bottom: 80px; }
 /* ---------- light mode (toggle in the top bar; saved in localStorage) ---------- */
 html[data-theme="light"] {
   --tint: 11 31 21;
-  --panel: 255 255 255;
-  --bg: #eef3ee;
+  --panel: 236 243 238;
+  --bg: #cfdcd3;
   --ink: #0b1f15;
   --ink-2: rgba(11, 31, 21, 0.8);
   --ink-3: rgba(11, 31, 21, 0.62);
   --ink-4: rgba(11, 31, 21, 0.42);
   --line: rgba(11, 31, 21, 0.12);
   --line-2: rgba(11, 31, 21, 0.22);
-  --glass: rgba(255, 255, 255, 0.78);
-  --glass-strong: rgba(255, 255, 255, 0.95);
+  --glass: rgba(236, 243, 238, 0.7);
+  --glass-strong: rgba(236, 243, 238, 0.96);
   --g-200: #0c4a30;
   --g-300: #157048;
   --b-200: #7e1434;
@@ -1429,17 +1429,17 @@ html[data-theme="light"] {
 }
 html[data-theme="light"] body {
   background:
-    radial-gradient(60% 50% at 12% 80%, rgba(63, 191, 127, 0.28), transparent 70%),
-    radial-gradient(50% 45% at 90% 12%, rgba(210, 71, 110, 0.2), transparent 70%),
-    radial-gradient(45% 40% at 78% 92%, rgba(63, 191, 127, 0.16), transparent 70%),
+    radial-gradient(60% 50% at 12% 80%, rgba(30, 143, 91, 0.3), transparent 70%),
+    radial-gradient(50% 45% at 90% 12%, rgba(165, 29, 69, 0.2), transparent 70%),
+    radial-gradient(45% 40% at 78% 92%, rgba(30, 143, 91, 0.18), transparent 70%),
     var(--bg);
   background-attachment: fixed;
 }
 html[data-theme="light"] #bg, html[data-theme="light"] .grain { display: none; }
-html[data-theme="light"] .glass, html[data-theme="light"] .card { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 14px 34px -24px rgba(11, 31, 21, 0.35); }
+html[data-theme="light"] .glass, html[data-theme="light"] .card { box-shadow: 0 14px 34px -24px rgba(11, 31, 21, 0.35); }
 html[data-theme="light"] #topbar { box-shadow: 0 8px 24px -16px rgba(11, 31, 21, 0.4); }
-html[data-theme="light"] #topbar .menu-panel { background: #fff; box-shadow: 0 24px 50px -14px rgba(11, 31, 21, 0.35); }
-html[data-theme="light"] .picker-list { background: #fff; box-shadow: 0 20px 40px -14px rgba(11, 31, 21, 0.3); }
+html[data-theme="light"] #topbar .menu-panel { background: #e8f0ea; box-shadow: 0 24px 50px -14px rgba(11, 31, 21, 0.35); }
+html[data-theme="light"] .picker-list { background: #e8f0ea; box-shadow: 0 20px 40px -14px rgba(11, 31, 21, 0.3); }
 html[data-theme="light"] .seg-btn[aria-selected="true"] { color: #0b1f15; }
 html[data-theme="light"] .seg-ind { background: linear-gradient(180deg, rgba(63, 191, 127, 0.3), rgba(30, 143, 91, 0.16)); border-color: rgba(30, 143, 91, 0.45); box-shadow: none; }
 html[data-theme="light"] .seg-hover { background: rgba(63, 191, 127, 0.14); border-color: rgba(30, 143, 91, 0.4); box-shadow: none; }
@@ -1448,10 +1448,10 @@ html[data-theme="light"] .bar-track { background: rgba(11, 31, 21, 0.1); }
 html[data-theme="light"] .bar-fill { box-shadow: none; }
 html[data-theme="light"] .card.spot, html[data-theme="light"] .podium-slot.spot, html[data-theme="light"] .badge-tile.spot { box-shadow: 0 14px 34px -24px rgba(11, 31, 21, 0.35), 0 0 calc(var(--o) * 22px) -10px hsl(var(--hue) 70% 45% / calc(var(--o) * 0.45)); }
 html[data-theme="light"] .tier-white, html[data-theme="light"] .tier-stop.tier-white, html[data-theme="light"] .ladder li.reached[data-tier="white"] .ladder-node { color: #0b1f15; }
-html[data-theme="light"] .footer-panel, html[data-theme="light"] .f-panel { background: rgba(255, 255, 255, 0.7); }
+html[data-theme="light"] .footer-panel, html[data-theme="light"] .f-panel { background: rgba(236, 243, 238, 0.7); }
 html[data-theme="light"] ::selection { background: rgba(63, 191, 127, 0.35); color: #0b1f15; }
 html[data-theme="light"] .nfc-name { color: #fff; }
-html[data-theme="light"] .nfc-card { color: #fff; }
+html[data-theme="light"] .nfc-card, html[data-theme="light"] .nfc-card .brand-name, html[data-theme="light"] .nfc-card .nfc-foot, html[data-theme="light"] .nfc-card .ico { color: #fff; }
 html[data-theme="light"] .tier-chip.tier-reef, html[data-theme="light"] .tier-stop.tier-reef { color: #0c4a30; }
 html[data-theme="light"] .tier-chip.tier-tiger { color: #0c4a30; }
 html[data-theme="light"] .tier-chip.tier-mega { color: #7e1434; }
