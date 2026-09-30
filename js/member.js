@@ -64,6 +64,11 @@
       renderActivity(cActivity, d);
       renderBadgesMini(cBadges, d);
       renderBoardMini(cBoard);
+      // The Tank Market cards (invest + bounties), once the v4 database update is in.
+      RT.market.memberCards(d).then(cards => {
+        if (!cards || !grid.isConnected) return;
+        cards.forEach((c, i) => { c.classList.add('reveal'); c.style.setProperty('--i', 7 + i); grid.appendChild(c); });
+      }).catch(() => {});
     }).catch(e => toast(friendly(e), 'error'));
     return {};
   };
@@ -159,7 +164,7 @@
 
     clear(el).appendChild(h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Recent activity'), h('span', { class: 'muted small' }, items.length ? items.length + ' total' : '')));
     if (!items.length) {
-      el.appendChild(h('div', { class: 'empty-mini' }, icon('nfc', 22, 'muted'), h('p', { class: 'muted' }, 'Nothing yet. Tap your card at the next meeting for your first 10 Bites.')));
+      el.appendChild(h('div', { class: 'empty-mini' }, icon('nfc', 22, 'muted'), h('p', { class: 'muted' }, 'Nothing yet. Tap your card at the next meeting for your first 100 Bites.')));
       return;
     }
     el.appendChild(h('ul', { class: 'timeline' }, items.slice(0, 6).map(it =>

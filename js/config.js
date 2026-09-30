@@ -10,8 +10,8 @@ window.RT_CONFIG = {
   // Points handed out by officers. Attendance is written on each check-in;
   // pitch points are written when an officer records a result.
   points: {
-    attendance: 10,
-    pitch: { 1: 30, 2: 20, 3: 10, 0: 5 }
+    attendance: 100,
+    pitch: { 1: 300, 2: 200, 3: 100, 0: 50 }
   },
 
   officers: [
