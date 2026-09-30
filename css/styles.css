@@ -1464,5 +1464,15 @@ html[data-theme="light"] .tier-chip.tier-mega { color: #7e1434; }
 .winner { padding: 18px; text-align: center; border: 1px solid rgba(63, 191, 127, 0.45); background: rgba(63, 191, 127, 0.1); }
 .winner-name { font: 800 34px/1.1 var(--font-display); margin-top: 6px; color: var(--g-200); }
 
+.faq-list { display: flex; flex-direction: column; gap: 12px; max-width: 820px; }
+.faq-item { border: 1px solid var(--line); background: rgb(var(--tint) / 0.04); }
+.faq-item summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 24px; cursor: pointer; list-style: none; font: 600 17px/1.35 var(--font-ui); }
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary .ico { flex: none; color: var(--ink-3); transition: transform 0.25s var(--ease); }
+.faq-item[open] summary .ico { transform: rotate(180deg); color: var(--g-300); }
+.faq-item[open] { border-color: rgba(63, 191, 127, 0.35); }
+.faq-item p { padding: 0 24px 22px; line-height: 1.6; max-width: 70ch; }
+.faq-foot { margin-top: 22px; }
+
 /* Everything is square, whatever rule or browser default says otherwise. */
 *, *::before, *::after { border-radius: 0 !important; }

@@ -241,6 +241,7 @@
       bottomSeg = segmented({ items: navItems(), value: key, vertical: true, className: 'bottom-seg', ariaLabel: 'Main navigation', onChange: v => go(v) });
       bottomEl.appendChild(bottomSeg);
     } else if (!S.user) {
+      right.appendChild(h('a', { class: 'btn btn-ghost btn-sm hide-sm', href: '#/', onclick: e => { e.preventDefault(); RT.jump('faq'); } }, 'FAQ'));
       right.appendChild(h('a', { class: 'btn btn-ghost btn-sm hide-sm', href: '#/login' }, 'Log in'));
       right.appendChild(h('a', { class: 'btn btn-primary btn-sm hide-sm', href: '#/signup' }, 'Join', icon('arrowRight', 16)));
     }
@@ -307,6 +308,7 @@
       items.push(h('button', { class: 'menu-item', type: 'button', onclick: signOut }, icon('logout', 18), h('span', { class: 'grow' }, 'Sign out')));
     } else {
       items.push(link('#/', 'About the program', 'fin'));
+      items.push(h('a', { class: 'menu-item', href: '#/', onclick: e => { e.preventDefault(); closeMenu(); RT.jump('faq'); } }, icon('chat', 18), h('span', { class: 'grow' }, 'FAQ')));
       items.push(link('#/login', 'Log in', 'user'));
       items.push(h('a', { class: 'btn btn-primary btn-block', href: '#/signup', onclick: closeMenu }, 'Join Ridge Tank', icon('arrowRight', 16)));
     }
@@ -364,8 +366,8 @@
       const el = document.getElementById(id);
       if (el) el.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
     };
-    if (current && current.key === 'landing') scroll();
-    else { go(''); setTimeout(scroll, 500); }
+    if (current && (current.key === 'landing' || current.key === 'about')) scroll();
+    else { go(S.me ? 'about' : ''); setTimeout(scroll, 500); }
   }
   RT.jump = jump;
 
@@ -376,7 +378,8 @@
           { label: 'Overview', href: '#/' },
           { label: 'How it works', jump: 'how' },
           { label: 'Tiers', jump: 'tiers' },
-          { label: 'Badges', jump: 'badges' }] },
+          { label: 'Badges', jump: 'badges' },
+          { label: 'FAQ', jump: 'faq' }] },
         { title: 'Members', links: [
           { label: 'Log in', href: '#/login' },
           { label: 'Join Ridge Tank', href: '#/signup' },
@@ -530,7 +533,8 @@
           S.me
             ? h('a', { class: 'btn btn-primary btn-lg', href: '#/home' }, 'Go to your dashboard', icon('arrowRight', 18))
             : [h('a', { class: 'btn btn-primary btn-lg', href: '#/signup' }, 'Join Ridge Tank', icon('arrowRight', 18)),
-               h('a', { class: 'btn btn-ghost btn-lg', href: '#/login' }, 'Log in')]),
+               h('a', { class: 'btn btn-ghost btn-lg', href: '#/login' }, 'Log in'),
+               h('a', { class: 'btn btn-ghost btn-lg', href: '#faq', onclick: e => { e.preventDefault(); RT.jump('faq'); } }, 'FAQ')]),
         (!S.me && cfg.promo) ? h('div', { class: 'promo reveal', style: { '--i': 5 } }, h('strong', null, cfg.promo.title), h('span', null, cfg.promo.text)) : null,
         h('div', { class: 'hero-meta reveal', style: { '--i': 5 } },
           h('span', null, icon('nfc', 16), 'Tap in with your card'),
@@ -586,13 +590,38 @@
             h('a', { class: 'btn btn-primary', href: '#/signup' }, 'Join Ridge Tank'),
             h('a', { class: 'btn btn-ghost', href: '#/login' }, 'Log in')))));
 
+    // Questions new people ask. Answers are in plain words on purpose.
+    const faqs = [
+      ['What is Ridge Tank?', 'A Shark Tank program at ' + cfg.school + '. You pitch ideas, invest in other people’s pitches, and climb a leaderboard all year.'],
+      ['Who can join?', 'Any ' + cfg.school + ' student, grades 9 to 12. Sign up on this site or through the sign-up form.'],
+      ['How do I sign up?', 'Hit “Join Ridge Tank” and fill in your name, grade, email and phone number. It takes under a minute. You can also use the Google sign-up form from the announcement.'],
+      ['Why do you want my phone number?', 'Only to add you to the program group chat (iMessage or WhatsApp) for meeting updates. Only officers can see it.'],
+      ['When is the first meeting?', cfg.nextMeeting + '. Everyone gets their own Ridge Tank card there, and we’ll show you how everything works.'],
+      ['What are the sign-up rewards?', cfg.promo ? cfg.promo.text : 'Ask an officer.'],
+      ['What are Bites?', 'Bites are the program’s money. You earn 100 every time you tap in at a meeting, and more for pitching and for bounties. You can invest them, and your Bites plus your winnings make up your net worth.'],
+      ['How does the card work?', 'You get a Ridge Tank card at the first meeting. Tap it on the reader at the door and you’re checked in. No sign-in sheet.'],
+      ['How do pitching and investing work?', 'Teams pitch in the Tank. During the meeting you put your Bites into the pitches you believe in. First place pays 3x, second 2x, third 1.5x, and a pitch that flops pays half. You don’t have to pitch to invest.'],
+      ['What are bounties?', 'Side challenges the officers post for extra Bites, like bringing a friend. Tap “I did it” and an officer checks it.'],
+      ['Why do my Bites fade?', 'Unspent Bites lose 10% at the start of each month. It keeps the game moving: put your Bites to work instead of sitting on them.'],
+      ['How do I see my Bites and rank?', 'Log in with your email and password. Your Home page shows your Bites, rank, badges and recent activity. If you already have a card, enter the code an officer gives you when you sign up.'],
+      ['What are tiers and badges?', 'Your net worth moves you through four tiers: Reef Shark, Tiger Shark, Great White and Megalodon. Badges are rewards for things like showing up, pitching and bringing friends.'],
+      ['What if I lose my card?', 'Tell an officer. They’ll link a new card to you and the old one stops working.'],
+      ['Who can see my information?', 'Members see names, Bites and tiers on the leaderboard. Officers see a bit more so they can run check-in. Read the full details on the privacy page.']
+    ];
+    const faq = h('section', { class: 'section', id: 'faq' },
+      h('div', { class: 'section-head' }, h('p', { class: 'eyebrow' }, 'FAQ'), h('h2', { class: 'section-title' }, 'Questions, answered.')),
+      h('div', { class: 'faq-list' }, faqs.map(([q, a]) => h('details', { class: 'faq-item' },
+        h('summary', null, h('span', null, q), icon('chevronDown', 18)),
+        h('p', { class: 'muted' }, a)))),
+      h('p', { class: 'muted small faq-foot' }, 'Still stuck? Ask any officer at a meeting, or read the ', h('a', { href: 'privacy.html' }, 'privacy page'), '.'));
+
     const officers = h('section', { class: 'section', id: 'officers' },
       h('div', { class: 'section-head' }, h('p', { class: 'eyebrow' }, 'Officers'), h('h2', { class: 'section-title' }, 'Who runs the Tank.')),
       h('div', { class: 'grid-4' }, cfg.officers.map((o, i) =>
         h('div', { class: 'card officer lift', style: { '--i': i } }, avatar(o.name, 52),
           h('div', null, h('div', { class: 'officer-name' }, o.name), h('div', { class: 'muted small' }, o.role + (o.note ? ' · ' + o.note : '')))))));
 
-    root.append(hero, how, tiers, badges, ...(S.me ? [] : [locked]), officers);
+    root.append(hero, how, tiers, badges, ...(S.me ? [] : [locked]), faq, officers);
 
     // Fade sections in as they scroll into view.
     const io = new IntersectionObserver(entries => {
