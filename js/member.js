@@ -57,7 +57,7 @@
 
     loadMine().then(d => {
       const { cur, next } = RT.tierFor(d.mine.total_points, S.tiers);
-      subLine.textContent = `${cur ? cur.name : 'Reef Shark'} · #${d.mine.rank} of ${S.board.length} · ${d.mine.total_points} pts`;
+      subLine.textContent = `${cur ? cur.name : 'Reef Shark'} · #${d.mine.rank} of ${S.board.length} · ${d.mine.total_points} Fins`;
       renderPoints(cPoints, d, cur, next);
       renderCardStatus(cCard);
       renderNext(cNext);
@@ -75,8 +75,8 @@
     const into = next ? d.mine.total_points - (cur ? cur.point_threshold : 0) : 1;
     el.classList.add('points-card');
     clear(el).append(
-      h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Your points'), tierChip(cur && cur.name)),
-      h('div', { class: 'points-row' }, num, h('span', { class: 'pts-unit' }, 'pts'),
+      h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Your Fins'), tierChip(cur && cur.name)),
+      h('div', { class: 'points-row' }, num, h('span', { class: 'pts-unit' }, 'Fins'),
         h('span', { class: 'rank-pill' }, icon('trophy', 14), '#' + d.mine.rank, h('span', { class: 'muted' }, ' of ' + S.board.length))),
       h('div', { class: 'tier-progress' },
         progressBar(into, span, 'bar-lg'),
@@ -112,7 +112,7 @@
         h('div', { class: 'nfc-foot mono' }, linked ? 'Member card' : 'Being made')),
       h('ol', { class: 'steps' }, steps.map(([label, doneStep]) => h('li', { class: doneStep ? 'done' : '' }, h('span', { class: 'step-dot' }, doneStep ? icon('check', 12) : null), label))),
       h('p', { class: 'muted small' }, linked
-        ? 'Tap your card on the reader when you walk in. Points show up here right away.'
+        ? 'Tap your card on the reader when you walk in. Your Fins show up here right away.'
         : 'An officer is making your card. Until you have it, they can check you in by name.'));
   }
 
@@ -159,7 +159,7 @@
 
     clear(el).appendChild(h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Recent activity'), h('span', { class: 'muted small' }, items.length ? items.length + ' total' : '')));
     if (!items.length) {
-      el.appendChild(h('div', { class: 'empty-mini' }, icon('nfc', 22, 'muted'), h('p', { class: 'muted' }, 'Nothing yet. Tap your card at the next meeting for your first 10 points.')));
+      el.appendChild(h('div', { class: 'empty-mini' }, icon('nfc', 22, 'muted'), h('p', { class: 'muted' }, 'Nothing yet. Tap your card at the next meeting for your first 10 Fins.')));
       return;
     }
     el.appendChild(h('ul', { class: 'timeline' }, items.slice(0, 6).map(it =>
@@ -191,7 +191,7 @@
     const rows = [...top];
     if (mineIdx >= 5) rows.push(S.board[mineIdx]);
     clear(el).appendChild(h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Leaderboard'), h('a', { class: 'link-sm', href: '#/leaderboard' }, 'Full list', icon('chevronRight', 14))));
-    if (!rows.length) { el.appendChild(h('p', { class: 'muted' }, 'No points yet this season.')); return; }
+    if (!rows.length) { el.appendChild(h('p', { class: 'muted' }, 'No Fins yet this season.')); return; }
     el.appendChild(h('ol', { class: 'mini-board' }, rows.map((r, i) =>
       h('li', { class: (r.member_id === S.me.id ? 'me' : '') + (i === 5 ? ' gap-above' : '') },
         h('span', { class: 'mono rank' }, String(r.rank)), avatar(r.name, 28), h('span', { class: 'grow ellipsis' }, r.name),
@@ -261,7 +261,7 @@
         place === 1 ? h('span', { class: 'crown' }, icon('crown', 22)) : null,
         h('div', { class: 'podium-avatar' }, avatar(r.name, place === 1 ? 76 : 60)),
         h('div', { class: 'podium-name ellipsis' }, r.name, me ? h('span', { class: 'you-tag' }, 'You') : null),
-        h('div', { class: 'podium-pts mono' }, String(r.total_points), h('span', { class: 'muted' }, ' pts')),
+        h('div', { class: 'podium-pts mono' }, String(r.total_points), h('span', { class: 'muted' }, ' Fins')),
         tierChip(r.current_tier),
         h('div', { class: 'podium-base' }, h('span', { class: 'mono' }, ordinal(place))));
     }
@@ -273,7 +273,7 @@
         avatar(r.name, 36),
         h('div', { class: 'grow min0' }, h('div', { class: 'ellipsis name' }, r.name, me ? h('span', { class: 'you-tag' }, 'You') : null)),
         tierChip(r.current_tier),
-        h('span', { class: 'pts mono' }, String(r.total_points), h('span', { class: 'muted' }, ' pts')));
+        h('span', { class: 'pts mono' }, String(r.total_points), h('span', { class: 'muted' }, ' Fins')));
     }
 
     search.addEventListener('input', RT.debounce(draw, 120));
@@ -323,7 +323,7 @@
       refCount.textContent = String(d.stats.referrals);
 
       clear(statsCard).append(
-        h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Stats'), h('span', { class: 'mono muted small' }, d.mine.total_points + ' pts')),
+        h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Stats'), h('span', { class: 'mono muted small' }, d.mine.total_points + ' Fins')),
         h('dl', { class: 'stat-list' },
           statRow('Meetings attended', d.stats.attendance),
           statRow('Current streak', d.stats.streak + (d.stats.bestStreak > d.stats.streak ? ` (best ${d.stats.bestStreak})` : '')),
@@ -338,7 +338,7 @@
           const isCur = cur && cur.id === t.id;
           return h('li', { class: (reached ? 'reached ' : '') + (isCur ? 'current' : ''), 'data-tier': RT.tierClass(t.name).replace('tier-', '') },
             h('span', { class: 'ladder-node' }), h('div', { class: 'grow min0' }, h('div', { class: 'ladder-name' }, t.name), h('div', { class: 'muted small' }, t.perks || '')),
-            h('span', { class: 'mono small nowrap' }, t.point_threshold + ' pts'));
+            h('span', { class: 'mono small nowrap' }, t.point_threshold + ' Fins'));
         })));
 
       renderBadges(badgesWrap, d.progress);
