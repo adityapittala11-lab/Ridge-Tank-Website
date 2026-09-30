@@ -144,6 +144,7 @@
       { value: 'members', label: 'Members', icon: 'users' },
       { value: 'meetings', label: 'Meetings', icon: 'calendar' },
       { value: 'pitches', label: 'Pitches', icon: 'mic' },
+      { value: 'market', label: 'Market', icon: 'coins' },
       { value: 'badges', label: 'Badges', icon: 'award' }
     ];
     const seg = segmented({ items: tabs, value: t.tab, className: 'admin-seg', ariaLabel: 'Officer tools', onChange: v => RT.go('admin/' + v) });
@@ -158,7 +159,7 @@
 
     let tab = t.tab;
     let tabCleanup = null;
-    const TABS = { checkin: tabCheckin, requests: tabRequests, members: tabMembers, meetings: tabMeetings, pitches: tabPitches, badges: tabBadges };
+    const TABS = { checkin: tabCheckin, requests: tabRequests, members: tabMembers, meetings: tabMeetings, pitches: tabPitches, market: pane => RT.market.adminTab(pane), badges: tabBadges };
 
     function show(name) {
       if (!TABS[name]) name = 'checkin';
@@ -669,6 +670,15 @@
     const sel = meetingSelect(() => { drawPitches(); drawVotes(); });
     pane.appendChild(h('div', { class: 'card meeting-bar' }, h('div', { class: 'grow min0' }, h('span', { class: 'card-label' }, 'Meeting'), sel)));
     if (!A.meetings.length) { pane.appendChild(h('div', { class: 'card empty' }, h('p', { class: 'muted' }, 'Add a meeting first (Meetings tab).'))); return null; }
+    // Investing / final-results switches (only once the v4 database update has been run).
+    const switchHost = h('div');
+    pane.appendChild(switchHost);
+    const drawSwitches = () => {
+      clear(switchHost);
+      if (RT.market && RT.market.live && A.meetings.some(x => 'investing_open' in x)) switchHost.appendChild(RT.market.meetingSwitches(A.meetingId));
+    };
+    drawSwitches();
+    sel.addEventListener('change', drawSwitches);
 
     // Pitch results
     let pitcher = null;

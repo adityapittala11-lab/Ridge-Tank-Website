@@ -517,9 +517,9 @@
       h('a', { class: 'scroll-hint', href: '#how', 'aria-label': 'Scroll down', onclick: e => { e.preventDefault(); document.getElementById('how').scrollIntoView({ behavior: 'smooth' }); } }, icon('chevronDown', 20)));
 
     const steps = [
-      ['01', 'Tap in', 'nfc', 'Every meeting, tap your Ridge Tank card on the reader at the door. That earns you 10 Bites. No sign-in sheet.'],
-      ['02', 'Pitch & invest', 'mic', 'Teams pitch in the Tank and everyone invests Shark Notes in the ideas they believe in. Top 3 earn bonus Bites.'],
-      ['03', 'Climb', 'trophy', 'Rack up Bites to climb four tiers and unlock badges. Whoever finishes the year on top is King of the Tank.']
+      ['01', 'Tap in', 'nfc', 'Every meeting, tap your Ridge Tank card on the reader at the door. That earns you 100 Bites. No sign-in sheet.'],
+      ['02', 'Pitch & invest', 'mic', 'Teams pitch in the Tank and everyone invests their Bites in the ideas they believe in. Back a winner and your money grows.'],
+      ['03', 'Climb', 'trophy', 'Your net worth climbs four tiers and unlocks badges. Bounties pay extra, and idle Bites fade, so put them to work. Whoever finishes the year on top is King of the Tank.']
     ];
     const how = h('section', { class: 'section', id: 'how' },
       h('div', { class: 'section-head' }, h('p', { class: 'eyebrow' }, 'How it works'), h('h2', { class: 'section-title' }, 'Show up. Pitch. Climb.')),
@@ -530,9 +530,9 @@
 
     const tierInfo = [
       ['Reef Shark', 0, 'Where everyone starts.'],
-      ['Tiger Shark', 100, 'About 10 meetings in.'],
-      ['Great White', 250, 'Showing up and pitching.'],
-      ['Megalodon', 500, 'A full year, all in.']
+      ['Tiger Shark', 1000, 'About 10 meetings in.'],
+      ['Great White', 2500, 'Showing up and pitching.'],
+      ['Megalodon', 5000, 'A full year, all in.']
     ];
     const tiers = h('section', { class: 'section', id: 'tiers' },
       h('div', { class: 'section-head' }, h('p', { class: 'eyebrow' }, 'Tiers'), h('h2', { class: 'section-title' }, 'From Reef Shark to Megalodon.')),
@@ -543,7 +543,7 @@
     const sampleBadges = ['First Bite', 'Feeding Frenzy', 'On the Hunt', 'In the Tank', 'Tank Champion', 'Crowd Favorite', 'Headhunter', 'King of the Tank'];
     const badgeDesc = {
       'First Bite': 'Your first meeting', 'Feeding Frenzy': '10 meetings', 'On the Hunt': '5 meetings in a row',
-      'In the Tank': 'Your first pitch', 'Tank Champion': 'Win a Tank competition', 'Crowd Favorite': 'Most Shark Notes in a session',
+      'In the Tank': 'Your first pitch', 'Tank Champion': 'Win a Tank competition', 'Crowd Favorite': 'Most Bites invested in you in a session',
       'Headhunter': 'Bring a friend who joins', 'King of the Tank': '#1 at the end of the year'
     };
     const badges = h('section', { class: 'section', id: 'badges' },

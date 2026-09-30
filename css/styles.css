@@ -1325,5 +1325,19 @@ body.is-member #toasts { bottom: calc(100px + env(safe-area-inset-bottom)); }
   .grain { animation: none; }
 }
 
+/* ---------- Tank Market (js/market.js) ---------- */
+.wallet { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+.wallet > div { padding: 12px; background: rgba(255, 255, 255, 0.035); border: 1px solid var(--line); min-width: 0; }
+.wallet-val { font-size: 22px; font-weight: 600; }
+.market-card .stack-sm, .market-card .entry-list { margin-top: 12px; }
+.market-card > p { margin-top: 10px; }
+.decay-note { display: flex; align-items: center; gap: 6px; margin-top: 14px !important; }
+.bounty-list { display: flex; flex-direction: column; gap: 10px; }
+.bounty { display: flex; align-items: center; gap: 14px; padding: 12px; background: rgba(255, 255, 255, 0.035); border: 1px solid var(--line); }
+.bounty-title { font-weight: 600; }
+.bounty-side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex: none; }
+.reward { color: var(--g-300); font-weight: 600; }
+.market-row { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+
 /* Everything is square, whatever rule or browser default says otherwise. */
 *, *::before, *::after { border-radius: 0 !important; }
