@@ -133,7 +133,7 @@
   function phoneInput(value) {
     return h('input', { class: 'input', type: 'tel', placeholder: '(555) 123-4567', autocomplete: 'tel', inputmode: 'tel', maxlength: 20, value: value || '' });
   }
-  const PHONE_HINT = 'We’ll text you once to add you to the club group chat (iMessage or WhatsApp). Only officers can see it.';
+  const PHONE_HINT = 'We’ll text you once to add you to the program group chat (iMessage or WhatsApp). Only officers can see it.';
   // Saving the number is a bonus step: joining still works if it fails (e.g. the v3 database update isn't in yet).
   async function savePhone(phone) {
     if (!phone) return;
@@ -298,7 +298,7 @@
     if (S.me) {
       items.push(h('div', { class: 'menu-user' }, avatar(S.me.name, 40),
         h('div', { class: 'min0' }, h('div', { class: 'menu-name' }, S.me.name), h('div', { class: 'muted small ellipsis' }, S.user.email || ''))));
-      items.push(link('#/home', 'Home', 'home'), link('#/about', 'About the club', 'fin'), link('#/leaderboard', 'Leaderboard', 'trophy'), link('#/chat', 'Club chat', 'chat'), link('#/profile', 'Profile & badges', 'user'));
+      items.push(link('#/home', 'Home', 'home'), link('#/about', 'About the program', 'fin'), link('#/leaderboard', 'Leaderboard', 'trophy'), link('#/chat', 'Program chat', 'chat'), link('#/profile', 'Profile & badges', 'user'));
       if (S.isAdmin) items.push(link('#/admin/checkin', 'Officer tools', 'shield', S.pendingCount ? h('span', { class: 'count-pill' }, String(S.pendingCount)) : null));
       items.push(h('div', { class: 'menu-sep' }));
       items.push(h('button', { class: 'menu-item', type: 'button', onclick: signOut }, icon('logout', 18), h('span', { class: 'grow' }, 'Sign out')));
@@ -306,7 +306,7 @@
       items.push(h('div', { class: 'menu-user' }, avatar(S.user.email, 40), h('div', { class: 'min0' }, h('div', { class: 'menu-name' }, 'Signed in'), h('div', { class: 'muted small ellipsis' }, S.user.email || ''))));
       items.push(h('button', { class: 'menu-item', type: 'button', onclick: signOut }, icon('logout', 18), h('span', { class: 'grow' }, 'Sign out')));
     } else {
-      items.push(link('#/', 'About the club', 'fin'));
+      items.push(link('#/', 'About the program', 'fin'));
       items.push(link('#/login', 'Log in', 'user'));
       items.push(h('a', { class: 'btn btn-primary btn-block', href: '#/signup', onclick: closeMenu }, 'Join Ridge Tank', icon('arrowRight', 16)));
     }
@@ -381,8 +381,8 @@
           { label: 'Log in', href: '#/login' },
           { label: 'Join Ridge Tank', href: '#/signup' },
           { label: 'Leaderboard', href: '#/leaderboard', lock: true },
-          { label: 'Club chat', href: '#/chat', lock: true }] },
-        { title: 'Club', links: [
+          { label: 'Program chat', href: '#/chat', lock: true }] },
+        { title: 'Program', links: [
           { label: 'Officers', jump: 'officers' },
           { label: 'Privacy', href: 'privacy.html' }] }
       ];
@@ -391,11 +391,11 @@
       { title: 'Explore', links: [
         { label: 'Home', href: '#/home' },
         { label: 'Leaderboard', href: '#/leaderboard' },
-        { label: 'Club chat', href: '#/chat' }] },
+        { label: 'Program chat', href: '#/chat' }] },
       { title: 'Account', links: [
         { label: 'Profile & badges', href: '#/profile' },
         { label: 'Sign out', onClick: signOut }] },
-      { title: 'Club', links: [{ label: 'Privacy', href: 'privacy.html' }].concat(S.isAdmin
+      { title: 'Program', links: [{ label: 'Privacy', href: 'privacy.html' }].concat(S.isAdmin
         ? [{ label: 'Officer tools', href: '#/admin/checkin' }, { label: 'Card requests', href: '#/admin/requests' }]
         : []) }
     ];
@@ -417,7 +417,7 @@
     const brand = anim(0.1, 'f-brand',
       h('a', { class: 'brand', href: S.me ? '#/home' : '#/', 'aria-label': 'Ridge Tank home' },
         h('span', { class: 'brand-mark' }, icon('fin', 18)), h('span', { class: 'brand-name' }, 'Ridge Tank')),
-      h('p', { class: 'f-tag' }, 'Mountain Ridge’s Shark Tank club. Show up, pitch your ideas, and climb the leaderboard.'),
+      h('p', { class: 'f-tag' }, 'Mountain Ridge’s Shark Tank program. Show up, pitch your ideas, and climb the leaderboard.'),
       social.length ? h('div', { class: 'f-social' }, social.map(s =>
         h('a', { class: 'icon-btn', href: s.href, target: '_blank', rel: 'noopener noreferrer', 'aria-label': s.label }, icon(s.icon || 'link', 18)))) : null);
 
@@ -525,7 +525,7 @@
       h('div', { class: 'hero-inner' },
         h('p', { class: 'eyebrow reveal', style: { '--i': 0 } }, cfg.school),
         title,
-        h('p', { class: 'hero-sub reveal', style: { '--i': 3 } }, 'Mountain Ridge’s Shark Tank club. Pitch your ideas, back other people’s, and climb the leaderboard all year.'),
+        h('p', { class: 'hero-sub reveal', style: { '--i': 3 } }, 'Mountain Ridge’s Shark Tank program. Pitch your ideas, back other people’s, and climb the leaderboard all year.'),
         h('div', { class: 'hero-cta reveal', style: { '--i': 4 } },
           S.me
             ? h('a', { class: 'btn btn-primary btn-lg', href: '#/home' }, 'Go to your dashboard', icon('arrowRight', 18))
@@ -581,7 +581,7 @@
         h('div', { class: 'locked-copy' },
           h('span', { class: 'lock-badge' }, icon('lock', 18)),
           h('h3', null, 'The leaderboard is members-only'),
-          h('p', { class: 'muted' }, 'Join or log in to see where you rank, track your badges, and talk in the club chat.'),
+          h('p', { class: 'muted' }, 'Join or log in to see where you rank, track your badges, and talk in the program chat.'),
           h('div', { class: 'row gap-sm wrap center' },
             h('a', { class: 'btn btn-primary', href: '#/signup' }, 'Join Ridge Tank'),
             h('a', { class: 'btn btn-ghost', href: '#/login' }, 'Log in')))));
@@ -686,7 +686,7 @@
         field('Password', pw),
         h('div', { class: 'field' }, h('span', { class: 'label' }, 'Already have a Ridge Tank card?'), hasCard),
         codeField, refField,
-        h('label', { class: 'check-row' }, agree, h('span', null, 'I understand my name and Bites will show on the club leaderboard, which only members can see.')),
+        h('label', { class: 'check-row' }, agree, h('span', null, 'I understand my name and Bites will show on the program leaderboard, which only members can see.')),
         err, submit,
         h('p', { class: 'muted small center' }, 'Already joined? ', h('a', { href: '#/login' }, 'Log in')));
 
@@ -787,7 +787,7 @@
       clear(panes).appendChild(m === 'new' ? newPane : cardPane);
       panes.firstChild.insertBefore(phoneField, panes.firstChild.children[m === 'new' ? 2 : 1] || null);
       panes.firstChild.classList.add('form-in');
-      submit.textContent = m === 'new' ? 'Join the club' : 'Link my card';
+      submit.textContent = m === 'new' ? 'Join the program' : 'Link my card';
     }
     const seg = segmented({ items: [{ value: 'new', label: 'I’m new' }, { value: 'card', label: 'I have a card' }], value: mode, className: 'seg-fill', onChange: show });
 

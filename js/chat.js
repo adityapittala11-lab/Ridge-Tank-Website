@@ -23,7 +23,7 @@
     const head = h('header', { class: 'chat-head' },
       h('div', { class: 'chat-title' },
         h('span', { class: 'chat-icon' }, icon('chat', 18)),
-        h('div', null, h('h2', null, 'Club chat'), h('p', { class: 'muted small' }, `Everyone in Ridge Tank · ${S.directory.size || S.board.length} members`))),
+        h('div', null, h('h2', null, 'Program chat'), h('p', { class: 'muted small' }, `Everyone in Ridge Tank · ${S.directory.size || S.board.length} members`))),
       liveDot);
 
     const list = h('div', { class: 'chat-list' });
@@ -31,7 +31,7 @@
     const scroller = h('div', { class: 'chat-scroll', role: 'log', 'aria-live': 'polite', 'aria-label': 'Messages' }, olderBtn, list);
     const newPill = h('button', { class: 'new-pill', type: 'button', hidden: true, onclick: () => scrollToBottom(true) }, 'New messages', icon('chevronDown', 14));
 
-    const input = h('textarea', { class: 'composer-input', rows: 1, placeholder: 'Message the club…', maxlength: 1000, 'aria-label': 'Message' });
+    const input = h('textarea', { class: 'composer-input', rows: 1, placeholder: 'Message everyone…', maxlength: 1000, 'aria-label': 'Message' });
     const counter = h('span', { class: 'composer-count mono', hidden: true });
     const sendBtn = h('button', { class: 'send-btn', type: 'submit', disabled: true, 'aria-label': 'Send message' }, icon('arrowUp', 18));
     const composer = h('form', { class: 'composer' }, input, counter, sendBtn);
@@ -161,7 +161,7 @@
         list.appendChild(h('div', { class: 'chat-empty' },
           h('span', { class: 'big-icon' }, icon('chat', 26)),
           h('h3', null, 'No messages yet'),
-          h('p', { class: 'muted' }, 'Say hi. Everyone in the club can see this chat.')));
+          h('p', { class: 'muted' }, 'Say hi. Everyone in the program can see this chat.')));
         return;
       }
       let lastDay = null;
