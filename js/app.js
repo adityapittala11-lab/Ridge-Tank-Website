@@ -249,6 +249,8 @@
     const chip = h('div', { class: 'menu-chip' + (S.user ? '' : ' only-sm') },
       S.me ? h('button', { class: 'chip-avatar', type: 'button', 'aria-label': 'Open menu', onclick: () => menuBtn.click() }, avatar(S.me.name, 30)) : null,
       menuBtn);
+    const isLight = theme.get() === 'light';
+    right.appendChild(h('button', { class: 'icon-btn theme-btn', type: 'button', 'aria-label': isLight ? 'Switch to dark mode' : 'Switch to light mode', title: isLight ? 'Dark mode' : 'Light mode', onclick: () => theme.toggle() }, icon(isLight ? 'moon' : 'sun', 18)));
     right.appendChild(chip);
 
     menuPanel = buildMenu();
@@ -256,6 +258,25 @@
     requestAnimationFrame(() => topEl.classList.add('ready'));
   }
   RT.renderShell = renderShell;
+
+  // Light / dark switch. The choice is saved in this browser.
+  const theme = {
+    get: () => (document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark'),
+    set(t) {
+      if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
+      else document.documentElement.removeAttribute('data-theme');
+      try { localStorage.setItem('rt_theme', t); } catch (e) { /* storage blocked */ }
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', t === 'light' ? '#eef3ee' : '#030705');
+      window.dispatchEvent(new CustomEvent('rt:theme', { detail: t }));
+    },
+    toggle() {
+      theme.set(theme.get() === 'light' ? 'dark' : 'light');
+      renderShell();   // button + menu labels
+      RT.rerender();   // redraws the dotted headings in the new colour
+    }
+  };
+  RT.theme = theme;
 
   // Top bar slides away while scrolling down and comes back on any scroll up (or near the top).
   (function () {
