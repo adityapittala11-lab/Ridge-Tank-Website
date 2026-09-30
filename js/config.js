@@ -27,6 +27,12 @@ window.RT_CONFIG = {
   social: [],
 
   // Opening animation timing in milliseconds.
+  // Sign-up incentive shown on the landing page for people who aren't members yet. Set to null to hide it.
+  promo: {
+    title: 'Sign up before the first meeting',
+    text: 'The first 10 sign-ups get candy. Everyone who signs up is entered to win cash, drawn live at the meeting.'
+  },
+
   intro: { form: 1700, hold: 1900, disperse: 2000 },
 
   // Background swirl edges: 'soft' (smooth blur), 'medium', 'sharp', or 'crisp' (no blur).

@@ -1457,5 +1457,12 @@ html[data-theme="light"] .tier-chip.tier-tiger { color: #0c4a30; }
 html[data-theme="light"] .tier-chip.tier-mega { color: #7e1434; }
 .theme-btn .ico svg { width: 18px; height: 18px; }
 
+.promo { display: flex; flex-direction: column; gap: 6px; max-width: 560px; margin: 4px auto 0; padding: 16px 22px; text-align: center; border: 1px solid rgba(63, 191, 127, 0.4); background: rgb(var(--tint) / 0.05); }
+.promo strong { color: var(--g-300); font: 500 12px/1.2 var(--font-mono); letter-spacing: 0.14em; text-transform: uppercase; }
+.promo span { color: var(--ink-2); font-size: 15px; line-height: 1.45; }
+.reward-draw { margin-top: 22px; }
+.winner { padding: 18px; text-align: center; border: 1px solid rgba(63, 191, 127, 0.45); background: rgba(63, 191, 127, 0.1); }
+.winner-name { font: 800 34px/1.1 var(--font-display); margin-top: 6px; color: var(--g-200); }
+
 /* Everything is square, whatever rule or browser default says otherwise. */
 *, *::before, *::after { border-radius: 0 !important; }
