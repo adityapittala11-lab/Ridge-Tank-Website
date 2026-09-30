@@ -122,6 +122,24 @@
 
   // Email sign-ups carry their answers (name, grade, card code) in user metadata; use them to finish
   // joining. Google sign-ins skip that form, so they go through the "One more step" screen instead.
+  // US numbers: keep the digits, add +1 when it's a plain 10-digit number. Returns '' if it doesn't look like a phone number.
+  function cleanPhone(raw) {
+    const d = String(raw || '').replace(/\D/g, '');
+    if (d.length === 10) return '+1' + d;
+    if (d.length === 11 && d[0] === '1') return '+' + d;
+    return d.length >= 8 && d.length <= 15 ? '+' + d : '';
+  }
+  RT.cleanPhone = cleanPhone;
+  function phoneInput(value) {
+    return h('input', { class: 'input', type: 'tel', placeholder: '(555) 123-4567', autocomplete: 'tel', inputmode: 'tel', maxlength: 20, value: value || '' });
+  }
+  const PHONE_HINT = 'We’ll text you once to add you to the club group chat (iMessage or WhatsApp). Only officers can see it.';
+  // Saving the number is a bonus step: joining still works if it fails (e.g. the v3 database update isn't in yet).
+  async function savePhone(phone) {
+    if (!phone) return;
+    try { const m = await api.setPhone(phone); if (m) S.me = m; } catch (e) { console.warn('Phone not saved', e); }
+  }
+
   async function autoOnboard() {
     const meta = (S.user && S.user.user_metadata) || {};
     if (!meta.rt_signup) return;
@@ -132,9 +150,11 @@
     try {
       if (meta.card_code) {
         S.me = await api.claim(meta.card_code);
+        await savePhone(meta.phone);
         toast('Card linked. Welcome back to the Tank.', 'success');
       } else if (meta.full_name) {
         S.me = await api.register(meta.full_name, meta.grade || '', meta.ref || '');
+        await savePhone(meta.phone);
         toast('You’re in. Your card request went to the officers.', 'success');
       }
     } catch (e) {
@@ -618,6 +638,7 @@
       const name = h('input', { class: 'input', type: 'text', placeholder: 'First and last name', autocomplete: 'name', required: true, maxlength: 60 });
       const grade = gradeSwitch('');
       const email = h('input', { class: 'input', type: 'email', placeholder: 'you@example.com', autocomplete: 'email', required: true });
+      const phone = phoneInput();
       const pw = passwordInput('At least 8 characters', 'new-password');
       const code = h('input', { class: 'input mono', type: 'text', placeholder: 'e.g. Falcon4821', autocomplete: 'off', spellcheck: false, maxlength: 20 });
       const ref = h('input', { class: 'input mono', type: 'text', placeholder: 'Their code (optional)', autocomplete: 'off', spellcheck: false, maxlength: 20 });
@@ -639,6 +660,7 @@
         field('Name', name),
         h('div', { class: 'field' }, h('span', { class: 'label' }, 'Grade'), grade),
         field('Email', email),
+        field('Phone number', phone, PHONE_HINT),
         field('Password', pw),
         h('div', { class: 'field' }, h('span', { class: 'label' }, 'Already have a Ridge Tank card?'), hasCard),
         codeField, refField,
@@ -654,16 +676,18 @@
         const g = grade.getValue();
         const em = email.value.trim();
         const p = pw.input.value;
+        const ph = cleanPhone(phone.value);
         const withCard = hasCard.getValue() === 'card';
         const c = code.value.trim();
         if (n.length < 2) return fail('Enter your name.');
         if (!g) return fail('Pick your grade.');
         if (!/^\S+@\S+\.\S+$/.test(em)) return fail('Enter a real email address.');
+        if (!ph) return fail('Enter your phone number.');
         if (p.length < 8) return fail('Use a password with at least 8 characters.');
         if (withCard && !/^[A-Za-z]+\d{4}$/.test(c)) return fail('Card codes look like a word plus 4 numbers, e.g. Falcon4821.');
         if (!agree.checked) return fail('Check the box about the leaderboard to continue.');
         busy(submit, async () => {
-          const meta = { rt_signup: true, full_name: n, grade: g };
+          const meta = { rt_signup: true, full_name: n, grade: g, phone: ph };
           if (withCard) meta.card_code = c;
           else if (ref.value.trim()) meta.ref = ref.value.trim();
           const { data, error } = await sb.auth.signUp({
@@ -723,6 +747,8 @@
     // Email sign-ups already ticked this box on the sign-up form; Google sign-ins see it here for the first time.
     const agree = h('input', { type: 'checkbox', class: 'check', checked: !!meta.rt_signup });
     const code = h('input', { class: 'input mono', type: 'text', placeholder: 'e.g. Falcon4821', value: meta.card_code || '', maxlength: 20, spellcheck: false });
+    const phone = phoneInput(meta.phone);
+    const phoneField = field('Phone number', phone, PHONE_HINT);
 
     const newPane = h('div', { class: 'stack' },
       field('Name', name),
@@ -737,6 +763,7 @@
     function show(m) {
       mode = m;
       clear(panes).appendChild(m === 'new' ? newPane : cardPane);
+      panes.firstChild.insertBefore(phoneField, panes.firstChild.children[m === 'new' ? 2 : 1] || null);
       panes.firstChild.classList.add('form-in');
       submit.textContent = m === 'new' ? 'Join the club' : 'Link my card';
     }
@@ -745,15 +772,19 @@
     submit.addEventListener('click', () => busy(submit, async () => {
       err.hidden = true;
       try {
+        const ph = cleanPhone(phone.value);
+        if (!ph) throw new Error('Enter your phone number.');
         if (mode === 'new') {
           if (name.value.trim().length < 2) throw new Error('Enter your name.');
           if (!grade.getValue()) throw new Error('Pick your grade.');
           if (!agree.checked) throw new Error('Check the box about the leaderboard to continue.');
           await api.register(name.value.trim(), grade.getValue(), ref.value.trim());
+          await savePhone(ph);
           toast('You’re in. Your card request went to the officers.', 'success');
         } else {
           if (!code.value.trim()) throw new Error('Enter the code from your card.');
           await api.claim(code.value.trim());
+          await savePhone(ph);
           toast('Card linked. Welcome back to the Tank.', 'success');
         }
         await RT.reloadMe();

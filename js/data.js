@@ -96,6 +96,9 @@
     async register(name, grade, ref) {
       return check(await sb.rpc('register_member', { p_name: name, p_grade: grade, p_ref: ref || null }));
     },
+    async setPhone(phone) {
+      return check(await sb.rpc('set_my_phone', { p_phone: phone }));
+    },
     async claim(code) {
       return check(await sb.rpc('claim_card', { p_code: code }));
     },
