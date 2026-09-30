@@ -272,10 +272,10 @@
     async function checkIn(m) {
       if (!A.meetingId) { flash('err', 'No meeting open', 'Start today’s meeting first.'); return; }
       const { data, error } = await sb.from('attendance').insert({ member_id: m.id, meeting_id: A.meetingId, points_awarded: cfg.points.attendance }).select().single();
-      if (error && error.code === '23505') { flash('dup', `${m.name} is already checked in`, 'No extra Fins added.'); return; }
+      if (error && error.code === '23505') { flash('dup', `${m.name} is already checked in`, 'No extra Bites added.'); return; }
       if (error) { flash('err', 'Check-in failed', friendly(error)); return; }
       A.attendance.push(data);
-      flash('ok', m.name, `+${cfg.points.attendance} Fins · checked in`);
+      flash('ok', m.name, `+${cfg.points.attendance} Bites · checked in`);
       if (window.RTMesh) window.RTMesh.pulse(0.3, 0.5, 1.6);
       drawList();
     }
@@ -292,7 +292,7 @@
     }
 
     async function undo(a) {
-      const ok = await confirmDialog({ title: 'Undo check-in?', message: `${nameOf(a.member_id)} loses the ${a.points_awarded} Fins from this meeting.`, confirmText: 'Undo', danger: true });
+      const ok = await confirmDialog({ title: 'Undo check-in?', message: `${nameOf(a.member_id)} loses the ${a.points_awarded} Bites from this meeting.`, confirmText: 'Undo', danger: true });
       if (!ok) return;
       const { error } = await sb.from('attendance').delete().eq('id', a.id);
       if (error) { toast(friendly(error), 'error'); return; }
@@ -442,7 +442,7 @@
       const q = search.value.trim().toLowerCase();
       const rows = A.members.filter(m => !q || m.name.toLowerCase().includes(q) || (m.email || '').toLowerCase().includes(q) || (m.login_code || '').toLowerCase().includes(q) || (m.phone || '').includes(q));
       clear(table);
-      table.appendChild(h('div', { class: 'trow thead' }, h('span', null, 'Name'), h('span', null, 'Grade'), h('span', null, 'Fins'), h('span', null, 'Card'), h('span', null, 'Account'), h('span')));
+      table.appendChild(h('div', { class: 'trow thead' }, h('span', null, 'Name'), h('span', null, 'Grade'), h('span', null, 'Bites'), h('span', null, 'Card'), h('span', null, 'Account'), h('span')));
       if (!rows.length) { table.appendChild(h('div', { class: 'empty small' }, h('p', { class: 'muted' }, A.members.length ? 'No matches.' : 'No members yet. Add the club roster to get started.'))); return; }
       rows.forEach(m => table.appendChild(h('button', { class: 'trow', type: 'button', onclick: () => memberModal(m, draw) },
         h('span', { class: 'cell-name' }, avatar(m.name, 30), h('span', { class: 'ellipsis' }, m.name)),
@@ -550,7 +550,7 @@
     const delBtn = h('button', { class: 'btn btn-danger btn-sm', type: 'button' }, icon('trash', 14), 'Delete member');
     const md = modal({
       title: m.name,
-      subtitle: `${pointsOf(m.id)} Fins · ${attended} meeting${attended === 1 ? '' : 's'} · joined ${fmtDate(m.join_date || m.created_at, { month: 'short', day: 'numeric', year: 'numeric' })}`,
+      subtitle: `${pointsOf(m.id)} Bites · ${attended} meeting${attended === 1 ? '' : 's'} · joined ${fmtDate(m.join_date || m.created_at, { month: 'short', day: 'numeric', year: 'numeric' })}`,
       wide: true,
       body: h('div', { class: 'stack' },
         h('div', { class: 'detail-box' }, h('div', { class: 'card-label' }, 'Profile'),
@@ -640,7 +640,7 @@
     }
 
     async function delMeeting(m, n) {
-      const ok = await confirmDialog({ title: 'Delete this meeting?', message: `${meetingLabel(m)}. ${n ? n + ' check-ins, plus any pitch results and Shark Notes from it, will be removed and those Fins taken back.' : 'No one has checked in yet.'}`, confirmText: 'Delete', danger: true });
+      const ok = await confirmDialog({ title: 'Delete this meeting?', message: `${meetingLabel(m)}. ${n ? n + ' check-ins, plus any pitch results and Shark Notes from it, will be removed and those Bites taken back.' : 'No one has checked in yet.'}`, confirmText: 'Delete', danger: true });
       if (!ok) return;
       try {
         for (const step of [
@@ -731,7 +731,7 @@
         h('span', { class: 'grow ellipsis' }, nameOf(p.member_id)),
         h('span', { class: 'mono accent' }, '+' + p.points_awarded),
         h('button', { class: 'icon-btn sm', type: 'button', 'aria-label': 'Remove result', onclick: async () => {
-          if (!(await confirmDialog({ title: 'Remove this result?', message: `${nameOf(p.member_id)} loses ${p.points_awarded} Fins.`, confirmText: 'Remove', danger: true }))) return;
+          if (!(await confirmDialog({ title: 'Remove this result?', message: `${nameOf(p.member_id)} loses ${p.points_awarded} Bites.`, confirmText: 'Remove', danger: true }))) return;
           const { error } = await sb.from('pitch_entries').delete().eq('id', p.id);
           if (error) { toast(friendly(error), 'error'); return; }
           A.pitches = A.pitches.filter(x => x.id !== p.id);
