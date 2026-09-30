@@ -7,9 +7,12 @@
 (function () {
   const BOXES = [
     '.card:not(.chat)', '.badge-tile', '.badge-chip', '.mini-stat', '.strip-stat',
-    '.podium-slot', '.detail-box', '.next-badge', '.ref-stat', '.composer'
+    '.podium-slot', '.detail-box', '.next-badge', '.ref-stat', '.composer',
+    // things you can click
+    '.btn', '.icon-btn', '.menu-btn', '.menu-item', '.menu-chip', '.seg', '.seg-btn', '.link-btn',
+    '.picker-item', '.quick-item', '.trow', '.board-row', '.tier-chip', '.f-link', '.admin-nav a', '.admin-nav button', '.check-row', '.send-btn'
   ].join(',');
-  const FIELDS = 'input.input, textarea.input'; // text boxes people type in
+  const FIELDS = 'input.input, textarea.input, select'; // text boxes people type in
   const REACH = 140;    // px: how close the pointer has to be for a neighbor's border to react
   const NEIGHBOR = 0.8; // strongest reaction for a box the pointer is next to (1 = pointer inside)
 
@@ -27,7 +30,13 @@
 
   function collect() {
     const out = [];
-    document.querySelectorAll(BOXES).forEach(el => { el.classList.add('spot'); out.push(el); });
+    document.querySelectorAll(BOXES).forEach(el => {
+      if (!el.classList.contains('spot')) {
+        el.classList.add('spot');
+        if (getComputedStyle(el).position === 'static') el.classList.add('spot-rel'); // glow layers need a positioned box
+      }
+      out.push(el);
+    });
     document.querySelectorAll(FIELDS).forEach(el => { el.classList.add('spot-field'); out.push(el); });
     return out;
   }
