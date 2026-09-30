@@ -698,24 +698,15 @@ input[type="number"].input { max-width: 140px; }
 @property --sr { syntax: "<length>"; inherits: false; initial-value: 240px; }
 @property --o { syntax: "<number>"; inherits: false; initial-value: 0; }
 
+/* Colour shifts from club green (left of the screen) to burgundy (right) as the pointer moves,
+   like the "Spotlight Card" it is modeled on. --xp (0-1) is set on <html> by the script. */
 .spot, .spot-field {
-  --spot: 63 191 127;        /* inner glow (green) */
-  --spot-ring: 134 221 176;  /* border highlight */
-  --spot-a: 0.5;            /* glow strength */
+  --hue: calc(150 + var(--xp, 0.5) * 210);
+  --glow: hsl(var(--hue) 90% 58%);
 }
-/* Burgundy boxes: ones that already lean burgundy, plus every other box in a grid for variety. */
-.step-card:nth-child(2), .locked-card, .request, .danger-zone,
-.podium-slot.p3, .podium-slot.me, .mini-stat:nth-child(2),
-.badge-tile:has(.badge-icon.burg), .badge-chip:has(.badge-chip-icon.burg),
-.dash-grid > .card:nth-child(even), .two-col > .card:nth-child(even), .checkin-grid > .card:nth-child(even),
-.grid-4 > .card:nth-child(even), .strip-stat:nth-child(even) {
-  --spot: 210 71 110;
-  --spot-ring: 240 154 178;
-  --spot-a: 0.5;
-}
-.podium-slot.p2 { --spot: 242 239 232; --spot-ring: 242 239 232; --spot-a: 0.09; }
 
-.spot { position: relative; isolation: isolate; }
+.spot { position: relative; isolation: isolate; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 60px -30px rgba(0, 0, 0, 0.75), 0 0 calc(var(--o) * 34px) -8px hsl(var(--hue) 90% 58% / calc(var(--o) * 0.65)); }
+/* inner glow that follows the pointer */
 .spot::before {
   content: "";
   position: absolute;
@@ -723,30 +714,34 @@ input[type="number"].input { max-width: 140px; }
   z-index: -1;
   border-radius: 0;
   pointer-events: none;
-  background: radial-gradient(circle var(--sr) at var(--mx) var(--my), rgb(var(--spot) / var(--spot-a)), transparent 80%);
+  background: radial-gradient(circle var(--sr) at var(--mx) var(--my), hsl(var(--hue) 90% 62% / 0.32), transparent 100%);
   opacity: var(--o);
-  transition: opacity 0.4s var(--ease);
+  transition: opacity 0.35s var(--ease);
 }
+/* lit border: coloured ring with a white-hot core under the pointer */
 .spot::after {
   content: "";
   position: absolute;
   inset: 0;
-  padding: 1px;
+  padding: 2px;
   border-radius: 0;
   pointer-events: none;
-  background: radial-gradient(circle calc(var(--sr) * 0.85) at var(--mx) var(--my), rgb(var(--spot-ring) / 1), transparent 72%);
+  background:
+    radial-gradient(circle calc(var(--sr) * 0.4) at var(--mx) var(--my), rgb(255 255 255 / 0.95), transparent 100%),
+    radial-gradient(circle calc(var(--sr) * 0.9) at var(--mx) var(--my), hsl(var(--hue) 100% 60%), transparent 100%);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  filter: brightness(1.5);
   opacity: var(--o);
-  transition: opacity 0.4s var(--ease);
+  transition: opacity 0.35s var(--ease);
 }
 /* Text fields can't have pseudo-elements, so their glow is drawn in their own background. */
 .spot-field {
-  background-image: radial-gradient(circle calc(var(--sr) * 0.7) at var(--mx) var(--my), rgb(var(--spot) / calc(var(--o) * var(--spot-a) * 0.8)), transparent 75%);
+  background-image: radial-gradient(circle calc(var(--sr) * 0.7) at var(--mx) var(--my), hsl(var(--hue) 90% 62% / calc(var(--o) * 0.3)), transparent 100%);
   transition: border-color 0.25s, box-shadow 0.2s, background-color 0.2s, --o 0.35s ease;
 }
-.spot-field:not(:focus) { border-color: color-mix(in srgb, rgb(var(--spot-ring) / 0.45) calc(var(--o) * 100%), var(--line-2)); }
+.spot-field:not(:focus) { border-color: color-mix(in srgb, hsl(var(--hue) 100% 65%) calc(var(--o) * 100%), var(--line-2)); box-shadow: 0 0 calc(var(--o) * 22px) -6px hsl(var(--hue) 90% 58% / calc(var(--o) * 0.7)); }
 
 /* ---------- footer ---------- */
 #site-footer { position: relative; z-index: 2; width: min(1160px, calc(100% - 40px)); margin: 0 auto; transition: opacity 0.9s var(--ease); }
