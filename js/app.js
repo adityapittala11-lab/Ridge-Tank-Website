@@ -466,7 +466,7 @@
 
     const hero = h('section', { class: 'hero' },
       h('div', { class: 'hero-inner' },
-        h('p', { class: 'eyebrow reveal', style: { '--i': 0 } }, h('span', { class: 'dot' }), cfg.school),
+        h('p', { class: 'eyebrow reveal', style: { '--i': 0 } }, cfg.school),
         title,
         h('p', { class: 'hero-sub reveal', style: { '--i': 3 } }, 'Mountain Ridge’s Shark Tank club. Pitch your ideas, back other people’s, and climb the leaderboard all year.'),
         h('div', { class: 'hero-cta reveal', style: { '--i': 4 } },
