@@ -173,6 +173,8 @@ html.intro-running #topbar,
 html.intro-running #bottombar { opacity: 0; }
 html.intro-running #app { opacity: 0; }
 #app, #topbar, #bottombar { transition: opacity 0.9s var(--ease); }
+#topbar { transition: opacity 0.9s var(--ease), transform 0.35s var(--ease); }
+#topbar.nav-hidden { transform: translate(-50%, calc(-100% - 20px)); }
 html.intro-running .reveal { animation-play-state: paused !important; }
 
 /* ---------- top bar ---------- */
@@ -314,6 +316,21 @@ html.intro-running .reveal { animation-play-state: paused !important; }
     opacity 0.2s;
 }
 .seg-ind.no-anim { transition: none; }
+.seg-hover {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  width: 0;
+  z-index: 0;
+  background: rgba(63, 191, 127, 0.16);
+  border: 1px solid rgba(134, 221, 176, 0.45);
+  box-shadow: 0 0 18px -4px rgba(63, 191, 127, 0.6);
+  opacity: 0;
+  pointer-events: none;
+  transition: left 0.35s var(--spring), width 0.35s var(--spring), opacity 0.2s;
+}
+.seg-hover.no-anim { transition: opacity 0.2s; }
 .seg-btn {
   position: relative;
   z-index: 1;
