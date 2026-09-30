@@ -38,6 +38,7 @@
     // Stay out of the way of the intro and of dialogs (their backdrop covers the page).
     if (root.classList.contains('intro-running') || document.body.classList.contains('modal-open')) { release(); return; }
 
+    root.style.setProperty('--xp', Math.min(1, Math.max(0, px / window.innerWidth)).toFixed(3));
     const els = collect();
     const rects = els.map(el => el.getBoundingClientRect()); // read everything first, then write
 
