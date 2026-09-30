@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy · Ridge Tank</title>
+  <meta name="color-scheme" content="dark">
+  <meta name="darkreader-lock">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,600..800&family=Geist:wght@400..600&display=swap">
+  <style>
+    :root { --bg: #030705; --ink: #f2efe8; --ink-2: rgba(242, 239, 232, 0.76); --line: rgba(255, 255, 255, 0.1); --g: #86ddb0; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: radial-gradient(60% 40% at 15% 0%, rgba(11, 74, 47, 0.45), transparent 70%), radial-gradient(50% 40% at 100% 100%, rgba(86, 16, 41, 0.4), transparent 70%), var(--bg); color: var(--ink); font: 16px/1.65 "Geist", system-ui, sans-serif; min-height: 100vh; }
+    main { width: min(720px, calc(100% - 32px)); margin: 0 auto; padding: 64px 0 80px; }
+    a { color: var(--g); }
+    h1 { font: 800 clamp(34px, 6vw, 52px)/1.05 "Bricolage Grotesque", sans-serif; letter-spacing: -0.03em; margin: 18px 0 8px; }
+    h2 { font: 700 21px/1.3 "Bricolage Grotesque", sans-serif; margin: 34px 0 8px; }
+    p, li { color: var(--ink-2); }
+    ul { padding-left: 20px; }
+    .back { font-size: 14px; text-decoration: none; }
+    .updated { font-size: 14px; color: rgba(242, 239, 232, 0.5); }
+    footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 14px; color: rgba(242, 239, 232, 0.5); }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="back" href="index.html">← Back to Ridge Tank</a>
+    <h1>Privacy</h1>
+    <p class="updated">Last updated September 29, 2026</p>
+
+    <p>Ridge Tank is a student club at Mountain Ridge High School. This site tracks club attendance, points, badges, and a members-only chat. Here's what it stores and why, in plain words.</p>
+
+    <h2>What we collect</h2>
+    <ul>
+      <li><strong>Your account:</strong> your name, grade, and email address. If you sign in with Google, we get your name and email from Google. We don't get your Google password or anything else from your Google account.</li>
+      <li><strong>Club activity:</strong> which meetings you checked in to, pitch results, Shark Notes you gave or got, badges, and your points.</li>
+      <li><strong>Your card:</strong> the ID number built into your Ridge Tank card, so tapping it can check you in.</li>
+      <li><strong>Chat:</strong> messages you post in the club chat.</li>
+    </ul>
+
+    <h2>Who can see it</h2>
+    <ul>
+      <li>Signed-in members can see everyone's name, points, and tier on the leaderboard, and messages in the club chat.</li>
+      <li>Only you can see your own check-in history and badge progress.</li>
+      <li>Club officers can see member details (including emails and card IDs) so they can run check-in and make cards.</li>
+    </ul>
+
+    <h2>What we don't do</h2>
+    <ul>
+      <li>We don't sell or share your information with anyone outside the club.</li>
+      <li>We don't show ads or use tracking cookies. The site only saves what it needs in your browser to keep you logged in.</li>
+    </ul>
+
+    <h2>Where it's stored</h2>
+    <p>Data is stored with Supabase, a database service, and is locked down so people can only read what the rules above allow.</p>
+
+    <h2>Deleting your data</h2>
+    <p>Ask any club officer to delete your account. We'll remove your profile, check-ins, badges, and chat messages.</p>
+
+    <footer>Ridge Tank · Mountain Ridge High School</footer>
+  </main>
+</body>
+</html>

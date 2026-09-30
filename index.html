@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Ridge Tank</title>
+  <meta name="description" content="Ridge Tank, Mountain Ridge High School's Shark Tank club. Tap in at meetings, pitch, earn badges, and climb the members-only leaderboard.">
+  <meta name="theme-color" content="#030705">
+  <!-- The site is already dark; stop dark-mode extensions (e.g. Dark Reader) from repainting it. -->
+  <meta name="color-scheme" content="dark">
+  <meta name="darkreader-lock">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%231e8f5b'/%3E%3Cstop offset='.55' stop-color='%230c4a30'/%3E%3Cstop offset='1' stop-color='%237e1434'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Cpath d='M11 45c8.5-1.8 16-8 20.5-18.5C33.7 21 35 15 35.5 9c8 9.7 15 22.8 18.5 36' fill='none' stroke='white' stroke-width='4.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M9 46h46' stroke='white' stroke-width='4.5' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,300..800&family=Geist:wght@300..700&family=Geist+Mono:wght@400..600&display=swap">
+  <link rel="stylesheet" href="css/styles.css?v=21">
+</head>
+<body>
+  <canvas id="bg" aria-hidden="true"></canvas>
+  <div class="grain" aria-hidden="true"></div>
+
+  <div id="intro">
+    <div class="intro-bg"></div>
+    <canvas aria-hidden="true"></canvas>
+    <div class="intro-caption" aria-hidden="true">Mountain Ridge High School</div>
+    <button class="intro-skip" type="button">Skip intro</button>
+  </div>
+
+  <header id="topbar"></header>
+  <main id="app" tabindex="-1"></main>
+  <footer id="site-footer" hidden></footer>
+  <nav id="bottombar" aria-label="Main navigation"></nav>
+  <div id="modal-root"></div>
+  <div id="toasts" aria-live="polite"></div>
+
+  <noscript>
+    <p style="position:relative;z-index:5;padding:120px 24px;text-align:center">Ridge Tank needs JavaScript turned on.</p>
+  </noscript>
+
+  <!-- Bump ?v= whenever these files change so browsers fetch the new copy. -->
+  <script src="js/config.js?v=21"></script>
+  <script src="js/mesh.js?v=21"></script>
+  <script src="js/intro.js?v=21"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/ui.js?v=21"></script>
+  <script src="js/dots.js?v=21"></script>
+  <script src="js/spotlight.js?v=21"></script>
+  <script src="js/data.js?v=21"></script>
+  <script src="js/member.js?v=21"></script>
+  <script src="js/chat.js?v=21"></script>
+  <script src="js/admin.js?v=21"></script>
+  <script src="js/app.js?v=21"></script>
+</body>
+</html>
