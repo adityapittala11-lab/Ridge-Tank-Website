@@ -33,6 +33,9 @@ window.RT_CONFIG = {
     text: 'The first 10 sign-ups get candy. Everyone who signs up is entered to win cash, drawn live at the meeting.'
   },
 
+  // Shown in the FAQ. Update after each meeting is scheduled.
+  nextMeeting: 'Wednesday, October 21',
+
   intro: { form: 1700, hold: 1900, disperse: 2000 },
 
   // Background swirl edges: 'soft' (smooth blur), 'medium', 'sharp', or 'crisp' (no blur).
