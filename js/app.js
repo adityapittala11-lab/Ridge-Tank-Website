@@ -517,9 +517,9 @@
       h('a', { class: 'scroll-hint', href: '#how', 'aria-label': 'Scroll down', onclick: e => { e.preventDefault(); document.getElementById('how').scrollIntoView({ behavior: 'smooth' }); } }, icon('chevronDown', 20)));
 
     const steps = [
-      ['01', 'Tap in', 'nfc', 'Every meeting, tap your Ridge Tank card on the reader at the door. That earns you 10 Fins. No sign-in sheet.'],
-      ['02', 'Pitch & invest', 'mic', 'Teams pitch in the Tank and everyone invests Shark Notes in the ideas they believe in. Top 3 earn bonus Fins.'],
-      ['03', 'Climb', 'trophy', 'Stack up Fins to swim up four tiers and unlock badges. Whoever finishes the year on top is King of the Tank.']
+      ['01', 'Tap in', 'nfc', 'Every meeting, tap your Ridge Tank card on the reader at the door. That earns you 10 Bites. No sign-in sheet.'],
+      ['02', 'Pitch & invest', 'mic', 'Teams pitch in the Tank and everyone invests Shark Notes in the ideas they believe in. Top 3 earn bonus Bites.'],
+      ['03', 'Climb', 'trophy', 'Rack up Bites to climb four tiers and unlock badges. Whoever finishes the year on top is King of the Tank.']
     ];
     const how = h('section', { class: 'section', id: 'how' },
       h('div', { class: 'section-head' }, h('p', { class: 'eyebrow' }, 'How it works'), h('h2', { class: 'section-title' }, 'Show up. Pitch. Climb.')),
@@ -538,7 +538,7 @@
       h('div', { class: 'section-head' }, h('p', { class: 'eyebrow' }, 'Tiers'), h('h2', { class: 'section-title' }, 'From Reef Shark to Megalodon.')),
       h('div', { class: 'tier-track' }, tierInfo.map(([name, pts, d], i) =>
         h('div', { class: 'tier-stop ' + RT.tierClass(name), style: { '--i': i } },
-          h('div', { class: 'tier-node' }), h('div', { class: 'tier-pts mono' }, pts + ' Fins'), h('div', { class: 'tier-name' }, name), h('p', { class: 'muted small' }, d)))));
+          h('div', { class: 'tier-node' }), h('div', { class: 'tier-pts mono' }, pts + ' Bites'), h('div', { class: 'tier-name' }, name), h('p', { class: 'muted small' }, d)))));
 
     const sampleBadges = ['First Bite', 'Feeding Frenzy', 'On the Hunt', 'In the Tank', 'Tank Champion', 'Crowd Favorite', 'Headhunter', 'King of the Tank'];
     const badgeDesc = {
@@ -602,7 +602,7 @@
       mode = m;
       seg.setValue(m);
       title.textContent = m === 'login' ? 'Welcome back' : 'Join Ridge Tank';
-      sub.textContent = m === 'login' ? 'Log in to see your Fins, badges, and the leaderboard.' : 'Takes a minute. Your physical card gets made after you sign up.';
+      sub.textContent = m === 'login' ? 'Log in to see your Bites, badges, and the leaderboard.' : 'Takes a minute. Your physical card gets made after you sign up.';
       const next = m === 'login' ? loginForm() : signupForm();
       next.classList.add('form-in');
       clear(formHost).appendChild(next);
@@ -664,7 +664,7 @@
         field('Password', pw),
         h('div', { class: 'field' }, h('span', { class: 'label' }, 'Already have a Ridge Tank card?'), hasCard),
         codeField, refField,
-        h('label', { class: 'check-row' }, agree, h('span', null, 'I understand my name and Fins will show on the club leaderboard, which only members can see.')),
+        h('label', { class: 'check-row' }, agree, h('span', null, 'I understand my name and Bites will show on the club leaderboard, which only members can see.')),
         err, submit,
         h('p', { class: 'muted small center' }, 'Already joined? ', h('a', { href: '#/login' }, 'Log in')));
 
@@ -754,7 +754,7 @@
       field('Name', name),
       h('div', { class: 'field' }, h('span', { class: 'label' }, 'Grade'), grade),
       field('Invited by a member?', ref, 'Enter their code so they get credit.'),
-      h('label', { class: 'check-row' }, agree, h('span', null, 'I understand my name and Fins will show on the members-only leaderboard.')));
+      h('label', { class: 'check-row' }, agree, h('span', null, 'I understand my name and Bites will show on the members-only leaderboard.')));
     const cardPane = h('div', { class: 'stack' }, field('Card code', code, 'It’s printed on your card. Lost it? Ask an officer.'));
 
     const submit = h('button', { class: 'btn btn-primary btn-block btn-lg', type: 'button' });
