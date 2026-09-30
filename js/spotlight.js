@@ -11,7 +11,7 @@
   ].join(',');
   const FIELDS = 'input.input, textarea.input'; // text boxes people type in
   const REACH = 140;    // px: how close the pointer has to be for a neighbor's border to react
-  const NEIGHBOR = 0.5; // strongest reaction for a box the pointer is next to (1 = pointer inside)
+  const NEIGHBOR = 0.8; // strongest reaction for a box the pointer is next to (1 = pointer inside)
 
   const root = document.documentElement;
   let px = -1, py = -1, raf = 0;
@@ -54,7 +54,7 @@
         el.style.setProperty('--mx', (px - r.left).toFixed(1) + 'px');
         el.style.setProperty('--my', (py - r.top).toFixed(1) + 'px');
         // Bigger boxes get a wider, softer glow.
-        el.style.setProperty('--sr', Math.round(Math.max(130, Math.min(300, Math.max(r.width, r.height) * 0.5))) + 'px');
+        el.style.setProperty('--sr', Math.round(Math.max(180, Math.min(420, Math.max(r.width, r.height) * 0.7))) + 'px');
         el.style.setProperty('--o', o.toFixed(3));
         lit.add(el);
       } else if (lit.has(el)) {

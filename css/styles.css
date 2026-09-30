@@ -701,7 +701,7 @@ input[type="number"].input { max-width: 140px; }
 .spot, .spot-field {
   --spot: 63 191 127;        /* inner glow (green) */
   --spot-ring: 134 221 176;  /* border highlight */
-  --spot-a: 0.24;            /* glow strength */
+  --spot-a: 0.5;            /* glow strength */
 }
 /* Burgundy boxes: ones that already lean burgundy, plus every other box in a grid for variety. */
 .step-card:nth-child(2), .locked-card, .request, .danger-zone,
@@ -711,7 +711,7 @@ input[type="number"].input { max-width: 140px; }
 .grid-4 > .card:nth-child(even), .strip-stat:nth-child(even) {
   --spot: 210 71 110;
   --spot-ring: 240 154 178;
-  --spot-a: 0.28;
+  --spot-a: 0.5;
 }
 .podium-slot.p2 { --spot: 242 239 232; --spot-ring: 242 239 232; --spot-a: 0.09; }
 
@@ -723,7 +723,7 @@ input[type="number"].input { max-width: 140px; }
   z-index: -1;
   border-radius: 0;
   pointer-events: none;
-  background: radial-gradient(circle var(--sr) at var(--mx) var(--my), rgb(var(--spot) / var(--spot-a)), transparent 72%);
+  background: radial-gradient(circle var(--sr) at var(--mx) var(--my), rgb(var(--spot) / var(--spot-a)), transparent 80%);
   opacity: var(--o);
   transition: opacity 0.4s var(--ease);
 }
@@ -734,7 +734,7 @@ input[type="number"].input { max-width: 140px; }
   padding: 1px;
   border-radius: 0;
   pointer-events: none;
-  background: radial-gradient(circle calc(var(--sr) * 0.85) at var(--mx) var(--my), rgb(var(--spot-ring) / 0.85), transparent 72%);
+  background: radial-gradient(circle calc(var(--sr) * 0.85) at var(--mx) var(--my), rgb(var(--spot-ring) / 1), transparent 72%);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
