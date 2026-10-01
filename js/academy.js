@@ -10,7 +10,7 @@
   const S = RT.state;
 
   // ---------------- small helpers ----------------
-  const LS = { date: 'rt_academy_date', draft: 'rt_academy_draft_', local: 'rt_academy_rounds_' };
+  const LS = { date: 'rt_academy_date', early: 'rt_academy_early', draft: 'rt_academy_draft_', local: 'rt_academy_rounds_' };
   const store = {
     get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
     set(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage blocked */ } }
@@ -30,6 +30,10 @@
     }
     return localDateISO();
   }
+  // Early access: an officer can open every level on their own account before its date (saved in this browser).
+  // Members never see the switch, so the course stays date-locked for everyone else.
+  const earlyOn = () => !!S.isAdmin && store.get(LS.early, false) === true;
+  const opened = (n, t) => earlyOn() || t >= blockOf(n).opens;
 
   // ---------------- course rules ----------------
   const seasonOf = n => (n <= 10 ? 1 : n <= 20 ? 2 : n <= 30 ? 3 : 4);
@@ -102,7 +106,7 @@
     let done = 0;
     while (best[done + 1]) done++;
     const cur = done < 40 ? done + 1 : null;
-    const curOpen = !!cur && t >= blockOf(cur).opens;
+    const curOpen = !!cur && opened(cur, t);
     const xp = Object.keys(best).reduce((s, n) => s + C.seasons[seasonOf(+n)].xp + STAR_XP[best[n].stars], 0) + Object.keys(weekly).length * 40;
     return { t, best, weekly, done, cur, curOpen, xp, season: cur ? seasonOf(cur) : 4, rank: rankOf(done) };
   }
@@ -110,7 +114,7 @@
 
   function lstate(n, p) {
     if (p.best[n]) return 'done';
-    if (p.t < blockOf(n).opens) return 'locked';
+    if (!opened(n, p.t)) return 'locked';
     return n === p.cur ? 'current' : 'ahead';
   }
 
@@ -234,8 +238,11 @@
     const input = h('input', { class: 'input', type: 'date', value: p.t, min: '2026-10-01', max: '2027-05-31', 'aria-label': 'Show the course as it looks on this date' });
     input.addEventListener('change', () => { if (input.value) { store.set(LS.date, input.value); draw(); } });
     const reset = h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => { store.set(LS.date, null); draw(); } }, 'Back to today');
+    const early = h('button', { class: 'btn btn-sm ' + (earlyOn() ? 'btn-ghost' : 'btn-primary'), type: 'button', onclick: () => { store.set(LS.early, earlyOn() ? null : true); draw(); } },
+      earlyOn() ? 'Back to normal dates' : 'Open all levels for me');
     return h('div', { class: 'ac-officer' },
-      h('span', null, 'Officer preview: show the course as it looks on'), input, store.get(LS.date, null) ? reset : null,
+      early, h('span', { class: 'muted small' }, earlyOn() ? 'Every level is open on your account. Members still see the normal dates.' : 'Officers only. Members still see the normal dates.'),
+      h('span', null, 'Show the course as it looks on'), input, store.get(LS.date, null) ? reset : null,
       AC.local ? h('span', { class: 'ac-officer-note' }, 'Progress is saved in this browser until migration_v4_course.sql is run in Supabase.') : null);
   }
 
@@ -329,7 +336,7 @@
     let done = 0;
     for (let n = (s - 1) * 10 + 1; n <= s * 10; n++) if (p.best[n]) done++;
     const status = done === 10 ? h('p', { class: 'ac-status done' }, icon('check', 15), 'Done')
-      : p.t >= blocks[0].opens ? h('p', { class: 'ac-status now' }, done + ' of 10 done')
+      : (earlyOn() || p.t >= blocks[0].opens) ? h('p', { class: 'ac-status now' }, done + ' of 10 done')
       : h('p', { class: 'ac-status' }, 'Opens ' + shortDate(blocks[0].opens));
     const finale = C.meetings.find(m => m.season === s && m.kind === 'event' && /Mini|Demo|Gauntlet|Finale/.test(m.title));
     const el = h('section', { class: 'ac-season' },
