@@ -80,8 +80,19 @@
     fin: '<path d="M2.5 18.5c3.4-.7 6.4-3.2 8.2-7.4.9-2.2 1.4-4.6 1.6-7.1 3.2 3.9 6.1 9.2 9.2 14.5"/><path d="M2.5 18.5h19"/>',
     target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.8"/>',
     sparkle: '<path d="M12 3.5 13.8 10 20.5 12l-6.7 2L12 20.5 10.2 14 3.5 12l6.7-2Z"/>',
+    info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5"/><path d="M12 7.8v.2"/>',
+    map: '<path d="M9 4.5 3.5 6.5v13l5.5-2 6 2 5.5-2v-13l-5.5 2-6-2Z"/><path d="M9 4.5v13M15 6.5v13"/>',
     dots: '<circle cx="5.5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18.5" cy="12" r="1.2"/>',
-    instagram: '<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="0.7"/>'
+    instagram: '<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="0.7"/>',
+    megaphone: '<path d="M4 10v4a1 1 0 0 0 1 1h2l5 4V5L7 9H5a1 1 0 0 0-1 1Z"/><path d="M16 9a4 4 0 0 1 0 6"/><path d="M19 6.5a8 8 0 0 1 0 11"/>',
+    phone: '<path d="M6.5 3.5h3l1.5 4-2 1.3a11 11 0 0 0 5.2 5.2l1.3-2 4 1.5v3a2 2 0 0 1-2 2A15.5 15.5 0 0 1 4.5 5.5a2 2 0 0 1 2-2Z"/>',
+    pin: '<path d="M12 17v5"/><path d="M8 3.5h8l-1 6 3 3.5H6l3-3.5-1-6Z"/>',
+    download: '<path d="M12 4v11"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/>',
+    chevronLeft: '<path d="m15 6-6 6 6 6"/>',
+    send: '<path d="M21 3 10.5 13.5"/><path d="M21 3 14.5 21l-4-7.5L3 9.5 21 3Z"/>',
+    list: '<path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="0.8"/><circle cx="4" cy="12" r="0.8"/><circle cx="4" cy="18" r="0.8"/>',
+    bolt: '<path d="M13 3 5 13.5h6L10 21l8-10.5h-6L13 3Z"/>',
+    whatsapp: '<path d="M3.5 20.5 5 16a8.5 8.5 0 1 1 3.3 3.2L3.5 20.5Z"/><path d="M9 8.5c0 3.6 2.9 6.5 6.5 6.5l1-1.6-1.9-1-0.9 0.7c-0.9-0.4-1.6-1.1-2-2l0.7-0.9-1-1.9L9 8.5Z"/>'
   };
   function icon(name, size = 18, extraClass = '') {
     const s = document.createElement('span');
@@ -95,7 +106,7 @@
   function toast(message, type = 'info', ms = 3400) {
     let wrap = document.getElementById('toasts');
     if (!wrap) { wrap = h('div', { id: 'toasts', 'aria-live': 'polite' }); document.body.appendChild(wrap); }
-    const ic = type === 'success' ? 'check' : type === 'error' ? 'alert' : 'sparkle';
+    const ic = type === 'success' ? 'check' : type === 'error' ? 'alert' : 'info';
     const t = h('div', { class: `toast toast-${type}`, role: type === 'error' ? 'alert' : 'status' }, icon(ic, 16), h('span', null, message));
     wrap.appendChild(t);
     requestAnimationFrame(() => t.classList.add('in'));
@@ -221,7 +232,13 @@
     }
 
     function select(v, fromUser) {
-      if (!buttons.has(v)) return;
+      if (!buttons.has(v)) {
+        // A page that isn't one of these tabs (e.g. Profile on the phone bar): show nothing selected.
+        current = v;
+        buttons.forEach(b => b.setAttribute('aria-selected', 'false'));
+        place(false);
+        return;
+      }
       const changed = v !== current;
       current = v;
       buttons.forEach((b, key) => b.setAttribute('aria-selected', String(key === v)));
@@ -311,6 +328,28 @@
     return wrap;
   }
 
+  // ---------- phone number + WhatsApp box (sign-up, onboarding, profile) ----------
+  function phoneFields({ phone = '', whatsapp = false, required = true } = {}) {
+    const input = h('input', { class: 'input', type: 'tel', inputmode: 'tel', placeholder: '(480) 555-0123', autocomplete: 'tel', maxlength: 24, value: fmtPhone(phone) || phone });
+    const wa = h('input', { type: 'checkbox', class: 'check', checked: !!whatsapp });
+    const el = h('div', { class: 'stack-sm' },
+      h('label', { class: 'field' },
+        h('span', { class: 'label' }, required ? 'Phone number' : 'Phone number (optional)'), input,
+        h('span', { class: 'hint' }, 'Officers text club updates here. Only officers can see it.')),
+      h('label', { class: 'check-row' }, wa, h('span', null, 'I’m on WhatsApp (add me to the club group chat)')));
+    return {
+      el, input,
+      value: () => cleanPhone(input.value),   // tidy "+14805550123", or null
+      raw: () => input.value.trim(),
+      whatsapp: () => wa.checked,
+      error() {
+        const r = input.value.trim();
+        if (!r) return required ? 'Add your phone number so officers can text you updates.' : '';
+        return cleanPhone(r) ? '' : 'That phone number doesn’t look right. Use 10 digits, like (480) 555-0123.';
+      }
+    };
+  }
+
   // ---------- avatars ----------
   function initials(name) {
     const parts = String(name || '?').trim().split(/\s+/).filter(Boolean);
@@ -357,6 +396,76 @@
     const d = parseLocalDate(isoDate);
     const today = parseLocalDate(localDateISO());
     return Math.round((d - today) / DAY);
+  }
+
+  function fmtClock(t) {
+    if (!t) return '';
+    const [hh, mm] = String(t).split(':').map(Number);
+    const d = new Date(2000, 0, 1, hh, mm || 0);
+    return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
+  function timeAgo(value) {
+    const t = new Date(value).getTime();
+    if (isNaN(t)) return '';
+    const s = Math.round((Date.now() - t) / 1000);
+    if (s < 60) return 'just now';
+    const m = Math.round(s / 60);
+    if (m < 60) return m + ' min ago';
+    const hr = Math.round(m / 60);
+    if (hr < 24) return hr + (hr === 1 ? ' hour ago' : ' hours ago');
+    const d = Math.round(hr / 24);
+    if (d < 7) return d + (d === 1 ? ' day ago' : ' days ago');
+    return fmtDate(value, { month: 'short', day: 'numeric' });
+  }
+
+  // ---------- phone numbers ----------
+  // "(555) 010-0199", "555-010-0199", "+1 555 010 0199" -> "+15550100199". Not a real number -> null.
+  function cleanPhone(raw) {
+    const s = String(raw || '').trim();
+    if (!s) return null;
+    const d = s.replace(/\D/g, '');
+    if (d.length === 10) return '+1' + d;
+    if (d.length === 11 && d[0] === '1') return '+' + d;
+    if (s.startsWith('+') && d.length >= 8 && d.length <= 15) return '+' + d;
+    return null;
+  }
+  function fmtPhone(p) {
+    if (!p) return '';
+    const m = /^\+1(\d{3})(\d{3})(\d{4})$/.exec(p);
+    return m ? `(${m[1]}) ${m[2]}-${m[3]}` : p;
+  }
+
+  // Turns plain text into nodes where web addresses become links (never raw HTML).
+  function linkify(text) {
+    const parts = String(text || '').split(/(https?:\/\/[^\s<>()]+[^\s<>().,!?;:'"])/gi);
+    return parts.map((p, i) => (i % 2 ? h('a', { href: p, target: '_blank', rel: 'noopener noreferrer' }, p) : p));
+  }
+
+  // ---------- add to calendar (.ics file) ----------
+  function downloadICS(ev) {
+    const esc = s => String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+    const ymd = s => String(s).slice(0, 10).replace(/-/g, '');
+    const hms = t => String(t).slice(0, 8).replace(/:/g, '').padEnd(6, '0');
+    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Ridge Tank//EN', 'BEGIN:VEVENT',
+      'UID:' + ymd(ev.date) + '-' + Math.random().toString(36).slice(2, 10) + '@ridgetank',
+      'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '')];
+    if (ev.start) {
+      lines.push('DTSTART:' + ymd(ev.date) + 'T' + hms(ev.start));
+      lines.push('DTEND:' + ymd(ev.date) + 'T' + hms(ev.end || ev.start));
+    } else {
+      const next = parseLocalDate(ev.date);
+      next.setDate(next.getDate() + 1);
+      lines.push('DTSTART;VALUE=DATE:' + ymd(ev.date), 'DTEND;VALUE=DATE:' + ymd(localDateISO(next)));
+    }
+    lines.push('SUMMARY:' + esc(ev.title));
+    if (ev.location) lines.push('LOCATION:' + esc(ev.location));
+    if (ev.description) lines.push('DESCRIPTION:' + esc(ev.description));
+    lines.push('END:VEVENT', 'END:VCALENDAR');
+    const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar' });
+    const a = h('a', { href: URL.createObjectURL(blob), download: 'ridge-tank.ics' });
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
   }
 
   // ---------- misc ----------
@@ -414,7 +523,8 @@
 
   Object.assign(RT, {
     h, clear, put, icon, toast, modal, confirmDialog, segmented, menuButton, memberPicker,
-    avatar, initials, localDateISO, parseLocalDate, fmtDate, fmtTime, dayLabel, daysUntil,
+    avatar, initials, localDateISO, parseLocalDate, fmtDate, fmtTime, fmtClock, timeAgo, dayLabel, daysUntil,
+    cleanPhone, fmtPhone, linkify, downloadICS, phoneFields,
     debounce, copyText, skeleton, spinner, busy, countUp, ordinal
   });
 })();

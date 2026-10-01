@@ -12,12 +12,12 @@
   const bottomEl = document.getElementById('bottombar');
   const footerEl = document.getElementById('site-footer');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const MEMBER_ROUTES = new Set(['home', 'leaderboard', 'chat', 'profile']);
-  const MESH_DIM = { landing: 1, auth: 0.9, welcome: 0.85, reset: 0.85, home: 0.78, leaderboard: 0.75, profile: 0.75, chat: 0.65, admin: 0.65 };
+  const MEMBER_ROUTES = new Set(['home', 'academy', 'leaderboard', 'bounties', 'updates', 'chat', 'profile']);
+  const MESH_DIM = { landing: 1, auth: 0.9, welcome: 0.85, reset: 0.85, home: 0.78, academy: 0.72, leaderboard: 0.75, bounties: 0.72, updates: 0.72, profile: 0.75, chat: 0.65, admin: 0.65 };
 
   RT.views = RT.views || {};
   let current = null; // { key, target, handle }
-  let navSeg = null, bottomSeg = null, menuBtn = null, menuPanel = null;
+  let navSeg = null, bottomSeg = null, menuBtn = null, menuPanel = null, chipBadge = null;
 
   // ---------------- routing ----------------
   function parseHash() {
@@ -37,6 +37,9 @@
     }
     if (!S.me) return { key: 'welcome' };
     if (b === 'admin') return S.isAdmin ? { key: 'admin', tab: r.sub || 'checkin' } : { key: 'home' };
+    if (b === 'updates') return { key: 'updates', tab: r.sub === 'calendar' ? 'calendar' : 'news' };
+    if (b === 'bounties') return { key: 'bounties', tab: r.sub === 'mine' ? 'mine' : 'open' };
+    if (b === 'academy') return { key: 'academy', sub: /^(edges|level\/\d{1,2})$/.test(r.sub) ? r.sub : '' };
     if (MEMBER_ROUTES.has(b)) return { key: b };
     return { key: 'home' };
   }
@@ -45,6 +48,9 @@
     if (t.key === 'landing') return '#/';
     if (t.key === 'auth') return '#/' + t.mode;
     if (t.key === 'admin') return '#/admin/' + t.tab;
+    if (t.key === 'updates') return t.tab === 'calendar' ? '#/updates/calendar' : '#/updates';
+    if (t.key === 'bounties') return t.tab === 'mine' ? '#/bounties/mine' : '#/bounties';
+    if (t.key === 'academy') return '#/academy' + (t.sub ? '/' + t.sub : '');
     return '#/' + t.key;
   }
 
@@ -132,9 +138,10 @@
     try {
       if (meta.card_code) {
         S.me = await api.claim(meta.card_code);
+        if (meta.phone) S.me = await api.updateProfile(S.me.name, S.me.grade || meta.grade || '', meta.phone, !!meta.whatsapp);
         toast('Card linked. Welcome back to the Tank.', 'success');
       } else if (meta.full_name) {
-        S.me = await api.register(meta.full_name, meta.grade || '', meta.ref || '');
+        S.me = await api.register(meta.full_name, meta.grade || '', meta.ref || '', meta.phone || '', !!meta.whatsapp);
         toast('You’re in. Your card request went to the officers.', 'success');
       }
     } catch (e) {
@@ -190,13 +197,18 @@
   function navItems() {
     const items = [
       { value: 'home', label: 'Home', icon: 'home' },
+      { value: 'academy', label: 'Academy', icon: 'map' },
       { value: 'leaderboard', label: 'Leaderboard', icon: 'trophy' },
+      { value: 'bounties', label: 'Bounties', icon: 'target' },
+      { value: 'updates', label: 'Updates', icon: 'megaphone', badge: S.unseenAnn || 0 },
       { value: 'chat', label: 'Chat', icon: 'chat' },
       { value: 'profile', label: 'Profile', icon: 'user' }
     ];
     if (S.isAdmin) items.push({ value: 'admin', label: 'Admin', icon: 'shield', badge: S.pendingCount || 0 });
     return items;
   }
+  // Phones only have room for five; Bounties, Profile and Officer tools live in the menu up top.
+  const BOTTOM_TABS = ['home', 'academy', 'leaderboard', 'updates', 'chat'];
 
   function renderShell() {
     clear(topEl);
@@ -217,16 +229,18 @@
     if (S.me) {
       navSeg = segmented({ items: navItems(), value: key, className: 'nav-seg', ariaLabel: 'Main navigation', onChange: v => go(v) });
       mid.appendChild(navSeg);
-      bottomSeg = segmented({ items: navItems(), value: key, vertical: true, className: 'bottom-seg', ariaLabel: 'Main navigation', onChange: v => go(v) });
+      bottomSeg = segmented({ items: navItems().filter(i => BOTTOM_TABS.includes(i.value)).map(i => (i.value === 'leaderboard' ? Object.assign({}, i, { label: 'Board' }) : i)), value: key, vertical: true, className: 'bottom-seg', ariaLabel: 'Main navigation', onChange: v => go(v) });
       bottomEl.appendChild(bottomSeg);
     } else if (!S.user) {
       right.appendChild(h('a', { class: 'btn btn-ghost btn-sm hide-sm', href: '#/login' }, 'Log in'));
-      right.appendChild(h('a', { class: 'btn btn-primary btn-sm hide-sm', href: '#/signup' }, 'Join', icon('arrowRight', 16)));
+      right.appendChild(h('a', { class: 'btn btn-primary btn-sm hide-sm', href: '#/signup' }, 'Join'));
     }
 
     menuBtn = menuButton({ label: 'Open menu', onToggle: open => (open ? openMenu() : closeMenu()) });
+    // On phones the Admin tab isn't in the bottom bar, so the to-do count rides on the avatar instead.
+    chipBadge = h('span', { class: 'chip-badge', hidden: !(S.isAdmin && S.pendingCount) }, String(S.pendingCount || ''));
     const chip = h('div', { class: 'menu-chip' + (S.user ? '' : ' only-sm') },
-      S.me ? h('button', { class: 'chip-avatar', type: 'button', 'aria-label': 'Open menu', onclick: () => menuBtn.click() }, avatar(S.me.name, 30)) : null,
+      S.me ? h('button', { class: 'chip-avatar', type: 'button', 'aria-label': 'Open menu', onclick: () => menuBtn.click() }, avatar(S.me.name, 30), chipBadge) : null,
       menuBtn);
     right.appendChild(chip);
 
@@ -242,7 +256,9 @@
     if (S.me) {
       items.push(h('div', { class: 'menu-user' }, avatar(S.me.name, 40),
         h('div', { class: 'min0' }, h('div', { class: 'menu-name' }, S.me.name), h('div', { class: 'muted small ellipsis' }, S.user.email || ''))));
-      items.push(link('#/home', 'Home', 'home'), link('#/leaderboard', 'Leaderboard', 'trophy'), link('#/chat', 'Club chat', 'chat'), link('#/profile', 'Profile & badges', 'user'));
+      items.push(link('#/home', 'Home', 'home'), link('#/academy', 'Academy', 'map'), link('#/leaderboard', 'Leaderboard', 'trophy'), link('#/bounties', 'Bounties', 'target'),
+        link('#/updates', 'Updates', 'megaphone', S.unseenAnn ? h('span', { class: 'count-pill' }, String(S.unseenAnn)) : null),
+        link('#/updates/calendar', 'Calendar', 'calendar'), link('#/chat', 'Club chat', 'chat'), link('#/profile', 'Profile & badges', 'user'));
       if (S.isAdmin) items.push(link('#/admin/checkin', 'Officer tools', 'shield', S.pendingCount ? h('span', { class: 'count-pill' }, String(S.pendingCount)) : null));
       items.push(h('div', { class: 'menu-sep' }));
       items.push(h('button', { class: 'menu-item', type: 'button', onclick: signOut }, icon('logout', 18), h('span', { class: 'grow' }, 'Sign out')));
@@ -252,7 +268,7 @@
     } else {
       items.push(link('#/', 'About the club', 'fin'));
       items.push(link('#/login', 'Log in', 'user'));
-      items.push(h('a', { class: 'btn btn-primary btn-block', href: '#/signup', onclick: closeMenu }, 'Join Ridge Tank', icon('arrowRight', 16)));
+      items.push(h('a', { class: 'btn btn-primary btn-block', href: '#/signup', onclick: closeMenu }, 'Join Ridge Tank'));
     }
     return h('div', { class: 'menu-panel glass', role: 'menu', hidden: true }, items);
   }
@@ -287,16 +303,24 @@
     if (bottomSeg && navKey) bottomSeg.setValue(navKey);
   }
 
+  // Refreshes every little count: the Admin to-do number and the Updates "new" number.
   function updateAdminBadge() {
-    if (navSeg) navSeg.setBadge('admin', S.pendingCount);
-    if (bottomSeg) bottomSeg.setBadge('admin', S.pendingCount);
+    [navSeg, bottomSeg].forEach(sg => {
+      if (!sg) return;
+      sg.setBadge('admin', S.pendingCount);
+      sg.setBadge('updates', S.unseenAnn);
+    });
+    if (chipBadge) {
+      chipBadge.textContent = String(S.pendingCount || '');
+      chipBadge.hidden = !(S.isAdmin && S.pendingCount);
+    }
     window.dispatchEvent(new CustomEvent('rt:pending', { detail: S.pendingCount }));
   }
   RT.updateAdminBadge = updateAdminBadge;
   setInterval(() => { if (S.isAdmin && !document.hidden) RT.refreshPending().then(updateAdminBadge); }, 60000);
 
   // ---------------- footer ----------------
-  // Rounded glass panel with brand + link columns that blur/fade in one after another
+  // Rounded panel with brand + link columns that blur/fade in one after another
   // (modeled on the Efferd "Footer Section" animation, in Ridge Tank colors).
   const NO_FOOTER = new Set(['chat', 'admin', 'auth', 'welcome', 'reset']);
   let footerKey = null;
@@ -325,7 +349,7 @@
           { label: 'Log in', href: '#/login' },
           { label: 'Join Ridge Tank', href: '#/signup' },
           { label: 'Leaderboard', href: '#/leaderboard', lock: true },
-          { label: 'Club chat', href: '#/chat', lock: true }] },
+          { label: 'Bounties', href: '#/bounties', lock: true }] },
         { title: 'Club', links: [
           { label: 'Officers', jump: 'officers' },
           { label: 'Privacy', href: 'privacy.html' }] }
@@ -334,14 +358,17 @@
     return [
       { title: 'Explore', links: [
         { label: 'Home', href: '#/home' },
+        { label: 'Academy', href: '#/academy' },
         { label: 'Leaderboard', href: '#/leaderboard' },
+        { label: 'Bounties', href: '#/bounties' }] },
+      { title: 'Club', links: [
+        { label: 'Updates', href: '#/updates' },
+        { label: 'Calendar', href: '#/updates/calendar' },
         { label: 'Club chat', href: '#/chat' }] },
       { title: 'Account', links: [
         { label: 'Profile & badges', href: '#/profile' },
-        { label: 'Sign out', onClick: signOut }] },
-      { title: 'Club', links: [{ label: 'Privacy', href: 'privacy.html' }].concat(S.isAdmin
-        ? [{ label: 'Officer tools', href: '#/admin/checkin' }, { label: 'Card requests', href: '#/admin/requests' }]
-        : []) }
+        { label: 'Privacy', href: 'privacy.html' },
+        { label: 'Sign out', onClick: signOut }].concat(S.isAdmin ? [{ label: 'Officer tools', href: '#/admin/checkin' }] : []) }
     ];
   }
 
@@ -361,7 +388,7 @@
     const brand = anim(0.1, 'f-brand',
       h('a', { class: 'brand', href: S.me ? '#/home' : '#/', 'aria-label': 'Ridge Tank home' },
         h('span', { class: 'brand-mark' }, icon('fin', 18)), h('span', { class: 'brand-name' }, 'Ridge Tank')),
-      h('p', { class: 'f-tag' }, 'Mountain Ridge’s Shark Tank club. Show up, pitch your ideas, and climb the leaderboard.'),
+      h('p', { class: 'f-tag' }, 'Mountain Ridge High School’s Shark Tank club.'),
       social.length ? h('div', { class: 'f-social' }, social.map(s =>
         h('a', { class: 'icon-btn', href: s.href, target: '_blank', rel: 'noopener noreferrer', 'aria-label': s.label }, icon(s.icon || 'link', 18)))) : null);
 
@@ -466,29 +493,20 @@
 
     const hero = h('section', { class: 'hero' },
       h('div', { class: 'hero-inner' },
-        h('p', { class: 'eyebrow reveal', style: { '--i': 0 } }, h('span', { class: 'dot' }), cfg.school),
         title,
-        h('p', { class: 'hero-sub reveal', style: { '--i': 3 } }, 'Mountain Ridge’s Shark Tank club. Pitch your ideas, back other people’s, and climb the leaderboard all year.'),
-        h('div', { class: 'hero-cta reveal', style: { '--i': 4 } },
-          h('a', { class: 'btn btn-primary btn-lg', href: '#/signup' }, 'Join Ridge Tank', icon('arrowRight', 18)),
-          h('a', { class: 'btn btn-ghost btn-lg', href: '#/login' }, 'Log in')),
-        h('div', { class: 'hero-meta reveal', style: { '--i': 5 } },
-          h('span', null, icon('nfc', 16), 'Tap in with your card'),
-          h('span', null, icon('trophy', 16), 'Season ' + cfg.season.replace('-', '–')),
-          h('span', null, icon('award', 16), '19 badges'))),
-      h('a', { class: 'scroll-hint', href: '#how', 'aria-label': 'Scroll down', onclick: e => { e.preventDefault(); document.getElementById('how').scrollIntoView({ behavior: 'smooth' }); } }, icon('chevronDown', 20)));
+        h('p', { class: 'hero-sub' }, 'Mountain Ridge High School’s Shark Tank club. Pitch your ideas, back other people’s, and climb the leaderboard all year.'),
+        h('div', { class: 'hero-cta' },
+          h('a', { class: 'btn btn-primary btn-lg', href: '#/signup' }, 'Join Ridge Tank'),
+          h('a', { class: 'btn btn-ghost btn-lg', href: '#/login' }, 'Log in'))));
 
     const steps = [
-      ['01', 'Tap in', 'nfc', 'Every meeting, tap your Ridge Tank card on the reader at the door. That’s 10 points. No sign-in sheet.'],
-      ['02', 'Pitch & invest', 'mic', 'Teams pitch in the Tank and everyone invests Shark Notes in the ideas they believe in. Top 3 earn bonus points.'],
-      ['03', 'Climb', 'trophy', 'Points move you up four tiers and unlock badges. Whoever finishes the year on top is King of the Tank.']
+      ['Tap in', 'Every meeting, tap your Ridge Tank card on the reader at the door. That’s 10 points. No sign-in sheet.'],
+      ['Pitch and invest', 'Teams pitch in the Tank and everyone invests bites in the ideas they believe in. The top 3 earn bonus points.'],
+      ['Climb', 'Points move you up four tiers and unlock badges. Whoever finishes the year on top is King of the Tank.']
     ];
     const how = h('section', { class: 'section', id: 'how' },
-      h('div', { class: 'section-head' }, h('p', { class: 'eyebrow' }, 'How it works'), h('h2', { class: 'section-title' }, 'Show up. Pitch. Climb.')),
-      h('div', { class: 'grid-3' }, steps.map(([n, t, ic, d], i) =>
-        h('article', { class: 'card step-card lift', style: { '--i': i } },
-          h('div', { class: 'step-top' }, h('span', { class: 'step-num' }, n), h('span', { class: 'step-icon' }, icon(ic, 20))),
-          h('h3', null, t), h('p', { class: 'muted' }, d)))));
+      h('div', { class: 'section-head' }, h('h2', { class: 'section-title' }, 'How it works')),
+      h('div', { class: 'how-list' }, steps.map(([t, d]) => h('div', null, h('h3', null, t), h('p', null, d)))));
 
     const tierInfo = [
       ['Reef Shark', 0, 'Where everyone starts.'],
@@ -497,49 +515,39 @@
       ['Megalodon', 500, 'A full year, all in.']
     ];
     const tiers = h('section', { class: 'section', id: 'tiers' },
-      h('div', { class: 'section-head' }, h('p', { class: 'eyebrow' }, 'Tiers'), h('h2', { class: 'section-title' }, 'From Reef Shark to Megalodon.')),
-      h('div', { class: 'tier-track' }, tierInfo.map(([name, pts, d], i) =>
-        h('div', { class: 'tier-stop ' + RT.tierClass(name), style: { '--i': i } },
-          h('div', { class: 'tier-node' }), h('div', { class: 'tier-pts mono' }, pts + ' pts'), h('div', { class: 'tier-name' }, name), h('p', { class: 'muted small' }, d)))));
+      h('div', { class: 'section-head' }, h('h2', { class: 'section-title' }, 'Tiers'), h('p', { class: 'section-sub' }, 'Your points decide your tier. Everyone starts as a Reef Shark.')),
+      h('div', { class: 'tier-track' }, tierInfo.map(([name, pts, d]) =>
+        h('div', { class: 'tier-stop ' + RT.tierClass(name) },
+          h('div', { class: 'tier-node' }), h('div', { class: 'tier-pts mono' }, pts + ' points'), h('div', { class: 'tier-name' }, name), h('p', { class: 'muted small' }, d)))));
 
     const sampleBadges = ['First Bite', 'Feeding Frenzy', 'On the Hunt', 'In the Tank', 'Tank Champion', 'Crowd Favorite', 'Headhunter', 'King of the Tank'];
     const badgeDesc = {
       'First Bite': 'Your first meeting', 'Feeding Frenzy': '10 meetings', 'On the Hunt': '5 meetings in a row',
-      'In the Tank': 'Your first pitch', 'Tank Champion': 'Win a Tank competition', 'Crowd Favorite': 'Most Shark Notes in a session',
+      'In the Tank': 'Your first pitch', 'Tank Champion': 'Win a Tank competition', 'Crowd Favorite': 'Most bites in a session',
       'Headhunter': 'Bring a friend who joins', 'King of the Tank': '#1 at the end of the year'
     };
     const badges = h('section', { class: 'section', id: 'badges' },
-      h('div', { class: 'section-head' }, h('p', { class: 'eyebrow' }, 'Badges'), h('h2', { class: 'section-title' }, '19 badges. Some are easy. One is not.')),
-      h('div', { class: 'badge-strip' }, sampleBadges.map((b, i) =>
-        h('div', { class: 'badge-chip', style: { '--i': i } }, h('span', { class: 'badge-chip-icon' + (i % 3 === 2 ? ' burg' : '') }, icon(RT.badgeIcon(b), 18)),
-          h('div', null, h('div', { class: 'badge-chip-name' }, b), h('div', { class: 'muted small' }, badgeDesc[b]))))));
+      h('div', { class: 'section-head' }, h('h2', { class: 'section-title' }, 'Badges'), h('p', { class: 'section-sub' }, 'There are 19 to earn. Here are 8 of them.')),
+      h('ul', { class: 'badge-list' }, sampleBadges.map(b =>
+        h('li', null, icon(RT.badgeIcon(b), 18), h('b', null, b), h('span', { class: 'muted' }, badgeDesc[b])))));
 
     const locked = h('section', { class: 'section' },
       h('div', { class: 'card locked-card' },
-        h('div', { class: 'locked-rows', 'aria-hidden': 'true' }, [1, 2, 3, 4, 5].map(i =>
-          h('div', { class: 'locked-row' }, h('span', { class: 'mono muted' }, String(i)), h('span', { class: 'bar', style: { width: (78 - i * 9) + '%' } }), h('span', { class: 'bar short' })))),
         h('div', { class: 'locked-copy' },
-          h('span', { class: 'lock-badge' }, icon('lock', 18)),
           h('h3', null, 'The leaderboard is members-only'),
-          h('p', { class: 'muted' }, 'Join or log in to see where you rank, track your badges, and talk in the club chat.'),
-          h('div', { class: 'row gap-sm wrap center' },
-            h('a', { class: 'btn btn-primary', href: '#/signup' }, 'Join Ridge Tank'),
-            h('a', { class: 'btn btn-ghost', href: '#/login' }, 'Log in')))));
+          h('p', { class: 'muted' }, 'Join or log in to see where you rank, track your badges, and talk in the club chat.')),
+        h('div', { class: 'row gap-sm wrap' },
+          h('a', { class: 'btn btn-primary', href: '#/signup' }, 'Join Ridge Tank'),
+          h('a', { class: 'btn btn-ghost', href: '#/login' }, 'Log in'))));
 
     const officers = h('section', { class: 'section', id: 'officers' },
-      h('div', { class: 'section-head' }, h('p', { class: 'eyebrow' }, 'Officers'), h('h2', { class: 'section-title' }, 'Who runs the Tank.')),
-      h('div', { class: 'grid-4' }, cfg.officers.map((o, i) =>
-        h('div', { class: 'card officer lift', style: { '--i': i } }, avatar(o.name, 52),
+      h('div', { class: 'section-head' }, h('h2', { class: 'section-title' }, 'Officers')),
+      h('div', { class: 'officer-list' }, cfg.officers.map(o =>
+        h('div', { class: 'officer' }, avatar(o.name, 48),
           h('div', null, h('div', { class: 'officer-name' }, o.name), h('div', { class: 'muted small' }, o.role + (o.note ? ' · ' + o.note : '')))))));
 
     root.append(hero, how, tiers, badges, locked, officers);
-
-    // Fade sections in as they scroll into view.
-    const io = new IntersectionObserver(entries => {
-      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
-    }, { threshold: 0.12 });
-    root.querySelectorAll('.section').forEach(s => io.observe(s));
-    return { cleanup: () => io.disconnect() };
+    return {};
   };
 
   // ---------------- log in / sign up ----------------
@@ -561,7 +569,7 @@
     function show(m) {
       mode = m;
       seg.setValue(m);
-      title.textContent = m === 'login' ? 'Welcome back' : 'Join Ridge Tank';
+      title.textContent = m === 'login' ? 'Log in to Ridge Tank' : 'Join Ridge Tank';
       sub.textContent = m === 'login' ? 'Log in to see your points, badges, and the leaderboard.' : 'Takes a minute. Your physical card gets made after you sign up.';
       const next = m === 'login' ? loginForm() : signupForm();
       next.classList.add('form-in');
@@ -598,6 +606,7 @@
       const name = h('input', { class: 'input', type: 'text', placeholder: 'First and last name', autocomplete: 'name', required: true, maxlength: 60 });
       const grade = gradeSwitch('');
       const email = h('input', { class: 'input', type: 'email', placeholder: 'you@example.com', autocomplete: 'email', required: true });
+      const phoneF = RT.phoneFields();
       const pw = passwordInput('At least 8 characters', 'new-password');
       const code = h('input', { class: 'input mono', type: 'text', placeholder: 'e.g. Falcon4821', autocomplete: 'off', spellcheck: false, maxlength: 20 });
       const ref = h('input', { class: 'input mono', type: 'text', placeholder: 'Their code (optional)', autocomplete: 'off', spellcheck: false, maxlength: 20 });
@@ -619,6 +628,7 @@
         field('Name', name),
         h('div', { class: 'field' }, h('span', { class: 'label' }, 'Grade'), grade),
         field('Email', email),
+        phoneF.el,
         field('Password', pw),
         h('div', { class: 'field' }, h('span', { class: 'label' }, 'Already have a Ridge Tank card?'), hasCard),
         codeField, refField,
@@ -639,11 +649,13 @@
         if (n.length < 2) return fail('Enter your name.');
         if (!g) return fail('Pick your grade.');
         if (!/^\S+@\S+\.\S+$/.test(em)) return fail('Enter a real email address.');
+        const pe = phoneF.error();
+        if (pe) return fail(pe);
         if (p.length < 8) return fail('Use a password with at least 8 characters.');
         if (withCard && !/^[A-Za-z]+\d{4}$/.test(c)) return fail('Card codes look like a word plus 4 numbers, e.g. Falcon4821.');
         if (!agree.checked) return fail('Check the box about the leaderboard to continue.');
         busy(submit, async () => {
-          const meta = { rt_signup: true, full_name: n, grade: g };
+          const meta = { rt_signup: true, full_name: n, grade: g, phone: phoneF.value(), whatsapp: phoneF.whatsapp() };
           if (withCard) meta.card_code = c;
           else if (ref.value.trim()) meta.ref = ref.value.trim();
           const { data, error } = await sb.auth.signUp({
@@ -710,6 +722,7 @@
       field('Invited by a member?', ref, 'Enter their code so they get credit.'),
       h('label', { class: 'check-row' }, agree, h('span', null, 'I understand my name and points will show on the members-only leaderboard.')));
     const cardPane = h('div', { class: 'stack' }, field('Card code', code, 'It’s printed on your card. Lost it? Ask an officer.'));
+    const phoneF = RT.phoneFields({ phone: meta.phone || '', whatsapp: !!meta.whatsapp });
 
     const submit = h('button', { class: 'btn btn-primary btn-block btn-lg', type: 'button' });
     const panes = h('div');
@@ -729,11 +742,14 @@
           if (name.value.trim().length < 2) throw new Error('Enter your name.');
           if (!grade.getValue()) throw new Error('Pick your grade.');
           if (!agree.checked) throw new Error('Check the box about the leaderboard to continue.');
-          await api.register(name.value.trim(), grade.getValue(), ref.value.trim());
+          if (phoneF.error()) throw new Error(phoneF.error());
+          await api.register(name.value.trim(), grade.getValue(), ref.value.trim(), phoneF.value(), phoneF.whatsapp());
           toast('You’re in. Your card request went to the officers.', 'success');
         } else {
           if (!code.value.trim()) throw new Error('Enter the code from your card.');
-          await api.claim(code.value.trim());
+          if (phoneF.error()) throw new Error(phoneF.error());
+          const me = await api.claim(code.value.trim());
+          await api.updateProfile(me.name, me.grade || '', phoneF.value(), phoneF.whatsapp());
           toast('Card linked. Welcome back to the Tank.', 'success');
         }
         await RT.reloadMe();
@@ -751,7 +767,7 @@
         h('div', { class: 'auth-brand' }, h('span', { class: 'brand-mark lg' }, icon('fin', 22))),
         h('h1', { class: 'auth-title' }, 'One more step'),
         h('p', { class: 'muted' }, 'Signed in as ', h('strong', null, S.user.email || ''), '. Set up your member profile.'),
-        seg, panes, err, submit,
+        seg, panes, phoneF.el, err, submit,
         h('button', { class: 'link-btn center', type: 'button', onclick: signOut }, 'Use a different account'))));
     return {};
   };

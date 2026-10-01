@@ -1,0 +1,6 @@
+{
+  "name": "ridge-tank-website",
+  "private": true,
+  "type": "module",
+  "description": "Static site. The only server code is api/shark.js (Vercel Function) and tools/dev-server.mjs (local testing)."
+}

@@ -11,19 +11,36 @@
   // Everything a member's own screens need, loaded in one go.
   async function loadMine() {
     const id = S.me.id;
-    const [attendance, pitches, awarded, votes, referrals] = await Promise.all([
+    const [attendance, pitches, awarded, votes, referrals, detail] = await Promise.all([
       api.myAttendance(id).catch(() => []),
       api.myPitches(id).catch(() => []),
       api.myBadges(id).catch(() => []),
       api.votes().catch(() => []),
       api.referralCount().catch(() => 0),
+      api.myPoints(id).catch(() => null),
       RT.refreshBoard()
     ]);
     const stats = RT.computeStats({ memberId: id, meetings: S.meetings, attendance, pitches, votes, referrals });
     const progress = RT.badgeProgress(S.badges, stats, awarded);
     const mine = S.board.find(r => r.member_id === id) || { total_points: 0, rank: S.board.length + 1, current_tier: (S.tiers[0] || {}).name };
-    return { attendance, pitches, awarded, votes, stats, progress, mine };
+    const earned = detail ? Number(detail.earned_points) : mine.total_points;
+    const lost = detail ? Number(detail.decay_points) : 0;
+    const decay = Object.assign(RT.decayInfo(attendance, S.me.join_date || S.me.created_at), { earned, lost });
+    return { attendance, pitches, awarded, votes, stats, progress, mine, decay };
   }
+
+  // One plain sentence about the bite-decay clock, or null when there's nothing worth saying.
+  function decayNote(dc) {
+    if (dc.earned <= 0) return null;
+    if (dc.decaying) {
+      return { tone: 'burg', text: `Bite decay is on. You lose about ${dc.pct}% a day until you come to a meeting` + (dc.lost ? ` (${dc.lost} lost so far).` : '.') };
+    }
+    if (dc.left <= 14) {
+      return { tone: dc.left <= 5 ? 'burg' : 'warn', text: `Come to a meeting within ${dc.left} day${dc.left === 1 ? '' : 's'} so your points don’t start to decay.` };
+    }
+    return null;
+  }
+  RT.decayNote = decayNote;
   RT.loadMine = loadMine;
 
   function meetingById(id) { return S.meetings.find(m => m.id === id); }
@@ -38,61 +55,87 @@
 
   // ---------------- home ----------------
   RT.views.home = function (root) {
-    const me = S.me;
-    const hour = new Date().getHours();
-    const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-    const first = String(me.name).split(' ')[0];
     const subLine = h('span');
-    root.appendChild(RT.pageHead(`${greet}, ${first}`, subLine));
+    root.appendChild(RT.pageHead('Home', subLine));
+    if (RT.academyHomeCard) root.appendChild(RT.academyHomeCard());
 
     const grid = h('div', { class: 'dash-grid' },
       h('section', { class: 'card span-7 reveal', style: { '--i': 1 } }, RT.skeleton(4)),
       h('section', { class: 'card span-5 reveal', style: { '--i': 2 } }, RT.skeleton(4)),
       h('section', { class: 'card span-4 reveal', style: { '--i': 3 } }, RT.skeleton(3)),
       h('section', { class: 'card span-8 reveal', style: { '--i': 4 } }, RT.skeleton(5)),
-      h('section', { class: 'card span-6 reveal', style: { '--i': 5 } }, RT.skeleton(4)),
-      h('section', { class: 'card span-6 reveal', style: { '--i': 6 } }, RT.skeleton(5)));
+      h('section', { class: 'card span-6 reveal', style: { '--i': 5 } }, RT.skeleton(3)),
+      h('section', { class: 'card span-6 reveal', style: { '--i': 6 } }, RT.skeleton(3)),
+      h('section', { class: 'card span-6 reveal', style: { '--i': 7 } }, RT.skeleton(4)),
+      h('section', { class: 'card span-6 reveal', style: { '--i': 8 } }, RT.skeleton(5)));
     root.appendChild(grid);
-    const [cPoints, cCard, cNext, cActivity, cBadges, cBoard] = grid.children;
+    const [cPoints, cCard, cNext, cActivity, cBounties, cNews, cBadges, cBoard] = grid.children;
 
     loadMine().then(d => {
       const { cur, next } = RT.tierFor(d.mine.total_points, S.tiers);
-      subLine.textContent = `${cur ? cur.name : 'Reef Shark'} · #${d.mine.rank} of ${S.board.length} · ${d.mine.total_points} pts`;
+      subLine.textContent = `${cur ? cur.name : 'Reef Shark'} · ${ordinal(d.mine.rank)} of ${S.board.length} on the leaderboard · ${d.mine.total_points} points`;
       renderPoints(cPoints, d, cur, next);
       renderCardStatus(cCard);
       renderNext(cNext);
       renderActivity(cActivity, d);
+      renderBountiesMini(cBounties);
+      renderNewsMini(cNews);
       renderBadgesMini(cBadges, d);
       renderBoardMini(cBoard);
     }).catch(e => toast(friendly(e), 'error'));
     return {};
   };
 
+  function renderBountiesMini(el) {
+    const items = S.bounties.filter(b => RT.bountyInfo(b).open).slice(0, 3);
+    clear(el).append(h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Bounties'),
+      h('a', { class: 'link-sm', href: '#/bounties' }, 'All bounties', icon('chevronRight', 14))));
+    if (!items.length) { el.appendChild(h('p', { class: 'muted' }, 'No open bounties right now. New ones will show up here.')); return; }
+    el.appendChild(h('ul', { class: 'timeline' }, items.map(b => h('li', null,
+      h('span', { class: 'tl-icon burg' }, icon('target', 16)),
+      h('div', { class: 'grow min0' }, h('div', { class: 'ellipsis' }, b.title), h('div', { class: 'muted small ellipsis' }, RT.bountyMeta(b))),
+      h('span', { class: 'pts-gain mono' }, '+' + b.points)))));
+  }
+
+  function renderNewsMini(el) {
+    const items = S.announcements.slice(0, 2);
+    clear(el).append(h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Latest news'),
+      h('a', { class: 'link-sm', href: '#/updates' }, 'All updates', icon('chevronRight', 14))));
+    if (!items.length) { el.appendChild(h('p', { class: 'muted' }, 'Nothing posted yet. Officers will post club news here.')); return; }
+    el.appendChild(h('ul', { class: 'timeline' }, items.map(a => h('li', null,
+      h('span', { class: 'tl-icon' + (a.pinned ? ' burg' : '') }, icon(a.pinned ? 'pin' : 'megaphone', 16)),
+      h('div', { class: 'grow min0' }, h('div', { class: 'ellipsis' }, a.title),
+        h('div', { class: 'muted small ellipsis' }, RT.timeAgo(a.created_at) + (a.body ? ' · ' + a.body.replace(/\s+/g, ' ').slice(0, 70) : '')))))));
+  }
+
   function renderPoints(el, d, cur, next) {
-    const num = h('span', { class: 'big-num mono' }, '0');
+    const num = h('span', { class: 'big-num mono' }, String(d.mine.total_points));
     const need = next ? next.point_threshold - d.mine.total_points : 0;
     const span = next ? next.point_threshold - (cur ? cur.point_threshold : 0) : 1;
     const into = next ? d.mine.total_points - (cur ? cur.point_threshold : 0) : 1;
     el.classList.add('points-card');
-    clear(el).append(
+    RT.put(clear(el),
       h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Your points'), tierChip(cur && cur.name)),
       h('div', { class: 'points-row' }, num, h('span', { class: 'pts-unit' }, 'pts'),
-        h('span', { class: 'rank-pill' }, icon('trophy', 14), '#' + d.mine.rank, h('span', { class: 'muted' }, ' of ' + S.board.length))),
+        h('span', { class: 'rank-pill' }, h('b', null, ordinal(d.mine.rank)), ' of ' + S.board.length)),
       h('div', { class: 'tier-progress' },
         progressBar(into, span, 'bar-lg'),
         h('div', { class: 'row between small' },
           h('span', { class: 'muted' }, cur ? cur.name : ''),
-          h('span', null, next ? h('span', null, h('strong', null, String(need)), ' more to ', next.name) : h('span', { class: 'accent' }, 'Top tier. Nothing above you.')))),
+          h('span', null, next ? h('span', null, h('strong', null, String(need)), ' more to ', next.name) : h('span', { class: 'accent' }, 'Top tier reached.')))),
+      (() => {
+        const note = decayNote(d.decay);
+        return note ? h('div', { class: 'decay-note ' + note.tone }, icon('clock', 16), h('span', null, note.text)) : null;
+      })(),
       h('div', { class: 'mini-stats' },
-        miniStat('Meetings', d.stats.attendance, 'calendar'),
-        miniStat('Streak', d.stats.streak, 'flame'),
-        miniStat('Pitches', d.stats.pitches, 'mic'),
-        miniStat('Badges', d.progress.filter(b => b.earned).length + '/' + d.progress.length, 'award')));
-    countUp(num, d.mine.total_points);
+        miniStat('Meetings', d.stats.attendance),
+        miniStat('Streak', d.stats.streak),
+        miniStat('Pitches', d.stats.pitches),
+        miniStat('Badges', d.progress.filter(b => b.earned).length + ' of ' + d.progress.length)));
   }
 
-  function miniStat(label, value, ic) {
-    return h('div', { class: 'mini-stat' }, h('span', { class: 'mini-icon' }, icon(ic, 16)), h('div', null, h('div', { class: 'mini-val mono' }, String(value)), h('div', { class: 'muted small' }, label)));
+  function miniStat(label, value) {
+    return h('div', { class: 'mini-stat' }, h('div', { class: 'mini-val' }, String(value)), h('div', { class: 'muted small' }, label));
   }
 
   function renderCardStatus(el) {
@@ -120,7 +163,7 @@
     const today = RT.localDateISO();
     const upcoming = S.meetings.filter(m => m.meeting_date >= today).sort((a, b) => (a.meeting_date < b.meeting_date ? -1 : 1));
     const m = upcoming[0];
-    clear(el).appendChild(h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Next meeting'), icon('calendar', 18, 'muted')));
+    clear(el).appendChild(h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Next meeting')));
     if (!m) {
       el.appendChild(h('div', { class: 'empty-mini' }, h('p', { class: 'muted' }, 'Nothing on the calendar yet. Officers will post the next date here.')));
       return;
@@ -130,7 +173,6 @@
     const later = upcoming.slice(1, 4);
     RT.put(el,
       h('div', { class: 'next-date' },
-        h('div', { class: 'cal-tile' }, h('span', { class: 'cal-mon' }, fmtDate(m.meeting_date, { month: 'short' })), h('span', { class: 'cal-day mono' }, fmtDate(m.meeting_date, { day: 'numeric' }))),
         h('div', null, h('div', { class: 'next-when' }, when), h('div', { class: 'muted small' }, fmtDate(m.meeting_date, { weekday: 'long', month: 'long', day: 'numeric' })))),
       h('div', { class: 'next-meta' },
         h('div', null, h('span', { class: 'muted small' }, 'What'), h('div', null, m.name || 'Meeting')),
@@ -205,6 +247,21 @@
     const sub = h('span', null, 'Season ' + cfg.season.replace('-', '–'));
     root.appendChild(RT.pageHead('Leaderboard', sub, tools));
 
+    // Points board (meetings, pitches, bounties) or the Academy board (levels passed, then XP).
+    let mode = 'points';
+    let acRows = null;
+    if (RT.academyBoard) {
+      tools.insertBefore(segmented({
+        items: [{ value: 'points', label: 'Points' }, { value: 'academy', label: 'Academy' }],
+        value: 'points', className: 'seg-sm', ariaLabel: 'Which board',
+        onChange: v => {
+          mode = v;
+          if (v === 'academy' && !acRows) RT.academyBoard().then(r => { acRows = r; draw(); }).catch(e => toast(friendly(e), 'error'));
+          draw();
+        }
+      }), tools.firstChild);
+    }
+
     let grades = null;
     let gradeFilter = 'all';
     if (S.isAdmin) {
@@ -232,7 +289,30 @@
       return r;
     }
 
+    function drawAcademy() {
+      clear(podium);
+      podium.hidden = true;
+      clear(list);
+      if (!acRows) { list.appendChild(RT.skeleton(6)); return; }
+      const q = search.value.trim().toLowerCase();
+      let r = acRows;
+      if (gradeFilter !== 'all' && grades) r = r.filter(x => grades.get(x.member_id) === gradeFilter);
+      if (q) r = r.filter(x => String(x.name).toLowerCase().includes(q));
+      sub.textContent = `Academy · ranked by levels passed, then XP`;
+      if (!r.length) { list.appendChild(h('div', { class: 'empty' }, h('p', { class: 'muted' }, acRows.length ? 'No one matches that.' : 'No one has passed a level yet.'))); return; }
+      r.forEach((x, i) => {
+        const me = x.member_id === S.me.id;
+        list.appendChild(h('li', { class: 'board-row' + (me ? ' me' : '') },
+          h('span', { class: 'rank mono' }, String(acRows.indexOf(x) + 1)),
+          avatar(x.name, 36),
+          h('div', { class: 'grow min0' }, h('div', { class: 'ellipsis name' }, x.name, me ? h('span', { class: 'you-tag' }, 'You') : null)),
+          h('span', { class: 'muted small nowrap' }, RT.academyRank(x.levels) + ' · ' + x.levels + (x.levels === 1 ? ' level' : ' levels')),
+          h('span', { class: 'pts mono' }, String(x.xp), h('span', { class: 'muted' }, ' XP'))));
+      });
+    }
+
     function draw() {
+      if (mode === 'academy') { drawAcademy(); return; }
       const all = rows();
       const filtered = !!search.value.trim() || gradeFilter !== 'all';
       sub.textContent = `Season ${cfg.season.replace('-', '–')} · ${S.board.length} member${S.board.length === 1 ? '' : 's'}`;
@@ -251,7 +331,7 @@
       }
       podium.hidden = filtered;
       rest.forEach((r, i) => list.appendChild(boardRow(r, i)));
-      if (!rest.length) list.appendChild(h('div', { class: 'empty small' }, h('p', { class: 'muted' }, 'Everyone’s on the podium. For now.')));
+      if (!rest.length) list.appendChild(h('div', { class: 'empty small' }, h('p', { class: 'muted' }, 'Everyone is on the podium.')));
     }
 
     function podiumSlot(r) {
@@ -300,17 +380,18 @@
 
     const refCount = h('span', { class: 'mono' }, '–');
     const codeCard = h('section', { class: 'card span-4 reveal code-card', style: { '--i': 1 } },
-      h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Your code'), icon('link', 18, 'muted')),
+      h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Your code')),
       h('div', { class: 'code-display mono' }, me.login_code || '—'),
       h('p', { class: 'muted small' }, 'Friends enter this when they sign up so you get credit toward Headhunter.'),
-      h('div', { class: 'ref-stat' }, h('span', { class: 'mini-icon' }, icon('users', 16)),
-        h('div', null, h('div', { class: 'mini-val' }, refCount), h('div', { class: 'muted small' }, 'friends joined and showed up'))),
+      h('div', { class: 'ref-stat' }, h('div', { class: 'mini-val' }, refCount), h('div', { class: 'muted small' }, 'friends joined and showed up')),
       h('button', { class: 'btn btn-ghost btn-sm code-copy', type: 'button', onclick: () => RT.copyText(me.login_code || '', 'Code copied') }, icon('copy', 16), 'Copy code'));
     const statsCard = h('section', { class: 'card span-4 reveal', style: { '--i': 2 } }, RT.skeleton(5));
     const ladderCard = h('section', { class: 'card span-4 reveal', style: { '--i': 3 } }, RT.skeleton(4));
     const badgesWrap = h('section', { class: 'reveal', style: { '--i': 4 } }, RT.skeleton(3));
     const account = h('section', { class: 'card account-card reveal', style: { '--i': 5 } },
-      h('div', { class: 'min0' }, h('div', { class: 'card-label' }, 'Account'), h('div', { class: 'ellipsis' }, S.user.email || '')),
+      h('div', { class: 'min0' }, h('div', { class: 'card-label' }, 'Account'),
+        h('div', { class: 'ellipsis' }, S.user.email || ''),
+        h('div', { class: 'muted small ellipsis' }, me.phone ? 'Phone ' + RT.fmtPhone(me.phone) + (me.whatsapp_ok ? ' · WhatsApp' : '') + ' (only officers can see this)' : 'No phone number yet. Add one in Edit so officers can text you updates.')),
       h('div', { class: 'row gap-sm wrap' },
         h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: changePassword }, icon('lock', 16), 'Change password'),
         h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: RT.signOut }, icon('logout', 16), 'Sign out')));
@@ -322,14 +403,20 @@
       clear(tierSlot).append(h('span', { class: 'sep' }, '·'), tierChip(cur && cur.name));
       refCount.textContent = String(d.stats.referrals);
 
-      clear(statsCard).append(
+      RT.put(clear(statsCard),
         h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Stats'), h('span', { class: 'mono muted small' }, d.mine.total_points + ' pts')),
         h('dl', { class: 'stat-list' },
           statRow('Meetings attended', d.stats.attendance),
+          statRow('Last meeting', d.decay.last ? fmtDate(d.decay.last, { month: 'short', day: 'numeric' }) : '—'),
           statRow('Current streak', d.stats.streak + (d.stats.bestStreak > d.stats.streak ? ` (best ${d.stats.bestStreak})` : '')),
           statRow('Pitches', d.stats.pitches),
           statRow('Best finish', d.stats.bestPlacement ? ordinal(d.stats.bestPlacement) : '—'),
-          statRow('Friends brought in', d.stats.referrals)));
+          statRow('Friends brought in', d.stats.referrals),
+          d.decay.lost > 0 ? statRow('Lost to decay', '−' + d.decay.lost) : null),
+        (() => {
+          const note = decayNote(d.decay);
+          return note ? h('div', { class: 'decay-note ' + note.tone }, icon('clock', 16), h('span', null, note.text)) : null;
+        })());
 
       clear(ladderCard).append(
         h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Tier ladder'), next ? h('span', { class: 'muted small' }, (next.point_threshold - d.mine.total_points) + ' to go') : null),
@@ -349,12 +436,14 @@
     function editProfile() {
       const name = h('input', { class: 'input', type: 'text', value: me.name, maxlength: 60 });
       const grade = RT.gradeSwitch(me.grade || '');
+      const phoneF = RT.phoneFields({ phone: me.phone || '', whatsapp: me.whatsapp_ok, required: false });
       const save = h('button', { class: 'btn btn-primary', type: 'button' }, 'Save');
-      const m = modal({ title: 'Edit profile', body: h('div', { class: 'stack' }, RT.field('Name', name), h('div', { class: 'field' }, h('span', { class: 'label' }, 'Grade'), grade)), actions: [save] });
+      const m = modal({ title: 'Edit profile', body: h('div', { class: 'stack' }, RT.field('Name', name), h('div', { class: 'field' }, h('span', { class: 'label' }, 'Grade'), grade), phoneF.el), actions: [save] });
       save.addEventListener('click', () => busy(save, async () => {
         if (name.value.trim().length < 2) { toast('Enter your name.', 'error'); return; }
+        if (phoneF.error()) { toast(phoneF.error(), 'error'); return; }
         try {
-          await api.updateProfile(name.value.trim(), grade.getValue());
+          await api.updateProfile(name.value.trim(), grade.getValue(), phoneF.raw() ? phoneF.value() : '', phoneF.whatsapp());
           await RT.reloadMe();
           m.close();
           toast('Profile saved', 'success');

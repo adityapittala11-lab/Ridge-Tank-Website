@@ -275,5 +275,6 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 
-  RT.dots = { refresh: () => state.forEach((st, el) => schedule(el)) };
+  // scan() picks up big text outside #app too (the Academy's round window lives in #modal-root).
+  RT.dots = { refresh: () => state.forEach((st, el) => schedule(el)), scan: scheduleScan };
 })();

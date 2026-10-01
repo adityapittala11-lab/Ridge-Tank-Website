@@ -1,4 +1,4 @@
-// Officer tools: card check-in, card requests, members, meetings, pitch results + Shark Notes, badges.
+// Officer tools: card check-in, card requests, members, meetings, pitch results + bites, badges.
 (function () {
   const RT = window.RT;
   const { h, clear, icon, toast, modal, confirmDialog, segmented, avatar, memberPicker, busy, friendly, fmtDate, fmtTime, localDateISO, ordinal } = RT;
@@ -14,6 +14,12 @@
   const nameOf = id => (memberById(id) || {}).name || S.directory.get(id) || 'Unknown';
   const meetingLabel = m => `${fmtDate(m.meeting_date)} · ${m.name || 'Meeting'}`;
   const pointsOf = id => { const r = S.board.find(b => b.member_id === id); return r ? r.total_points : 0; };
+
+  // Shared with js/admin2.js (Welcome queue, Bounties, Meetings, Card station).
+  RT.adminKit = {
+    A, memberById, nameOf, assignCard, captureCards, beep, normalizeUid, syncPending, codeModal, stripStat,
+    tapToLink, loadAll, openMember: (m, onChange) => memberModal(m, onChange || (() => {}))
+  };
 
   async function loadAll() {
     const f = RT.api.fetchAll;
@@ -31,8 +37,11 @@
     syncPending();
   }
 
+  // What officers still owe: cards to make, people to welcome (bounty claims are counted by their own tab).
   function syncPending() {
-    S.pendingCount = A.members.filter(m => m.card_status === 'pending').length;
+    S.adminCounts.cards = A.members.filter(m => m.card_status === 'pending').length;
+    S.adminCounts.welcome = A.members.filter(m => m.contact_status === 'new' && m.phone).length;
+    S.pendingCount = S.adminCounts.cards + S.adminCounts.welcome + S.adminCounts.claims;
     RT.updateAdminBadge();
   }
 
@@ -140,10 +149,12 @@
   RT.views.admin = function (root, t) {
     const tabs = [
       { value: 'checkin', label: 'Check-in', icon: 'nfc' },
-      { value: 'requests', label: 'Card requests', icon: 'card', badge: S.pendingCount || 0 },
+      { value: 'welcome', label: 'Welcome', icon: 'send', badge: S.adminCounts.welcome || 0 },
+      { value: 'requests', label: 'Card requests', icon: 'card', badge: S.adminCounts.cards || 0 },
       { value: 'members', label: 'Members', icon: 'users' },
-      { value: 'meetings', label: 'Meetings', icon: 'calendar' },
+      { value: 'meetings', label: 'Calendar', icon: 'calendar' },
       { value: 'pitches', label: 'Pitches', icon: 'mic' },
+      { value: 'bounties', label: 'Bounties', icon: 'target', badge: S.adminCounts.claims || 0 },
       { value: 'badges', label: 'Badges', icon: 'award' }
     ];
     const seg = segmented({ items: tabs, value: t.tab, className: 'admin-seg', ariaLabel: 'Officer tools', onChange: v => RT.go('admin/' + v) });
@@ -153,12 +164,17 @@
     const host = h('div', { class: 'admin-body' });
     root.appendChild(host);
 
-    const onPending = e => seg.setBadge('requests', e.detail);
+    const onPending = () => {
+      seg.setBadge('welcome', S.adminCounts.welcome);
+      seg.setBadge('requests', S.adminCounts.cards);
+      seg.setBadge('bounties', S.adminCounts.claims);
+    };
     window.addEventListener('rt:pending', onPending);
 
     let tab = t.tab;
     let tabCleanup = null;
-    const TABS = { checkin: tabCheckin, requests: tabRequests, members: tabMembers, meetings: tabMeetings, pitches: tabPitches, badges: tabBadges };
+    // welcome, bounties, and meetings (the calendar) live in admin2.js
+    const TABS = Object.assign({ checkin: tabCheckin, requests: tabRequests, members: tabMembers, pitches: tabPitches, badges: tabBadges }, RT.adminTabs);
 
     function show(name) {
       if (!TABS[name]) name = 'checkin';
@@ -369,8 +385,10 @@
   function tabRequests(pane) {
     const pending = A.members.filter(m => m.card_status === 'pending').sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
     pane.appendChild(h('div', { class: 'section-row' },
-      h('div', null, h('h2', { class: 'h2' }, 'Card requests'), h('p', { class: 'muted small' }, 'Everyone here needs a physical card. Tap “Link card”, then tap their new card on the reader.')),
-      h('span', { class: 'count-pill lg' }, String(pending.length))));
+      h('div', null, h('h2', { class: 'h2' }, 'Card requests'), h('p', { class: 'muted small' }, 'Everyone here needs a physical card. Use Card station to link a whole stack of blank cards fast, or tap “Link card” for one person.')),
+      h('div', { class: 'row gap-sm' },
+        pending.length ? h('button', { class: 'btn btn-primary btn-sm', type: 'button', onclick: () => RT.adminKit2.cardStation(() => RT.rerenderAdminTab && RT.rerenderAdminTab()) }, icon('nfc', 16), 'Card station') : null,
+        h('span', { class: 'count-pill lg' }, String(pending.length)))));
     if (!pending.length) {
       pane.appendChild(h('div', { class: 'card empty' }, icon('check', 24, 'accent'), h('h3', null, 'All caught up'), h('p', { class: 'muted' }, 'No one is waiting on a card.')));
       return null;
@@ -434,7 +452,8 @@
 
     function draw() {
       const q = search.value.trim().toLowerCase();
-      const rows = A.members.filter(m => !q || m.name.toLowerCase().includes(q) || (m.email || '').toLowerCase().includes(q) || (m.login_code || '').toLowerCase().includes(q));
+      const digits = q.replace(/\D/g, '');
+      const rows = A.members.filter(m => !q || m.name.toLowerCase().includes(q) || (m.email || '').toLowerCase().includes(q) || (m.login_code || '').toLowerCase().includes(q) || (digits.length >= 3 && (m.phone || '').includes(digits)));
       clear(table);
       table.appendChild(h('div', { class: 'trow thead' }, h('span', null, 'Name'), h('span', null, 'Grade'), h('span', null, 'Points'), h('span', null, 'Card'), h('span', null, 'Account'), h('span')));
       if (!rows.length) { table.appendChild(h('div', { class: 'empty small' }, h('p', { class: 'muted' }, A.members.length ? 'No matches.' : 'No members yet. Add the club roster to get started.'))); return; }
@@ -449,20 +468,62 @@
     search.addEventListener('input', RT.debounce(draw, 120));
     draw();
 
+    // Reads pasted lines: typed by hand ("Jordan Lee, 10") or copied straight from the Google Form sheet
+    // (timestamp, name, grade, email, phone, WhatsApp yes/no…). Each cell is recognized by what it looks like.
+    function splitCells(line) {
+      if (line.includes('\t')) return line.split('\t');
+      const out = [];
+      let cur = '', q = false;
+      for (const ch of line) {
+        if (ch === '"') q = !q;
+        else if (ch === ',' && !q) { out.push(cur); cur = ''; }
+        else cur += ch;
+      }
+      out.push(cur);
+      return out;
+    }
+    function parsePasted(text) {
+      const rows = [];
+      text.split(/\r?\n/).forEach(line => {
+        if (!line.trim()) return;
+        const rest = [];
+        const row = { name: '', grade: null, email: null, phone: null, whatsapp_ok: false };
+        const cells = splitCells(line).map(c => c.trim().replace(/^"|"$/g, '').trim()).filter(Boolean);
+        if (cells.some(c => /^(timestamp|name|full name)$/i.test(c))) return; // the sheet's header row
+        cells.forEach(c => {
+          if (/^\d{1,2}\/\d{1,2}\/\d{2,4}/.test(c) || /^\d{4}-\d{2}-\d{2}/.test(c)) return; // form timestamp
+          if (/^\S+@\S+\.\S+$/.test(c)) { row.email = row.email || c.toLowerCase(); return; }
+          if (/^(9|10|11|12)(th)?( grade)?$/i.test(c)) { row.grade = c.match(/\d+/)[0]; return; }
+          if (/^[\d\s().+-]{7,}$/.test(c) && RT.cleanPhone(c)) { row.phone = row.phone || RT.cleanPhone(c); return; }
+          if (/^(yes|y)$/i.test(c)) { row.whatsapp_ok = true; return; }
+          if (/^(no|n)$/i.test(c)) return;
+          rest.push(c);
+        });
+        row.name = (rest[0] || '').slice(0, 60);
+        if (row.name.length >= 2) rows.push(row);
+      });
+      return rows;
+    }
+
     function bulkAdd() {
-      const ta = h('textarea', { class: 'input textarea', rows: 8, placeholder: 'Jordan Lee, 10\nPriya Shah, 11\nSam Carter' });
+      const ta = h('textarea', { class: 'input textarea', rows: 9, placeholder: 'Jordan Lee, 10\nPriya Shah, 11, priya@school.org, 480-555-0123\n\nOr paste rows straight from the Google Form sheet.' });
+      const found = h('p', { class: 'muted small' }, 'Nothing pasted yet.');
+      ta.addEventListener('input', () => {
+        const r = parsePasted(ta.value);
+        found.textContent = r.length ? `Found ${r.length} ${r.length === 1 ? 'person' : 'people'}` + (r.filter(x => x.phone).length ? `, ${r.filter(x => x.phone).length} with a phone number.` : '.') : 'Nothing pasted yet.';
+      });
       const save = h('button', { class: 'btn btn-primary', type: 'button' }, 'Add members');
-      const md = modal({ title: 'Add members', subtitle: 'One person per line. Add their grade after a comma if you know it.', body: ta, actions: [save], wide: true });
+      const md = modal({ title: 'Add members', subtitle: 'One person per line. Grade, email and phone are picked up automatically if they’re there.', body: h('div', { class: 'stack-sm' }, ta, found), actions: [save], wide: true });
       save.addEventListener('click', () => busy(save, async () => {
-        const rows = ta.value.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
-          const [n, g] = l.split(',').map(s => s.trim());
-          const gr = (g || '').replace(/\D/g, '');
-          return { name: n, grade: ['9', '10', '11', '12'].includes(gr) ? gr : null, card_status: 'pending' };
-        }).filter(r => r.name && r.name.length >= 2);
+        const rows = parsePasted(ta.value).map(r => ({
+          name: r.name, grade: r.grade, email: r.email, phone: r.phone, whatsapp_ok: r.whatsapp_ok, card_status: 'pending',
+          source: r.email || r.phone ? 'form' : 'officer'
+        }));
         if (!rows.length) { toast('Add at least one name.', 'error'); return; }
         const existing = new Set(A.members.map(m => m.name.toLowerCase()));
-        const dupes = rows.filter(r => existing.has(r.name.toLowerCase()));
-        if (dupes.length && !(await confirmDialog({ title: 'Some names already exist', message: dupes.map(d => d.name).join(', ') + ' are already members. Add them again anyway?', confirmText: 'Add anyway' }))) return;
+        const emails = new Set(A.members.map(m => (m.email || '').toLowerCase()).filter(Boolean));
+        const dupes = rows.filter(r => existing.has(r.name.toLowerCase()) || (r.email && emails.has(r.email)));
+        if (dupes.length && !(await confirmDialog({ title: 'Some people already exist', message: dupes.map(d => d.name).join(', ') + ' are already members. Add them again anyway?', confirmText: 'Add anyway' }))) return;
         const { data, error } = await sb.from('members').insert(rows).select();
         if (error) { toast(friendly(error), 'error'); return; }
         A.members.push(...data);
@@ -488,6 +549,16 @@
     const myAwards = A.awards.filter(a => a.member_id === m.id);
     const cardBox = h('div', { class: 'detail-box' });
     const codeBox = h('div', { class: 'detail-box' });
+    const phoneF = RT.phoneFields({ phone: m.phone || '', whatsapp: m.whatsapp_ok, required: false });
+    const reach = h('div', { class: 'row gap-sm wrap' });
+    function drawReach() {
+      clear(reach);
+      if (!m.phone) return;
+      const msg = RT.fillTemplate(cfg.templates.welcomeText, m);
+      reach.append(
+        h('a', { class: 'btn btn-ghost btn-sm', href: `sms:${m.phone}?&body=${encodeURIComponent(msg)}` }, icon('chat', 14), 'Text ' + RT.fmtPhone(m.phone)),
+        h('a', { class: 'btn btn-ghost btn-sm', href: `https://wa.me/${m.phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, target: '_blank', rel: 'noopener' }, icon('whatsapp', 14), 'WhatsApp'));
+    }
 
     function drawCard() {
       clear(cardBox).append(
@@ -529,10 +600,16 @@
     }
     saveBtn.addEventListener('click', () => busy(saveBtn, async () => {
       if (name.value.trim().length < 2) { toast('Enter a name.', 'error'); return; }
-      const { data, error } = await sb.from('members').update({ name: name.value.trim(), grade: grade.getValue() || null }).eq('id', m.id).select().single();
+      if (phoneF.error()) { toast(phoneF.error(), 'error'); return; }
+      const { data, error } = await sb.from('members').update({
+        name: name.value.trim(), grade: grade.getValue() || null,
+        phone: phoneF.raw() ? phoneF.value() : null, whatsapp_ok: phoneF.whatsapp()
+      }).eq('id', m.id).select().single();
       if (error) { toast(friendly(error), 'error'); return; }
       Object.assign(m, data);
       S.directory.set(m.id, m.name);
+      syncPending();
+      drawReach();
       toast('Saved', 'success');
       onChange();
     }));
@@ -545,6 +622,7 @@
       body: h('div', { class: 'stack' },
         h('div', { class: 'detail-box' }, h('div', { class: 'card-label' }, 'Profile'),
           h('div', { class: 'form-grid' }, RT.field('Name', name), h('div', { class: 'field' }, h('span', { class: 'label' }, 'Grade'), grade)),
+          phoneF.el, reach,
           h('div', { class: 'row end' }, saveBtn)),
         cardBox, codeBox,
         h('div', { class: 'detail-box' }, h('div', { class: 'card-label' }, 'Officer-given badges'),
@@ -553,6 +631,7 @@
     });
     drawCard();
     drawCode();
+    drawReach();
     delBtn.addEventListener('click', async () => {
       const ok = await confirmDialog({ title: 'Delete ' + m.name + '?', message: 'This removes them from the leaderboard for good.', confirmText: 'Delete forever', danger: true, requireText: m.name });
       if (!ok) return;
@@ -587,73 +666,7 @@
     }
   }
 
-  // ---------------- meetings ----------------
-  function tabMeetings(pane) {
-    const date = h('input', { class: 'input', type: 'date', value: localDateISO() });
-    const name = h('input', { class: 'input', type: 'text', placeholder: 'Meeting', maxlength: 80 });
-    const where = h('input', { class: 'input', type: 'text', placeholder: 'Room (optional)', maxlength: 80 });
-    const add = h('button', { class: 'btn btn-primary', type: 'button' }, icon('plus', 16), 'Add meeting');
-    pane.appendChild(h('div', { class: 'card' },
-      h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Schedule a meeting'), h('span', { class: 'muted small' }, 'Members see the next one on their home page.')),
-      h('div', { class: 'form-grid three' }, RT.field('Date', date), RT.field('Name', name), RT.field('Where', where)),
-      h('div', { class: 'row end' }, add)));
-    const list = h('div', { class: 'meeting-list' });
-    pane.appendChild(list);
-
-    add.addEventListener('click', () => busy(add, async () => {
-      if (!date.value) { toast('Pick a date.', 'error'); return; }
-      const { data, error } = await sb.from('meetings').insert({ meeting_date: date.value, name: name.value.trim() || 'Meeting', location: where.value.trim() || null, season: cfg.season }).select().single();
-      if (error) { toast(friendly(error), 'error'); return; }
-      A.meetings.push(data);
-      A.meetings.sort((a, b) => (a.meeting_date < b.meeting_date ? 1 : -1));
-      S.meetings = A.meetings;
-      name.value = ''; where.value = '';
-      toast('Meeting added', 'success');
-      draw();
-    }));
-
-    function draw() {
-      clear(list);
-      if (!A.meetings.length) { list.appendChild(h('div', { class: 'card empty' }, h('p', { class: 'muted' }, 'No meetings yet.'))); return; }
-      const today = localDateISO();
-      A.meetings.forEach((m, i) => {
-        const n = A.attendance.filter(a => a.meeting_id === m.id).length;
-        const upcoming = m.meeting_date > today;
-        list.appendChild(h('div', { class: 'card meeting-row', style: { '--i': Math.min(i, 10) } },
-          h('div', { class: 'cal-tile sm' + (m.meeting_date === today ? ' today' : '') }, h('span', { class: 'cal-mon' }, fmtDate(m.meeting_date, { month: 'short' })), h('span', { class: 'cal-day mono' }, fmtDate(m.meeting_date, { day: 'numeric' }))),
-          h('div', { class: 'grow min0' }, h('div', { class: 'ellipsis' }, m.name || 'Meeting', m.meeting_date === today ? h('span', { class: 'tag sm' }, 'Today') : upcoming ? h('span', { class: 'tag sm muted' }, 'Upcoming') : null),
-            h('div', { class: 'muted small' }, fmtDate(m.meeting_date, { weekday: 'long' }) + (m.location ? ' · ' + m.location : ''))),
-          h('span', { class: 'mono muted small' }, n + ' checked in'),
-          h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => { A.meetingId = m.id; RT.go('admin/checkin'); } }, 'Check-in'),
-          h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Delete meeting', title: 'Delete meeting', onclick: () => delMeeting(m, n) }, icon('trash', 16))));
-      });
-    }
-
-    async function delMeeting(m, n) {
-      const ok = await confirmDialog({ title: 'Delete this meeting?', message: `${meetingLabel(m)}. ${n ? n + ' check-ins, plus any pitch results and Shark Notes from it, will be removed and those points taken back.' : 'No one has checked in yet.'}`, confirmText: 'Delete', danger: true });
-      if (!ok) return;
-      try {
-        for (const step of [
-          () => sb.from('attendance').delete().eq('meeting_id', m.id),
-          () => sb.from('pitch_entries').delete().eq('meeting_id', m.id),
-          () => sb.from('currency_votes').delete().eq('meeting_id', m.id),
-          () => sb.from('meetings').delete().eq('id', m.id)
-        ]) { const { error } = await step(); if (error) throw error; }
-        A.meetings = A.meetings.filter(x => x.id !== m.id);
-        A.attendance = A.attendance.filter(x => x.meeting_id !== m.id);
-        A.pitches = A.pitches.filter(x => x.meeting_id !== m.id);
-        A.votes = A.votes.filter(x => x.meeting_id !== m.id);
-        S.meetings = A.meetings;
-        if (A.meetingId === m.id) A.meetingId = null;
-        toast('Meeting deleted', 'success');
-        draw();
-      } catch (e) { toast(friendly(e), 'error'); }
-    }
-    draw();
-    return null;
-  }
-
-  // ---------------- pitches + Shark Notes ----------------
+  // ---------------- pitches + bites ----------------
   function tabPitches(pane) {
     A.meetingId = defaultMeetingId();
     const sel = meetingSelect(() => { drawPitches(); drawVotes(); });
@@ -668,7 +681,7 @@
     const pList = h('div', { class: 'entry-list' });
     const ptsHint = h('span', { class: 'muted small' }, `1st +${cfg.points.pitch[1]} · 2nd +${cfg.points.pitch[2]} · 3rd +${cfg.points.pitch[3]} · pitched +${cfg.points.pitch[0]}`);
 
-    // Shark Notes
+    // Bites
     let investor = null, receiver = null;
     const vFrom = memberPicker({ members: () => A.members, placeholder: 'Investor', keepValue: true, onPick: m => { investor = m; } });
     const vTo = memberPicker({ members: () => A.members, placeholder: 'Invested in', keepValue: true, onPick: m => { receiver = m; } });
@@ -682,7 +695,7 @@
         h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Pitch results'), ptsHint),
         h('div', { class: 'stack-sm' }, pPick, place, h('div', { class: 'row end' }, pAdd)), pList),
       h('div', { class: 'card' },
-        h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Shark Notes'), h('span', { class: 'muted small' }, 'Who invested in whom')),
+        h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Bites'), h('span', { class: 'muted small' }, 'Who invested in whom')),
         h('div', { class: 'stack-sm' }, h('div', { class: 'form-grid' }, vFrom, vTo), h('div', { class: 'row gap-sm' }, vAmt, vAdd)), vTotals, vList)));
 
     pAdd.addEventListener('click', () => busy(pAdd, async () => {
@@ -733,7 +746,7 @@
       clear(vList);
       clear(vTotals);
       const rows = A.votes.filter(v => v.meeting_id === A.meetingId);
-      if (!rows.length) { vList.appendChild(h('p', { class: 'muted small' }, 'No Shark Notes recorded for this meeting.')); return; }
+      if (!rows.length) { vList.appendChild(h('p', { class: 'muted small' }, 'No bites recorded for this meeting.')); return; }
       const totals = new Map();
       rows.forEach(v => totals.set(v.to_member_id, (totals.get(v.to_member_id) || 0) + Number(v.amount)));
       const ranked = [...totals.entries()].sort((a, b) => b[1] - a[1]);

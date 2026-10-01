@@ -1,0 +1,5 @@
+# Secrets stay on this computer. Never commit them.
+.env
+.env.*
+!.env.example
+node_modules/
