@@ -33,7 +33,9 @@
   // Early access: an officer can open every level on their own account before its date (saved in this browser).
   // Members never see the switch, so the course stays date-locked for everyone else.
   const earlyOn = () => !!S.isAdmin && store.get(LS.early, false) === true;
-  const opened = (n, t) => earlyOn() || t >= blockOf(n).opens;
+  // config.js academy.openNow opens the whole course for everyone (still one level at a time).
+  const openForAll = () => !!(window.RT_CONFIG && RT_CONFIG.academy && RT_CONFIG.academy.openNow);
+  const opened = (n, t) => openForAll() || earlyOn() || t >= blockOf(n).opens;
 
   // ---------------- course rules ----------------
   const seasonOf = n => (n <= 10 ? 1 : n <= 20 ? 2 : n <= 30 ? 3 : 4);
@@ -241,7 +243,7 @@
     const early = h('button', { class: 'btn btn-sm ' + (earlyOn() ? 'btn-ghost' : 'btn-primary'), type: 'button', onclick: () => { store.set(LS.early, earlyOn() ? null : true); draw(); } },
       earlyOn() ? 'Back to normal dates' : 'Open all levels for me');
     return h('div', { class: 'ac-officer' },
-      early, h('span', { class: 'muted small' }, earlyOn() ? 'Every level is open on your account. Members still see the normal dates.' : 'Officers only. Members still see the normal dates.'),
+      openForAll() ? h('span', { class: 'muted small' }, 'The course is open to everyone (academy.openNow in config.js).') : early, openForAll() ? null : h('span', { class: 'muted small' }, earlyOn() ? 'Every level is open on your account. Members still see the normal dates.' : 'Officers only. Members still see the normal dates.'),
       h('span', null, 'Show the course as it looks on'), input, store.get(LS.date, null) ? reset : null,
       AC.local ? h('span', { class: 'ac-officer-note' }, 'Progress is saved in this browser until migration_v4_course.sql is run in Supabase.') : null);
   }
@@ -336,7 +338,7 @@
     let done = 0;
     for (let n = (s - 1) * 10 + 1; n <= s * 10; n++) if (p.best[n]) done++;
     const status = done === 10 ? h('p', { class: 'ac-status done' }, icon('check', 15), 'Done')
-      : (earlyOn() || p.t >= blocks[0].opens) ? h('p', { class: 'ac-status now' }, done + ' of 10 done')
+      : opened(blocks[0].a, p.t) ? h('p', { class: 'ac-status now' }, done + ' of 10 done')
       : h('p', { class: 'ac-status' }, 'Opens ' + shortDate(blocks[0].opens));
     const finale = C.meetings.find(m => m.season === s && m.kind === 'event' && /Mini|Demo|Gauntlet|Finale/.test(m.title));
     const el = h('section', { class: 'ac-season' },
@@ -357,7 +359,7 @@
         h('span', { class: 'ac-nm' }, h('span', { class: 't' }, edgeName(b)),
           h('span', { class: 's' }, cl.state === 'claimed' ? 'Collected ' + shortDate(cl.on) : cl.state === 'ready' ? 'Check in at a meeting to collect' : 'Reward for levels ' + b.a + ' to ' + b.b))));
       el.appendChild(h('div', { class: 'ac-blk' },
-        h('p', { class: 'ac-blk-h' }, h('b', null, `Block ${b.id}: ${b.name}`), h('span', null, b.opensText + ' · ' + b.claim.replace(/^Unlock at /, 'reward at '))),
+        h('p', { class: 'ac-blk-h' }, h('b', null, `Block ${b.id}: ${b.name}`), h('span', null, (openForAll() ? '' : b.opensText + ' · ') + b.claim.replace(/^Unlock at /, 'reward at '))),
         path));
     });
     if (finale) el.appendChild(h('p', { class: 'ac-finale' }, h('span', { class: 'fm', 'aria-hidden': 'true' }), h('span', null, 'Season finale: ', h('b', null, finale.title), ', ' + fmtDate(finale.iso, { weekday: 'short', month: 'short', day: 'numeric' }))));

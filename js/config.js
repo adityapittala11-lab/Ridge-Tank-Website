@@ -57,6 +57,10 @@ window.RT_CONFIG = {
   // Environment Variables. Both places use the same address. If the key is missing the sharks use their scripted lines.
   ai: { endpoint: '/api/shark' },
 
+  // Tank Academy. openNow: true = every member can start now and work through the levels in order,
+  // ignoring each block's open date. false = levels open on their dates (Season 1 starts Oct 12).
+  academy: { openNow: true },
+
   // Footer social icons. Add real accounts only, e.g.
   // { label: 'Instagram', icon: 'instagram', href: 'https://instagram.com/yourclub' }
   // (other icon names: 'mail', 'link'). Leave empty to hide the row.
