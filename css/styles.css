@@ -1474,5 +1474,35 @@ html[data-theme="light"] .tier-chip.tier-mega { color: #7e1434; }
 .faq-item p { padding: 0 24px 22px; line-height: 1.6; max-width: 70ch; }
 .faq-foot { margin-top: 22px; }
 
+/* ---------- The Sharks (js/sharks.js) ---------- */
+.sharks-intro { max-width: 640px; margin-bottom: 28px; line-height: 1.55; }
+.shark-roster { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; margin-bottom: 32px; }
+.shark-chip { display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--line); background: rgb(var(--tint) / 0.04); min-width: 0; }
+.shark-av { flex: none; width: 40px; height: 40px; display: grid; place-items: center; color: #fff; background: linear-gradient(145deg, var(--g-500), var(--g-700)); }
+.shark-av.marlo, .shark-av.reef { background: linear-gradient(145deg, var(--b-500), var(--b-700)); }
+.shark-av.tide { background: linear-gradient(145deg, var(--g-500), var(--b-600)); }
+.sharks-form { max-width: 760px; margin-bottom: 8px; }
+.sharks-form .textarea { min-height: 110px; }
+.sharks-form .btn { align-self: flex-start; }
+.sharks-note { display: flex; align-items: center; gap: 6px; margin: 0; max-width: 520px; }
+.shark-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; margin-bottom: 28px; }
+.shark-head { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.shark-head .shark-av { width: 46px; height: 46px; }
+.shark-name { font: 700 20px/1.1 var(--font-display); }
+.teeth { display: flex; gap: 4px; flex: none; }
+.teeth i { width: 12px; height: 18px; background: rgb(var(--tint) / 0.14); }
+.teeth i.on { background: var(--g-400); }
+.shark-verdict { font-size: 17px; line-height: 1.5; font-weight: 500; margin-bottom: 14px; }
+.shark-tips { display: flex; flex-direction: column; gap: 10px; padding-left: 20px; list-style: square; color: var(--ink-2); line-height: 1.5; }
+.shark-q { margin-top: 20px; padding: 16px; border: 1px solid rgba(63, 191, 127, 0.35); background: rgba(63, 191, 127, 0.08); }
+.shark-q p { margin-top: 6px; font-weight: 600; }
+.shark-pitch { font-size: 18px; line-height: 1.6; }
+.shark-plan { display: flex; flex-direction: column; gap: 12px; padding-left: 22px; line-height: 1.5; list-style: decimal; }
+.shark-grid > .shark-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.sharks-wait { max-width: 760px; margin-top: 24px; }
+@media (max-width: 1060px) { .shark-roster { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 899px) { .shark-grid { grid-template-columns: 1fr; gap: 22px; } }
+@media (max-width: 560px) { .shark-roster { grid-template-columns: 1fr 1fr; gap: 12px; } }
+
 /* Everything is square, whatever rule or browser default says otherwise. */
 *, *::before, *::after { border-radius: 0 !important; }
