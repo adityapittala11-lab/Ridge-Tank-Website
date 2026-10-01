@@ -12,8 +12,8 @@
   const bottomEl = document.getElementById('bottombar');
   const footerEl = document.getElementById('site-footer');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const MEMBER_ROUTES = new Set(['home', 'about', 'leaderboard', 'chat', 'profile']);
-  const MESH_DIM = { landing: 1, about: 1, auth: 0.9, welcome: 0.85, reset: 0.85, home: 0.78, leaderboard: 0.75, profile: 0.75, chat: 0.65, admin: 0.65 };
+  const MEMBER_ROUTES = new Set(['home', 'sharks', 'about', 'leaderboard', 'chat', 'profile']);
+  const MESH_DIM = { landing: 1, about: 1, sharks: 0.8, auth: 0.9, welcome: 0.85, reset: 0.85, home: 0.78, leaderboard: 0.75, profile: 0.75, chat: 0.65, admin: 0.65 };
 
   RT.views = RT.views || {};
   let current = null; // { key, target, handle }
@@ -210,7 +210,8 @@
   function navItems() {
     const items = [
       { value: 'home', label: 'Home', icon: 'home' },
-      { value: 'about', label: 'About', icon: 'fin' },
+      { value: 'sharks', label: 'Sharks', icon: 'fin' },
+      { value: 'about', label: 'About', icon: 'target' },
       { value: 'leaderboard', label: 'Leaderboard', icon: 'trophy' },
       { value: 'chat', label: 'Chat', icon: 'chat' },
       { value: 'profile', label: 'Profile', icon: 'user' }
@@ -299,7 +300,7 @@
     if (S.me) {
       items.push(h('div', { class: 'menu-user' }, avatar(S.me.name, 40),
         h('div', { class: 'min0' }, h('div', { class: 'menu-name' }, S.me.name), h('div', { class: 'muted small ellipsis' }, S.user.email || ''))));
-      items.push(link('#/home', 'Home', 'home'), link('#/about', 'About the program', 'fin'), link('#/leaderboard', 'Leaderboard', 'trophy'), link('#/chat', 'Program chat', 'chat'), link('#/profile', 'Profile & badges', 'user'));
+      items.push(link('#/home', 'Home', 'home'), link('#/sharks', 'The Sharks', 'fin'), link('#/about', 'About the program', 'target'), link('#/leaderboard', 'Leaderboard', 'trophy'), link('#/chat', 'Program chat', 'chat'), link('#/profile', 'Profile & badges', 'user'));
       if (S.isAdmin) items.push(link('#/admin/checkin', 'Officer tools', 'shield', S.pendingCount ? h('span', { class: 'count-pill' }, String(S.pendingCount)) : null));
       items.push(h('div', { class: 'menu-sep' }));
       items.push(h('button', { class: 'menu-item', type: 'button', onclick: signOut }, icon('logout', 18), h('span', { class: 'grow' }, 'Sign out')));
