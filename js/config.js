@@ -10,8 +10,8 @@ window.RT_CONFIG = {
   // Points handed out by officers. Attendance is written on each check-in;
   // pitch points are written when an officer records a result.
   points: {
-    attendance: 10,
-    pitch: { 1: 30, 2: 20, 3: 10, 0: 5 }
+    attendance: 100,
+    pitch: { 1: 300, 2: 200, 3: 100, 0: 50 }
   },
 
   officers: [
@@ -63,6 +63,15 @@ window.RT_CONFIG = {
   social: [],
 
   // Opening animation timing in milliseconds.
+  // Sign-up incentive shown on the landing page for people who aren't members yet. Set to null to hide it.
+  promo: {
+    title: 'Sign up before the first meeting',
+    text: 'The first 10 sign-ups get candy. Everyone who signs up is entered to win cash, drawn live at the meeting.'
+  },
+
+  // Shown in the FAQ. Update after each meeting is scheduled.
+  nextMeeting: 'Wednesday, October 21',
+
   intro: { form: 1700, hold: 1900, disperse: 2000 },
 
   // Background swirl edges: 'soft' (smooth blur), 'medium', 'sharp', or 'crisp' (no blur).

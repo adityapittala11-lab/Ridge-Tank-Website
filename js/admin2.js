@@ -164,6 +164,8 @@
 
     drawTemplate();
     draw();
+    // Candy for the first sign-ups and the cash draw (from the Tank Market code).
+    if (RT.market && RT.market.rewardsCard) pane.appendChild(RT.market.rewardsCard());
     return null;
   };
 
@@ -174,7 +176,7 @@
     const who = id => (A.members.find(m => m.id === id) || {}).name || S.directory.get(id) || 'Member';
 
     const head = h('div', { class: 'section-row' },
-      h('div', null, h('h2', { class: 'h2' }, 'Bounties'), h('p', { class: 'muted small' }, 'Challenges members can claim for bonus points. Approve a claim and the points land right away.')),
+      h('div', null, h('h2', { class: 'h2' }, 'Bounties'), h('p', { class: 'muted small' }, 'Challenges members can claim for bonus Bites. Approve a claim and the points land right away.')),
       h('button', { class: 'btn btn-primary btn-sm', type: 'button', onclick: () => editBounty() }, icon('plus', 16), 'New bounty'));
     const queue = h('div', { class: 'request-list' });
     const list = h('div', { class: 'stack-sm' });
@@ -289,7 +291,7 @@
         title: b ? 'Edit bounty' : 'New bounty', wide: true,
         body: h('div', { class: 'stack' },
           RT.field('Title', title), RT.field('Details', desc),
-          h('div', { class: 'form-grid' }, RT.field('Reward (points)', pts), h('div', { class: 'field' }, h('span', { class: 'label' }, 'What members send'), proof)),
+          h('div', { class: 'form-grid' }, RT.field('Reward (Bites)', pts), h('div', { class: 'field' }, h('span', { class: 'label' }, 'What members send'), proof)),
           h('div', { class: 'form-grid three' }, RT.field('Per person', each, 'How many times one person can claim it.'), RT.field('Total spots', total, 'Leave empty for no limit.'), RT.field('Ends', ends, 'Optional.'))),
         actions: [save]
       });
@@ -314,7 +316,7 @@
     async function delBounty(b, claimCount) {
       const ok = await confirmDialog({
         title: 'Delete “' + b.title + '”?',
-        message: claimCount ? `This also deletes its ${claimCount} claim${claimCount === 1 ? '' : 's'}, and any points from them. To just stop new claims, use Close instead.` : 'No one has claimed it yet.',
+        message: claimCount ? `This also deletes its ${claimCount} claim${claimCount === 1 ? '' : 's'}, and any Bites from them. To just stop new claims, use Close instead.` : 'No one has claimed it yet.',
         confirmText: 'Delete', danger: true
       });
       if (!ok) return;
@@ -454,7 +456,7 @@
     function explain() {
       const g = Math.round(Number(grace.value)) || 30, p = Number(pct.value) || 0, c = Number(cap.value) || 0;
       const sixty = Math.min(c, Math.max(0, 60 - g) * p);
-      sentence.textContent = `After ${g} days without a meeting, members lose ${p}% of their points every day until they come to one. They can never lose more than ${c}% in total. Example: someone with 100 points who skips 60 days loses about ${Math.round(sixty)}.`;
+      sentence.textContent = `After ${g} days without a meeting, members lose ${p}% of their Bites every day until they come to one. They can never lose more than ${c}% in total. Example: someone with 100 points who skips 60 days loses about ${Math.round(sixty)}.`;
     }
     [grace, pct, cap].forEach(i => i.addEventListener('input', explain));
     saveRules.addEventListener('click', () => busy(saveRules, async () => {
@@ -469,7 +471,7 @@
     }));
     async function countLosing() {
       const { data } = await sb.from('member_points').select('decay_points').gt('decay_points', 0);
-      losing.textContent = data ? (data.length ? `Right now ${data.length} member${data.length === 1 ? ' is' : 's are'} losing points to decay.` : 'Right now nobody is losing points to decay.') : '';
+      losing.textContent = data ? (data.length ? `Right now ${data.length} member${data.length === 1 ? ' is' : 's are'} losing Bites to decay.` : 'Right now nobody is losing points to decay.') : '';
     }
     pane.appendChild(h('div', { class: 'card' },
       h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Bite decay'), saveRules),

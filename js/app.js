@@ -12,8 +12,8 @@
   const bottomEl = document.getElementById('bottombar');
   const footerEl = document.getElementById('site-footer');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const MEMBER_ROUTES = new Set(['home', 'academy', 'leaderboard', 'bounties', 'updates', 'chat', 'profile']);
-  const MESH_DIM = { landing: 1, auth: 0.9, welcome: 0.85, reset: 0.85, home: 0.78, academy: 0.72, leaderboard: 0.75, bounties: 0.72, updates: 0.72, profile: 0.75, chat: 0.65, admin: 0.65 };
+  const MEMBER_ROUTES = new Set(['home', 'academy', 'about', 'leaderboard', 'bounties', 'updates', 'chat', 'profile']);
+  const MESH_DIM = { landing: 1, about: 1, auth: 0.9, welcome: 0.85, reset: 0.85, home: 0.78, academy: 0.72, leaderboard: 0.75, bounties: 0.72, updates: 0.72, profile: 0.75, chat: 0.65, admin: 0.65 };
 
   RT.views = RT.views || {};
   let current = null; // { key, target, handle }
@@ -39,7 +39,8 @@
     if (b === 'admin') return S.isAdmin ? { key: 'admin', tab: r.sub || 'checkin' } : { key: 'home' };
     if (b === 'updates') return { key: 'updates', tab: r.sub === 'calendar' ? 'calendar' : 'news' };
     if (b === 'bounties') return { key: 'bounties', tab: r.sub === 'mine' ? 'mine' : 'open' };
-    if (b === 'academy') return { key: 'academy', sub: /^(edges|level\/\d{1,2})$/.test(r.sub) ? r.sub : '' };
+    if (b === 'academy') return { key: 'academy', sub: /^(edges|panel|level\/\d{1,2})$/.test(r.sub) ? r.sub : '' };
+    if (b === 'sharks') return { key: 'academy', sub: 'panel' }; // old link: The Sharks now lives inside the Academy
     if (MEMBER_ROUTES.has(b)) return { key: b };
     return { key: 'home' };
   }
@@ -128,6 +129,7 @@
 
   // Email sign-ups carry their answers (name, grade, card code) in user metadata; use them to finish
   // joining. Google sign-ins skip that form, so they go through the "One more step" screen instead.
+
   async function autoOnboard() {
     const meta = (S.user && S.user.user_metadata) || {};
     if (!meta.rt_signup) return;
@@ -232,6 +234,7 @@
       bottomSeg = segmented({ items: navItems().filter(i => BOTTOM_TABS.includes(i.value)).map(i => (i.value === 'leaderboard' ? Object.assign({}, i, { label: 'Board' }) : i)), value: key, vertical: true, className: 'bottom-seg', ariaLabel: 'Main navigation', onChange: v => go(v) });
       bottomEl.appendChild(bottomSeg);
     } else if (!S.user) {
+      right.appendChild(h('a', { class: 'btn btn-ghost btn-sm hide-sm', href: '#/', onclick: e => { e.preventDefault(); RT.jump('faq'); } }, 'FAQ'));
       right.appendChild(h('a', { class: 'btn btn-ghost btn-sm hide-sm', href: '#/login' }, 'Log in'));
       right.appendChild(h('a', { class: 'btn btn-primary btn-sm hide-sm', href: '#/signup' }, 'Join'));
     }
@@ -242,6 +245,8 @@
     const chip = h('div', { class: 'menu-chip' + (S.user ? '' : ' only-sm') },
       S.me ? h('button', { class: 'chip-avatar', type: 'button', 'aria-label': 'Open menu', onclick: () => menuBtn.click() }, avatar(S.me.name, 30), chipBadge) : null,
       menuBtn);
+    const isLight = theme.get() === 'light';
+    right.appendChild(h('button', { class: 'icon-btn theme-btn', type: 'button', 'aria-label': isLight ? 'Switch to dark mode' : 'Switch to light mode', title: isLight ? 'Dark mode' : 'Light mode', onclick: () => theme.toggle() }, icon(isLight ? 'moon' : 'sun', 18)));
     right.appendChild(chip);
 
     menuPanel = buildMenu();
@@ -250,15 +255,48 @@
   }
   RT.renderShell = renderShell;
 
+  // Light / dark switch. The choice is saved in this browser.
+  const theme = {
+    get: () => (document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark'),
+    set(t) {
+      if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
+      else document.documentElement.removeAttribute('data-theme');
+      try { localStorage.setItem('rt_theme', t); } catch (e) { /* storage blocked */ }
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', t === 'light' ? '#cfdcd3' : '#030705');
+      window.dispatchEvent(new CustomEvent('rt:theme', { detail: t }));
+    },
+    toggle() {
+      theme.set(theme.get() === 'light' ? 'dark' : 'light');
+      renderShell();   // button + menu labels
+      RT.rerender();   // redraws the dotted headings in the new colour
+    }
+  };
+  RT.theme = theme;
+
+  // Top bar slides away while scrolling down and comes back on any scroll up (or near the top).
+  (function () {
+    let lastY = window.scrollY, ticking = false;
+    function update() {
+      ticking = false;
+      const y = window.scrollY;
+      const menuOpen = menuPanel && !menuPanel.hidden;
+      if (y < 80 || y < lastY - 4 || menuOpen) topEl.classList.remove('nav-hidden');
+      else if (y > lastY + 4) topEl.classList.add('nav-hidden');
+      if (Math.abs(y - lastY) > 4) lastY = y;
+    }
+    window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+  })();
+
   function buildMenu() {
     const items = [];
     const link = (href, label, ic, extra) => h('a', { class: 'menu-item', href, onclick: closeMenu }, icon(ic, 18), h('span', { class: 'grow' }, label), extra || null);
     if (S.me) {
       items.push(h('div', { class: 'menu-user' }, avatar(S.me.name, 40),
         h('div', { class: 'min0' }, h('div', { class: 'menu-name' }, S.me.name), h('div', { class: 'muted small ellipsis' }, S.user.email || ''))));
-      items.push(link('#/home', 'Home', 'home'), link('#/academy', 'Academy', 'map'), link('#/leaderboard', 'Leaderboard', 'trophy'), link('#/bounties', 'Bounties', 'target'),
+      items.push(link('#/home', 'Home', 'home'), link('#/academy', 'Academy', 'map'), link('#/academy/panel', 'Pitch the panel', 'fin'), link('#/leaderboard', 'Leaderboard', 'trophy'), link('#/bounties', 'Bounties', 'target'),
         link('#/updates', 'Updates', 'megaphone', S.unseenAnn ? h('span', { class: 'count-pill' }, String(S.unseenAnn)) : null),
-        link('#/updates/calendar', 'Calendar', 'calendar'), link('#/chat', 'Club chat', 'chat'), link('#/profile', 'Profile & badges', 'user'));
+        link('#/updates/calendar', 'Calendar', 'calendar'), link('#/chat', 'Program chat', 'chat'), link('#/about', 'About the program', 'target'), link('#/profile', 'Profile & badges', 'user'));
       if (S.isAdmin) items.push(link('#/admin/checkin', 'Officer tools', 'shield', S.pendingCount ? h('span', { class: 'count-pill' }, String(S.pendingCount)) : null));
       items.push(h('div', { class: 'menu-sep' }));
       items.push(h('button', { class: 'menu-item', type: 'button', onclick: signOut }, icon('logout', 18), h('span', { class: 'grow' }, 'Sign out')));
@@ -266,7 +304,8 @@
       items.push(h('div', { class: 'menu-user' }, avatar(S.user.email, 40), h('div', { class: 'min0' }, h('div', { class: 'menu-name' }, 'Signed in'), h('div', { class: 'muted small ellipsis' }, S.user.email || ''))));
       items.push(h('button', { class: 'menu-item', type: 'button', onclick: signOut }, icon('logout', 18), h('span', { class: 'grow' }, 'Sign out')));
     } else {
-      items.push(link('#/', 'About the club', 'fin'));
+      items.push(link('#/', 'About the program', 'fin'));
+      items.push(h('a', { class: 'menu-item', href: '#/', onclick: e => { e.preventDefault(); closeMenu(); RT.jump('faq'); } }, icon('chat', 18), h('span', { class: 'grow' }, 'FAQ')));
       items.push(link('#/login', 'Log in', 'user'));
       items.push(h('a', { class: 'btn btn-primary btn-block', href: '#/signup', onclick: closeMenu }, 'Join Ridge Tank'));
     }
@@ -332,8 +371,8 @@
       const el = document.getElementById(id);
       if (el) el.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
     };
-    if (current && current.key === 'landing') scroll();
-    else { go(''); setTimeout(scroll, 500); }
+    if (current && (current.key === 'landing' || current.key === 'about')) scroll();
+    else { go(S.me ? 'about' : ''); setTimeout(scroll, 500); }
   }
   RT.jump = jump;
 
@@ -344,13 +383,15 @@
           { label: 'Overview', href: '#/' },
           { label: 'How it works', jump: 'how' },
           { label: 'Tiers', jump: 'tiers' },
-          { label: 'Badges', jump: 'badges' }] },
+          { label: 'Badges', jump: 'badges' },
+          { label: 'FAQ', jump: 'faq' }] },
         { title: 'Members', links: [
           { label: 'Log in', href: '#/login' },
           { label: 'Join Ridge Tank', href: '#/signup' },
           { label: 'Leaderboard', href: '#/leaderboard', lock: true },
-          { label: 'Bounties', href: '#/bounties', lock: true }] },
-        { title: 'Club', links: [
+          { label: 'Bounties', href: '#/bounties', lock: true },
+          { label: 'Program chat', href: '#/chat', lock: true }] },
+        { title: 'Program', links: [
           { label: 'Officers', jump: 'officers' },
           { label: 'Privacy', href: 'privacy.html' }] }
       ];
@@ -361,14 +402,15 @@
         { label: 'Academy', href: '#/academy' },
         { label: 'Leaderboard', href: '#/leaderboard' },
         { label: 'Bounties', href: '#/bounties' }] },
-      { title: 'Club', links: [
+      { title: 'Program', links: [
         { label: 'Updates', href: '#/updates' },
         { label: 'Calendar', href: '#/updates/calendar' },
-        { label: 'Club chat', href: '#/chat' }] },
+        { label: 'About the program', href: '#/about' },
+        { label: 'Program chat', href: '#/chat' }] },
       { title: 'Account', links: [
         { label: 'Profile & badges', href: '#/profile' },
         { label: 'Privacy', href: 'privacy.html' },
-        { label: 'Sign out', onClick: signOut }].concat(S.isAdmin ? [{ label: 'Officer tools', href: '#/admin/checkin' }] : []) }
+        { label: 'Sign out', onClick: signOut }].concat(S.isAdmin ? [{ label: 'Officer tools', href: '#/admin/checkin' }, { label: 'Card requests', href: '#/admin/requests' }] : []) }
     ];
   }
 
@@ -388,7 +430,7 @@
     const brand = anim(0.1, 'f-brand',
       h('a', { class: 'brand', href: S.me ? '#/home' : '#/', 'aria-label': 'Ridge Tank home' },
         h('span', { class: 'brand-mark' }, icon('fin', 18)), h('span', { class: 'brand-name' }, 'Ridge Tank')),
-      h('p', { class: 'f-tag' }, 'Mountain Ridge High School’s Shark Tank club.'),
+      h('p', { class: 'f-tag' }, 'Mountain Ridge’s Shark Tank program. Show up, pitch your ideas, and climb the leaderboard.'),
       social.length ? h('div', { class: 'f-social' }, social.map(s =>
         h('a', { class: 'icon-btn', href: s.href, target: '_blank', rel: 'noopener noreferrer', 'aria-label': s.label }, icon(s.icon || 'link', 18)))) : null);
 
@@ -488,21 +530,27 @@
   RT.gradeSwitch = gradeSwitch;
 
   // ---------------- landing ----------------
+  // Members reach the same page from the About tab.
   RT.views.landing = function (root) {
     const title = h('h1', { class: 'hero-title' }, 'RIDGE TANK');
 
     const hero = h('section', { class: 'hero' },
       h('div', { class: 'hero-inner' },
         title,
-        h('p', { class: 'hero-sub' }, 'Mountain Ridge High School’s Shark Tank club. Pitch your ideas, back other people’s, and climb the leaderboard all year.'),
+        h('p', { class: 'hero-sub' }, 'Mountain Ridge’s Shark Tank program. Pitch your ideas, back other people’s, and climb the leaderboard all year.'),
         h('div', { class: 'hero-cta' },
-          h('a', { class: 'btn btn-primary btn-lg', href: '#/signup' }, 'Join Ridge Tank'),
-          h('a', { class: 'btn btn-ghost btn-lg', href: '#/login' }, 'Log in'))));
+          S.me
+            ? h('a', { class: 'btn btn-primary btn-lg', href: '#/home' }, 'Go to your dashboard')
+            : [h('a', { class: 'btn btn-primary btn-lg', href: '#/signup' }, 'Join Ridge Tank'),
+               h('a', { class: 'btn btn-ghost btn-lg', href: '#/login' }, 'Log in'),
+               h('a', { class: 'btn btn-ghost btn-lg', href: '#faq', onclick: e => { e.preventDefault(); RT.jump('faq'); } }, 'FAQ')]),
+        (!S.me && cfg.promo) ? h('div', { class: 'promo' }, h('strong', null, cfg.promo.title), h('span', null, cfg.promo.text)) : null));
 
     const steps = [
-      ['Tap in', 'Every meeting, tap your Ridge Tank card on the reader at the door. That’s 10 points. No sign-in sheet.'],
-      ['Pitch and invest', 'Teams pitch in the Tank and everyone invests bites in the ideas they believe in. The top 3 earn bonus points.'],
-      ['Climb', 'Points move you up four tiers and unlock badges. Whoever finishes the year on top is King of the Tank.']
+      ['Tap in', 'Every meeting, tap your Ridge Tank card on the reader at the door. That earns you 100 Bites. No sign-in sheet.'],
+      ['Learn with the sharks', 'Tank Academy is a year-long course. Five AI sharks coach you through 40 levels, from your first idea to a full pitch, and you can pitch any idea to the whole panel any time.'],
+      ['Pitch and invest', 'Teams pitch in the Tank and everyone invests their Bites in the ideas they believe in. Back a winner and your money grows.'],
+      ['Climb', 'Your net worth moves you up four tiers and unlocks badges. Bounties pay extra, and your Bites fade if you stop showing up. Whoever finishes the year on top is King of the Tank.']
     ];
     const how = h('section', { class: 'section', id: 'how' },
       h('div', { class: 'section-head' }, h('h2', { class: 'section-title' }, 'How it works')),
@@ -510,20 +558,20 @@
 
     const tierInfo = [
       ['Reef Shark', 0, 'Where everyone starts.'],
-      ['Tiger Shark', 100, 'About 10 meetings in.'],
-      ['Great White', 250, 'Showing up and pitching.'],
-      ['Megalodon', 500, 'A full year, all in.']
+      ['Tiger Shark', 1000, 'About 10 meetings in.'],
+      ['Great White', 2500, 'Showing up and pitching.'],
+      ['Megalodon', 5000, 'A full year, all in.']
     ];
     const tiers = h('section', { class: 'section', id: 'tiers' },
-      h('div', { class: 'section-head' }, h('h2', { class: 'section-title' }, 'Tiers'), h('p', { class: 'section-sub' }, 'Your points decide your tier. Everyone starts as a Reef Shark.')),
+      h('div', { class: 'section-head' }, h('h2', { class: 'section-title' }, 'From Reef Shark to Megalodon.'), h('p', { class: 'section-sub' }, 'Your Bites decide your tier. Everyone starts as a Reef Shark.')),
       h('div', { class: 'tier-track' }, tierInfo.map(([name, pts, d]) =>
         h('div', { class: 'tier-stop ' + RT.tierClass(name) },
-          h('div', { class: 'tier-node' }), h('div', { class: 'tier-pts mono' }, pts + ' points'), h('div', { class: 'tier-name' }, name), h('p', { class: 'muted small' }, d)))));
+          h('div', { class: 'tier-node' }), h('div', { class: 'tier-pts mono' }, pts + ' Bites'), h('div', { class: 'tier-name' }, name), h('p', { class: 'muted small' }, d)))));
 
     const sampleBadges = ['First Bite', 'Feeding Frenzy', 'On the Hunt', 'In the Tank', 'Tank Champion', 'Crowd Favorite', 'Headhunter', 'King of the Tank'];
     const badgeDesc = {
       'First Bite': 'Your first meeting', 'Feeding Frenzy': '10 meetings', 'On the Hunt': '5 meetings in a row',
-      'In the Tank': 'Your first pitch', 'Tank Champion': 'Win a Tank competition', 'Crowd Favorite': 'Most bites in a session',
+      'In the Tank': 'Your first pitch', 'Tank Champion': 'Win a Tank competition', 'Crowd Favorite': 'Most Bites invested in you in a session',
       'Headhunter': 'Bring a friend who joins', 'King of the Tank': '#1 at the end of the year'
     };
     const badges = h('section', { class: 'section', id: 'badges' },
@@ -535,10 +583,35 @@
       h('div', { class: 'card locked-card' },
         h('div', { class: 'locked-copy' },
           h('h3', null, 'The leaderboard is members-only'),
-          h('p', { class: 'muted' }, 'Join or log in to see where you rank, track your badges, and talk in the club chat.')),
+          h('p', { class: 'muted' }, 'Join or log in to see where you rank, track your badges, and talk in the program chat.')),
         h('div', { class: 'row gap-sm wrap' },
           h('a', { class: 'btn btn-primary', href: '#/signup' }, 'Join Ridge Tank'),
           h('a', { class: 'btn btn-ghost', href: '#/login' }, 'Log in'))));
+
+    // Questions new people ask. Answers are in plain words on purpose.
+    const faqs = [
+      ['What is Ridge Tank?', 'A Shark Tank program at ' + cfg.school + '. You pitch ideas, invest in other people’s pitches, and climb a leaderboard all year.'],
+      ['Who can join?', 'Any ' + cfg.school + ' student, grades 9 to 12. Sign up on this site or through the sign-up form.'],
+      ['How do I sign up?', 'Hit “Join Ridge Tank” and fill in your name, grade, email and phone number. It takes under a minute. You can also use the Google sign-up form from the announcement.'],
+      ['Why do you want my phone number?', 'Only to add you to the program group chat (iMessage or WhatsApp) for meeting updates. Only officers can see it.'],
+      ['When is the first meeting?', cfg.nextMeeting + '. Everyone gets their own Ridge Tank card there, and we’ll show you how everything works.'],
+      ['What are the sign-up rewards?', cfg.promo ? cfg.promo.text : 'Ask an officer.'],
+      ['What are Bites?', 'Bites are the program’s money. You earn 100 every time you tap in at a meeting, and more for pitching and for bounties. You can invest them, and your Bites plus your winnings make up your net worth.'],
+      ['How does the card work?', 'You get a Ridge Tank card at the first meeting. Tap it on the reader at the door and you’re checked in. No sign-in sheet.'],
+      ['How do pitching and investing work?', 'Teams pitch in the Tank. During the meeting you put your Bites into the pitches you believe in. First place pays 3x, second 2x, third 1.5x, and a pitch that flops pays half. You don’t have to pitch to invest.'],
+      ['What are bounties?', 'Side challenges the officers post for extra Bites, like bringing a friend. Tap “I did it” and an officer checks it.'],
+      ['Why do my Bites fade?', 'Unspent Bites lose 10% at the start of each month. It keeps the game moving: put your Bites to work instead of sitting on them.'],
+      ['How do I see my Bites and rank?', 'Log in with your email and password. Your Home page shows your Bites, rank, badges and recent activity. If you already have a card, enter the code an officer gives you when you sign up.'],
+      ['What are tiers and badges?', 'Your net worth moves you through four tiers: Reef Shark, Tiger Shark, Great White and Megalodon. Badges are rewards for things like showing up, pitching and bringing friends.'],
+      ['What if I lose my card?', 'Tell an officer. They’ll link a new card to you and the old one stops working.'],
+      ['Who can see my information?', 'Members see names, Bites and tiers on the leaderboard. Officers see a bit more so they can run check-in. Read the full details on the privacy page.']
+    ];
+    const faq = h('section', { class: 'section', id: 'faq' },
+      h('div', { class: 'section-head' }, h('p', { class: 'eyebrow' }, 'FAQ'), h('h2', { class: 'section-title' }, 'Questions, answered.')),
+      h('div', { class: 'faq-list' }, faqs.map(([q, a]) => h('details', { class: 'faq-item' },
+        h('summary', null, h('span', null, q), icon('chevronDown', 18)),
+        h('p', { class: 'muted' }, a)))),
+      h('p', { class: 'muted small faq-foot' }, 'Still stuck? Ask any officer at a meeting, or read the ', h('a', { href: 'privacy.html' }, 'privacy page'), '.'));
 
     const officers = h('section', { class: 'section', id: 'officers' },
       h('div', { class: 'section-head' }, h('h2', { class: 'section-title' }, 'Officers')),
@@ -546,9 +619,11 @@
         h('div', { class: 'officer' }, avatar(o.name, 48),
           h('div', null, h('div', { class: 'officer-name' }, o.name), h('div', { class: 'muted small' }, o.role + (o.note ? ' · ' + o.note : '')))))));
 
-    root.append(hero, how, tiers, badges, locked, officers);
+    root.append(hero, how, tiers, badges, ...(S.me ? [] : [locked]), faq, officers);
     return {};
   };
+
+  RT.views.about = RT.views.landing;
 
   // ---------------- log in / sign up ----------------
   RT.views.auth = function (root, t) {
@@ -570,7 +645,7 @@
       mode = m;
       seg.setValue(m);
       title.textContent = m === 'login' ? 'Log in to Ridge Tank' : 'Join Ridge Tank';
-      sub.textContent = m === 'login' ? 'Log in to see your points, badges, and the leaderboard.' : 'Takes a minute. Your physical card gets made after you sign up.';
+      sub.textContent = m === 'login' ? 'Log in to see your Bites, badges, and the leaderboard.' : 'Takes a minute. Your physical card gets made after you sign up.';
       const next = m === 'login' ? loginForm() : signupForm();
       next.classList.add('form-in');
       clear(formHost).appendChild(next);
@@ -632,7 +707,7 @@
         field('Password', pw),
         h('div', { class: 'field' }, h('span', { class: 'label' }, 'Already have a Ridge Tank card?'), hasCard),
         codeField, refField,
-        h('label', { class: 'check-row' }, agree, h('span', null, 'I understand my name and points will show on the club leaderboard, which only members can see.')),
+        h('label', { class: 'check-row' }, agree, h('span', null, 'I understand my name and Bites will show on the program leaderboard, which only members can see.')),
         err, submit,
         h('p', { class: 'muted small center' }, 'Already joined? ', h('a', { href: '#/login' }, 'Log in')));
 
@@ -715,12 +790,11 @@
     // Email sign-ups already ticked this box on the sign-up form; Google sign-ins see it here for the first time.
     const agree = h('input', { type: 'checkbox', class: 'check', checked: !!meta.rt_signup });
     const code = h('input', { class: 'input mono', type: 'text', placeholder: 'e.g. Falcon4821', value: meta.card_code || '', maxlength: 20, spellcheck: false });
-
     const newPane = h('div', { class: 'stack' },
       field('Name', name),
       h('div', { class: 'field' }, h('span', { class: 'label' }, 'Grade'), grade),
       field('Invited by a member?', ref, 'Enter their code so they get credit.'),
-      h('label', { class: 'check-row' }, agree, h('span', null, 'I understand my name and points will show on the members-only leaderboard.')));
+      h('label', { class: 'check-row' }, agree, h('span', null, 'I understand my name and Bites will show on the members-only leaderboard.')));
     const cardPane = h('div', { class: 'stack' }, field('Card code', code, 'It’s printed on your card. Lost it? Ask an officer.'));
     const phoneF = RT.phoneFields({ phone: meta.phone || '', whatsapp: !!meta.whatsapp });
 
@@ -731,7 +805,7 @@
       mode = m;
       clear(panes).appendChild(m === 'new' ? newPane : cardPane);
       panes.firstChild.classList.add('form-in');
-      submit.textContent = m === 'new' ? 'Join the club' : 'Link my card';
+      submit.textContent = m === 'new' ? 'Join the program' : 'Link my card';
     }
     const seg = segmented({ items: [{ value: 'new', label: 'I’m new' }, { value: 'card', label: 'I have a card' }], value: mode, className: 'seg-fill', onChange: show });
 

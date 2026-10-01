@@ -117,7 +117,7 @@
         start: m.start_time, end: m.end_time, location: m.location, description: m.description
       }));
       S.bounties.filter(b => b.active && b.ends_at).forEach(b => add(localDateISO(new Date(b.ends_at)), {
-        type: 'deadline', title: 'Bounty ends: ' + b.title, description: `+${b.points} points. Claim it before it closes.`
+        type: 'deadline', title: 'Bounty ends: ' + b.title, description: `+${b.points} Bites. Claim it before it closes.`
       }));
       map.forEach(list => list.sort((a, b) => String(a.start || '99').localeCompare(String(b.start || '99'))));
       return map;

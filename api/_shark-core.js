@@ -1,4 +1,4 @@
-// The AI sharks. Shared by tools/dev-server.mjs (this computer) and the Supabase Edge Function (live site).
+// The Tank Academy sharks: builds the Groq request for one shark's reply or a round's score. Used by api/shark.js.
 // The browser never sees the Groq key: it sends the round so far, this code asks Groq, and only the reply comes back.
 // Only the round's text is sent to Groq. No names, emails or member ids.
 

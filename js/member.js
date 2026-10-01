@@ -36,7 +36,7 @@
       return { tone: 'burg', text: `Bite decay is on. You lose about ${dc.pct}% a day until you come to a meeting` + (dc.lost ? ` (${dc.lost} lost so far).` : '.') };
     }
     if (dc.left <= 14) {
-      return { tone: dc.left <= 5 ? 'burg' : 'warn', text: `Come to a meeting within ${dc.left} day${dc.left === 1 ? '' : 's'} so your points don’t start to decay.` };
+      return { tone: dc.left <= 5 ? 'burg' : 'warn', text: `Come to a meeting within ${dc.left} day${dc.left === 1 ? '' : 's'} so your Bites don’t start to fade.` };
     }
     return null;
   }
@@ -73,7 +73,7 @@
 
     loadMine().then(d => {
       const { cur, next } = RT.tierFor(d.mine.total_points, S.tiers);
-      subLine.textContent = `${cur ? cur.name : 'Reef Shark'} · ${ordinal(d.mine.rank)} of ${S.board.length} on the leaderboard · ${d.mine.total_points} points`;
+      subLine.textContent = `${cur ? cur.name : 'Reef Shark'} · ${ordinal(d.mine.rank)} of ${S.board.length} on the leaderboard · ${d.mine.total_points} Bites`;
       renderPoints(cPoints, d, cur, next);
       renderCardStatus(cCard);
       renderNext(cNext);
@@ -82,6 +82,12 @@
       renderNewsMini(cNews);
       renderBadgesMini(cBadges, d);
       renderBoardMini(cBoard);
+      // The invest card, once the market database update (migration_v5_market.sql) is in.
+      // While investing is open it goes to the top of the page, because that's what people need during a meeting.
+      RT.market.memberCards(d).then(cards => {
+        if (!cards || !grid.isConnected) return;
+        cards.forEach(c => { if (c.dataset.open === '1') grid.insertBefore(c, grid.firstChild); else grid.appendChild(c); });
+      }).catch(() => {});
     }).catch(e => toast(friendly(e), 'error'));
     return {};
   };
@@ -115,8 +121,8 @@
     const into = next ? d.mine.total_points - (cur ? cur.point_threshold : 0) : 1;
     el.classList.add('points-card');
     RT.put(clear(el),
-      h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Your points'), tierChip(cur && cur.name)),
-      h('div', { class: 'points-row' }, num, h('span', { class: 'pts-unit' }, 'pts'),
+      h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Your Bites'), tierChip(cur && cur.name)),
+      h('div', { class: 'points-row' }, num, h('span', { class: 'pts-unit' }, 'Bites'),
         h('span', { class: 'rank-pill' }, h('b', null, ordinal(d.mine.rank)), ' of ' + S.board.length)),
       h('div', { class: 'tier-progress' },
         progressBar(into, span, 'bar-lg'),
@@ -155,7 +161,7 @@
         h('div', { class: 'nfc-foot mono' }, linked ? 'Member card' : 'Being made')),
       h('ol', { class: 'steps' }, steps.map(([label, doneStep]) => h('li', { class: doneStep ? 'done' : '' }, h('span', { class: 'step-dot' }, doneStep ? icon('check', 12) : null), label))),
       h('p', { class: 'muted small' }, linked
-        ? 'Tap your card on the reader when you walk in. Points show up here right away.'
+        ? 'Tap your card on the reader when you walk in. Your Bites show up here right away.'
         : 'An officer is making your card. Until you have it, they can check you in by name.'));
   }
 
@@ -201,7 +207,7 @@
 
     clear(el).appendChild(h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Recent activity'), h('span', { class: 'muted small' }, items.length ? items.length + ' total' : '')));
     if (!items.length) {
-      el.appendChild(h('div', { class: 'empty-mini' }, icon('nfc', 22, 'muted'), h('p', { class: 'muted' }, 'Nothing yet. Tap your card at the next meeting for your first 10 points.')));
+      el.appendChild(h('div', { class: 'empty-mini' }, icon('nfc', 22, 'muted'), h('p', { class: 'muted' }, 'Nothing yet. Tap your card at the next meeting for your first 100 Bites.')));
       return;
     }
     el.appendChild(h('ul', { class: 'timeline' }, items.slice(0, 6).map(it =>
@@ -233,7 +239,7 @@
     const rows = [...top];
     if (mineIdx >= 5) rows.push(S.board[mineIdx]);
     clear(el).appendChild(h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Leaderboard'), h('a', { class: 'link-sm', href: '#/leaderboard' }, 'Full list', icon('chevronRight', 14))));
-    if (!rows.length) { el.appendChild(h('p', { class: 'muted' }, 'No points yet this season.')); return; }
+    if (!rows.length) { el.appendChild(h('p', { class: 'muted' }, 'No Bites yet this season.')); return; }
     el.appendChild(h('ol', { class: 'mini-board' }, rows.map((r, i) =>
       h('li', { class: (r.member_id === S.me.id ? 'me' : '') + (i === 5 ? ' gap-above' : '') },
         h('span', { class: 'mono rank' }, String(r.rank)), avatar(r.name, 28), h('span', { class: 'grow ellipsis' }, r.name),
@@ -252,7 +258,7 @@
     let acRows = null;
     if (RT.academyBoard) {
       tools.insertBefore(segmented({
-        items: [{ value: 'points', label: 'Points' }, { value: 'academy', label: 'Academy' }],
+        items: [{ value: 'points', label: 'Bites' }, { value: 'academy', label: 'Academy' }],
         value: 'points', className: 'seg-sm', ariaLabel: 'Which board',
         onChange: v => {
           mode = v;
@@ -341,7 +347,7 @@
         place === 1 ? h('span', { class: 'crown' }, icon('crown', 22)) : null,
         h('div', { class: 'podium-avatar' }, avatar(r.name, place === 1 ? 76 : 60)),
         h('div', { class: 'podium-name ellipsis' }, r.name, me ? h('span', { class: 'you-tag' }, 'You') : null),
-        h('div', { class: 'podium-pts mono' }, String(r.total_points), h('span', { class: 'muted' }, ' pts')),
+        h('div', { class: 'podium-pts mono' }, String(r.total_points), h('span', { class: 'muted' }, ' Bites')),
         tierChip(r.current_tier),
         h('div', { class: 'podium-base' }, h('span', { class: 'mono' }, ordinal(place))));
     }
@@ -353,7 +359,7 @@
         avatar(r.name, 36),
         h('div', { class: 'grow min0' }, h('div', { class: 'ellipsis name' }, r.name, me ? h('span', { class: 'you-tag' }, 'You') : null)),
         tierChip(r.current_tier),
-        h('span', { class: 'pts mono' }, String(r.total_points), h('span', { class: 'muted' }, ' pts')));
+        h('span', { class: 'pts mono' }, String(r.total_points), h('span', { class: 'muted' }, ' Bites')));
     }
 
     search.addEventListener('input', RT.debounce(draw, 120));
@@ -404,7 +410,7 @@
       refCount.textContent = String(d.stats.referrals);
 
       RT.put(clear(statsCard),
-        h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Stats'), h('span', { class: 'mono muted small' }, d.mine.total_points + ' pts')),
+        h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Stats'), h('span', { class: 'mono muted small' }, d.mine.total_points + ' Bites')),
         h('dl', { class: 'stat-list' },
           statRow('Meetings attended', d.stats.attendance),
           statRow('Last meeting', d.decay.last ? fmtDate(d.decay.last, { month: 'short', day: 'numeric' }) : '—'),
@@ -425,7 +431,7 @@
           const isCur = cur && cur.id === t.id;
           return h('li', { class: (reached ? 'reached ' : '') + (isCur ? 'current' : ''), 'data-tier': RT.tierClass(t.name).replace('tier-', '') },
             h('span', { class: 'ladder-node' }), h('div', { class: 'grow min0' }, h('div', { class: 'ladder-name' }, t.name), h('div', { class: 'muted small' }, t.perks || '')),
-            h('span', { class: 'mono small nowrap' }, t.point_threshold + ' pts'));
+            h('span', { class: 'mono small nowrap' }, t.point_threshold + ' Bites'));
         })));
 
       renderBadges(badgesWrap, d.progress);

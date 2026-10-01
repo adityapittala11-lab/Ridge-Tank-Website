@@ -288,10 +288,10 @@
     async function checkIn(m) {
       if (!A.meetingId) { flash('err', 'No meeting open', 'Start today’s meeting first.'); return; }
       const { data, error } = await sb.from('attendance').insert({ member_id: m.id, meeting_id: A.meetingId, points_awarded: cfg.points.attendance }).select().single();
-      if (error && error.code === '23505') { flash('dup', `${m.name} is already checked in`, 'No extra points added.'); return; }
+      if (error && error.code === '23505') { flash('dup', `${m.name} is already checked in`, 'No extra Bites added.'); return; }
       if (error) { flash('err', 'Check-in failed', friendly(error)); return; }
       A.attendance.push(data);
-      flash('ok', m.name, `+${cfg.points.attendance} points · checked in`);
+      flash('ok', m.name, `+${cfg.points.attendance} Bites · checked in`);
       if (window.RTMesh) window.RTMesh.pulse(0.3, 0.5, 1.6);
       drawList();
     }
@@ -308,7 +308,7 @@
     }
 
     async function undo(a) {
-      const ok = await confirmDialog({ title: 'Undo check-in?', message: `${nameOf(a.member_id)} loses the ${a.points_awarded} points from this meeting.`, confirmText: 'Undo', danger: true });
+      const ok = await confirmDialog({ title: 'Undo check-in?', message: `${nameOf(a.member_id)} loses the ${a.points_awarded} Bites from this meeting.`, confirmText: 'Undo', danger: true });
       if (!ok) return;
       const { error } = await sb.from('attendance').delete().eq('id', a.id);
       if (error) { toast(friendly(error), 'error'); return; }
@@ -441,12 +441,18 @@
   function tabMembers(pane) {
     const search = h('input', { class: 'input', type: 'search', placeholder: 'Search members', autocomplete: 'off' });
     const addBtn = h('button', { class: 'btn btn-primary btn-sm', type: 'button', onclick: bulkAdd }, icon('plus', 16), 'Add members');
+    // For adding everyone to the group chat: one "Name, number" per line.
+    const phonesBtn = h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => {
+      const rows = A.members.filter(m => m.phone);
+      if (!rows.length) { toast('No phone numbers yet.', 'info'); return; }
+      RT.copyText(rows.map(m => m.name + ', ' + m.phone).join('\n'), rows.length + ' phone numbers copied');
+    } }, icon('copy', 16), 'Copy phone numbers');
     const linked = A.members.filter(m => m.card_status === 'linked').length;
     const withAcct = A.members.filter(m => m.user_id).length;
     pane.append(
       h('div', { class: 'stat-strip' },
         stripStat('Members', A.members.length), stripStat('Cards linked', linked), stripStat('Waiting on card', A.members.length - linked), stripStat('Have accounts', withAcct)),
-      h('div', { class: 'toolbar' }, h('div', { class: 'input-icon grow' }, icon('search', 16), search), addBtn));
+      h('div', { class: 'toolbar' }, h('div', { class: 'input-icon grow' }, icon('search', 16), search), phonesBtn, addBtn));
     const table = h('div', { class: 'card table-card' });
     pane.appendChild(table);
 
@@ -455,8 +461,8 @@
       const digits = q.replace(/\D/g, '');
       const rows = A.members.filter(m => !q || m.name.toLowerCase().includes(q) || (m.email || '').toLowerCase().includes(q) || (m.login_code || '').toLowerCase().includes(q) || (digits.length >= 3 && (m.phone || '').includes(digits)));
       clear(table);
-      table.appendChild(h('div', { class: 'trow thead' }, h('span', null, 'Name'), h('span', null, 'Grade'), h('span', null, 'Points'), h('span', null, 'Card'), h('span', null, 'Account'), h('span')));
-      if (!rows.length) { table.appendChild(h('div', { class: 'empty small' }, h('p', { class: 'muted' }, A.members.length ? 'No matches.' : 'No members yet. Add the club roster to get started.'))); return; }
+      table.appendChild(h('div', { class: 'trow thead' }, h('span', null, 'Name'), h('span', null, 'Grade'), h('span', null, 'Bites'), h('span', null, 'Card'), h('span', null, 'Account'), h('span')));
+      if (!rows.length) { table.appendChild(h('div', { class: 'empty small' }, h('p', { class: 'muted' }, A.members.length ? 'No matches.' : 'No members yet. Add the roster to get started.'))); return; }
       rows.forEach(m => table.appendChild(h('button', { class: 'trow', type: 'button', onclick: () => memberModal(m, draw) },
         h('span', { class: 'cell-name' }, avatar(m.name, 30), h('span', { class: 'ellipsis' }, m.name)),
         h('span', { class: 'muted' }, m.grade ? m.grade + 'th' : '—'),
@@ -578,6 +584,7 @@
           h('div', { class: 'row gap-sm' },
             h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => RT.copyText(m.login_code, 'Code copied') }, icon('copy', 14), 'Copy'),
             h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: newCode }, icon('refresh', 14), 'New code'))),
+        m.phone ? h('p', { class: 'small' }, 'Phone: ', h('a', { href: 'tel:' + m.phone, class: 'mono' }, m.phone)) : null,
         h('p', { class: 'muted small' }, m.user_id ? 'Their account is linked' + (m.email ? ' (' + m.email + ')' : '') + '.' : 'No account yet. They enter this code when they sign up.'));
     }
     async function unlinkCard() {
@@ -617,7 +624,7 @@
     const delBtn = h('button', { class: 'btn btn-danger btn-sm', type: 'button' }, icon('trash', 14), 'Delete member');
     const md = modal({
       title: m.name,
-      subtitle: `${pointsOf(m.id)} points · ${attended} meeting${attended === 1 ? '' : 's'} · joined ${fmtDate(m.join_date || m.created_at, { month: 'short', day: 'numeric', year: 'numeric' })}`,
+      subtitle: `${pointsOf(m.id)} Bites · ${attended} meeting${attended === 1 ? '' : 's'} · joined ${fmtDate(m.join_date || m.created_at, { month: 'short', day: 'numeric', year: 'numeric' })}`,
       wide: true,
       body: h('div', { class: 'stack' },
         h('div', { class: 'detail-box' }, h('div', { class: 'card-label' }, 'Profile'),
@@ -672,6 +679,15 @@
     const sel = meetingSelect(() => { drawPitches(); drawVotes(); });
     pane.appendChild(h('div', { class: 'card meeting-bar' }, h('div', { class: 'grow min0' }, h('span', { class: 'card-label' }, 'Meeting'), sel)));
     if (!A.meetings.length) { pane.appendChild(h('div', { class: 'card empty' }, h('p', { class: 'muted' }, 'Add a meeting first (Meetings tab).'))); return null; }
+    // Investing / final-results switches (only once the v4 database update has been run).
+    const switchHost = h('div');
+    pane.appendChild(switchHost);
+    const drawSwitches = () => {
+      clear(switchHost);
+      if (RT.market && RT.market.live && A.meetings.some(x => 'investing_open' in x)) switchHost.appendChild(RT.market.meetingSwitches(A.meetingId));
+    };
+    drawSwitches();
+    sel.addEventListener('change', drawSwitches);
 
     // Pitch results
     let pitcher = null;
@@ -734,7 +750,7 @@
         h('span', { class: 'grow ellipsis' }, nameOf(p.member_id)),
         h('span', { class: 'mono accent' }, '+' + p.points_awarded),
         h('button', { class: 'icon-btn sm', type: 'button', 'aria-label': 'Remove result', onclick: async () => {
-          if (!(await confirmDialog({ title: 'Remove this result?', message: `${nameOf(p.member_id)} loses ${p.points_awarded} points.`, confirmText: 'Remove', danger: true }))) return;
+          if (!(await confirmDialog({ title: 'Remove this result?', message: `${nameOf(p.member_id)} loses ${p.points_awarded} Bites.`, confirmText: 'Remove', danger: true }))) return;
           const { error } = await sb.from('pitch_entries').delete().eq('id', p.id);
           if (error) { toast(friendly(error), 'error'); return; }
           A.pitches = A.pitches.filter(x => x.id !== p.id);

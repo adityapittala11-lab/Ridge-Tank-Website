@@ -78,6 +78,8 @@
     mail: '<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 6.5 8.5 6.5 8.5-6.5"/>',
     link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
     fin: '<path d="M2.5 18.5c3.4-.7 6.4-3.2 8.2-7.4.9-2.2 1.4-4.6 1.6-7.1 3.2 3.9 6.1 9.2 9.2 14.5"/><path d="M2.5 18.5h19"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/>',
+    moon: '<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/>',
     target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.8"/>',
     sparkle: '<path d="M12 3.5 13.8 10 20.5 12l-6.7 2L12 20.5 10.2 14 3.5 12l6.7-2Z"/>',
     info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5"/><path d="M12 7.8v.2"/>',
@@ -196,7 +198,10 @@
   // items: [{ value, label, icon?, badge? }]
   function segmented({ items, value, onChange, className = '', ariaLabel = 'Switch view', vertical = false }) {
     const ind = h('span', { class: 'seg-ind', 'aria-hidden': 'true' });
-    const wrap = h('div', { class: 'seg ' + className + (vertical ? ' seg-vertical' : ''), role: 'tablist', 'aria-label': ariaLabel }, ind);
+    // Hover highlight that slides to whichever tab the pointer is over (desktop only).
+    const hov = h('span', { class: 'seg-hover', 'aria-hidden': 'true' });
+    const wrap = h('div', { class: 'seg ' + className + (vertical ? ' seg-vertical' : ''), role: 'tablist', 'aria-label': ariaLabel }, hov, ind);
+    wrap.addEventListener('pointerleave', () => { hov.style.opacity = '0'; });
     const buttons = new Map();
     let current = value;
     let placed = false;
@@ -210,6 +215,15 @@
         onclick: () => select(it.value, true)
       }, it.icon ? icon(it.icon, vertical ? 20 : 16) : null, h('span', { class: 'seg-label' }, it.label), badge);
       b._badge = badge;
+      b.addEventListener('pointerenter', e => {
+        if (e.pointerType === 'touch') return;
+        if (hov.style.opacity !== '1') hov.classList.add('no-anim');
+        hov.style.left = b.offsetLeft + 'px';
+        hov.style.width = b.offsetWidth + 'px';
+        void hov.offsetWidth;
+        hov.classList.remove('no-anim');
+        hov.style.opacity = '1';
+      });
       buttons.set(it.value, b);
       wrap.appendChild(b);
     });

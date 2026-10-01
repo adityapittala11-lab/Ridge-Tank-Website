@@ -189,16 +189,17 @@
     const svg = (name === 'Cam' || name === 'Sully' || name === 'Dana') ? roleSvg(name) : sharkSvg(AVC[name] ? name : 'Great White');
     return h('span', { class: 'ac-av', style: { width: size + 'px', height: size + 'px' }, html: svg });
   }
+  RT.sharkPortrait = portrait; // the "Pitch the panel" tab (js/sharks.js) draws the same sharks
 
   // ---------------- the Academy page ----------------
   let redraw = null; // set by the open Academy view so a finished round can refresh it
 
   RT.views.academy = function (root, t) {
     let sub = t.sub || '';
-    const tabFor = s => (s === 'edges' ? 'edges' : 'year');
+    const tabFor = s => (s === 'edges' || s === 'panel' ? s : 'year');
     const seg = segmented({
-      items: [{ value: 'year', label: 'Your year' }, { value: 'edges', label: 'Edges and the Crown' }],
-      value: tabFor(sub), ariaLabel: 'Academy', onChange: v => RT.go(v === 'edges' ? 'academy/edges' : 'academy')
+      items: [{ value: 'year', label: 'Your year' }, { value: 'panel', label: 'Pitch the panel' }, { value: 'edges', label: 'Edges and the Crown' }],
+      value: tabFor(sub), ariaLabel: 'Academy', onChange: v => RT.go(v === 'year' ? 'academy' : 'academy/' + v)
     });
     const subLine = h('span', null, 'Loading your year');
     root.appendChild(RT.pageHead('Academy', subLine, seg));
@@ -213,6 +214,7 @@
       const m = /^level\/(\d+)$/.exec(sub);
       if (m && C.levels[+m[1]]) drawLevel(body, +m[1], p);
       else if (sub === 'edges') drawEdges(body, p);
+      else if (sub === 'panel' && RT.sharksPanel) RT.sharksPanel(body);
       else drawYear(body, p);
     }
     redraw = draw;

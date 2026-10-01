@@ -244,7 +244,9 @@
   function stop() { cancelAnimationFrame(raf); raf = 0; }
   document.addEventListener('visibilitychange', () => (document.hidden ? stop() : run()));
   canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); stop(); });
-  run();
+  // Light mode hides the canvas, so stop drawing it.
+  window.addEventListener('rt:theme', e => (e.detail === 'light' ? stop() : run()));
+  if (document.documentElement.getAttribute('data-theme') !== 'light') run();
   requestAnimationFrame(() => canvas.classList.add('ready'));
 
   window.RTMesh = {

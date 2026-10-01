@@ -157,8 +157,23 @@
     async meetings() {
       return check(await sb.from('meetings').select('*').order('meeting_date', { ascending: false }));
     },
+    // Net worth leaderboard (supabase/migration_v4.sql). Falls back to the old view until that's been run.
     async board() {
+      const r = await sb.from('member_standings').select('member_id, name, total_points, current_tier, earned, gain, locked, available');
+      if (!r.error) { RT.market = Object.assign(RT.market || {}, { live: true }); return r.data; }
+      RT.market = Object.assign(RT.market || {}, { live: false });
       return check(await sb.from('member_tiers').select('member_id, name, total_points, current_tier'));
+    },
+    async openMeeting() {
+      const r = await sb.from('meetings').select('*').eq('investing_open', true).order('meeting_date', { ascending: false }).limit(1);
+      return r.error ? null : (r.data && r.data[0]) || null;
+    },
+    async myStakes(memberId) {
+      const r = await sb.from('vote_values').select('*').eq('from_member_id', memberId);
+      return r.error ? [] : r.data;
+    },
+    async invest(toId, amount) {
+      return check(await sb.rpc('invest', { p_to: toId, p_amount: amount }));
     },
     async directory() {
       return check(await sb.from('member_directory').select('id, name'));

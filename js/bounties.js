@@ -47,7 +47,7 @@
       items: [{ value: 'open', label: 'Open' }, { value: 'mine', label: 'My claims' }],
       value: tab, ariaLabel: 'Bounties', onChange: v => RT.go('bounties' + (v === 'mine' ? '/mine' : ''))
     });
-    root.appendChild(RT.pageHead('Bounties', 'Finish a challenge, earn bonus points. Officers check each one before the points land.', seg));
+    root.appendChild(RT.pageHead('Bounties', 'Finish a challenge, earn bonus Bites. Officers check each one before the Bites land.', seg));
     const body = h('div', { class: 'reveal', style: { '--i': 1 } });
     root.appendChild(body);
 
@@ -82,7 +82,7 @@
       }
       return h('article', { class: 'card bounty-card' + (info.open ? '' : ' is-done'), style: { '--i': Math.min(i, 8) } },
         h('div', { class: 'bounty-top' },
-          h('span', { class: 'reward mono' }, '+' + b.points, h('small', null, ' pts')),
+          h('span', { class: 'reward mono' }, '+' + b.points, h('small', null, ' Bites')),
           h('span', { class: 'tag sm muted' }, PROOF[b.proof])),
         h('h3', null, b.title),
         b.description ? h('p', { class: 'muted' }, b.description) : null,
@@ -101,7 +101,7 @@
       const won = claims.filter(c => c.status === 'approved').reduce((s, c) => s + (Number(c.points_awarded) || 0), 0);
       const waiting = claims.filter(c => c.status === 'pending').length;
       body.appendChild(h('div', { class: 'stat-strip' },
-        strip('Points from bounties', '+' + won), strip('Approved', claims.filter(c => c.status === 'approved').length),
+        strip('Bites from bounties', '+' + won), strip('Approved', claims.filter(c => c.status === 'approved').length),
         strip('Waiting', waiting), strip('Not approved', claims.filter(c => c.status === 'rejected').length)));
       body.appendChild(h('div', { class: 'card claim-list' }, claims.map(c => {
         const b = S.bounties.find(x => x.id === c.bounty_id);
@@ -125,11 +125,11 @@
       const send = h('button', { class: 'btn btn-primary', type: 'button' }, 'Send to officers');
       const m = modal({
         title: b.title,
-        subtitle: `+${b.points} points if approved`,
+        subtitle: `+${b.points} Bites if approved`,
         body: h('div', { class: 'stack' },
           b.description ? h('p', { class: 'muted' }, b.description) : null,
           RT.field(b.proof === 'link' ? 'Link' : needs ? 'Your note' : 'Note (optional)', input),
-          h('p', { class: 'muted small' }, 'Officers check every claim. Points show up on your profile once it’s approved.')),
+          h('p', { class: 'muted small' }, 'Officers check every claim. Bites show up on your profile once it’s approved.')),
         actions: [send]
       });
       send.addEventListener('click', () => busy(send, async () => {

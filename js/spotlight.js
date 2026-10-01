@@ -7,11 +7,14 @@
 (function () {
   const BOXES = [
     '.card:not(.chat)', '.badge-tile', '.badge-chip', '.mini-stat', '.strip-stat',
-    '.podium-slot', '.detail-box', '.next-badge', '.ref-stat', '.composer'
+    '.podium-slot', '.detail-box', '.next-badge', '.ref-stat', '.composer',
+    // things you can click
+    '.btn', '.icon-btn', '.menu-btn', '.menu-item', '.menu-chip', '.seg', '.seg-btn', '.link-btn',
+    '.picker-item', '.quick-item', '.trow', '.board-row', '.tier-chip', '.f-link', '.admin-nav a', '.admin-nav button', '.check-row', '.send-btn'
   ].join(',');
-  const FIELDS = 'input.input, textarea.input'; // text boxes people type in
+  const FIELDS = 'input.input, textarea.input, select'; // text boxes people type in
   const REACH = 140;    // px: how close the pointer has to be for a neighbor's border to react
-  const NEIGHBOR = 0.5; // strongest reaction for a box the pointer is next to (1 = pointer inside)
+  const NEIGHBOR = 0.8; // strongest reaction for a box the pointer is next to (1 = pointer inside)
 
   const root = document.documentElement;
   let px = -1, py = -1, raf = 0;
@@ -27,7 +30,13 @@
 
   function collect() {
     const out = [];
-    document.querySelectorAll(BOXES).forEach(el => { el.classList.add('spot'); out.push(el); });
+    document.querySelectorAll(BOXES).forEach(el => {
+      if (!el.classList.contains('spot')) {
+        el.classList.add('spot');
+        if (getComputedStyle(el).position === 'static') el.classList.add('spot-rel'); // glow layers need a positioned box
+      }
+      out.push(el);
+    });
     document.querySelectorAll(FIELDS).forEach(el => { el.classList.add('spot-field'); out.push(el); });
     return out;
   }
@@ -38,6 +47,7 @@
     // Stay out of the way of the intro and of dialogs (their backdrop covers the page).
     if (root.classList.contains('intro-running') || document.body.classList.contains('modal-open')) { release(); return; }
 
+    root.style.setProperty('--xp', Math.min(1, Math.max(0, px / window.innerWidth)).toFixed(3));
     const els = collect();
     const rects = els.map(el => el.getBoundingClientRect()); // read everything first, then write
 
@@ -54,7 +64,7 @@
         el.style.setProperty('--mx', (px - r.left).toFixed(1) + 'px');
         el.style.setProperty('--my', (py - r.top).toFixed(1) + 'px');
         // Bigger boxes get a wider, softer glow.
-        el.style.setProperty('--sr', Math.round(Math.max(130, Math.min(300, Math.max(r.width, r.height) * 0.5))) + 'px');
+        el.style.setProperty('--sr', Math.round(Math.max(180, Math.min(420, Math.max(r.width, r.height) * 0.7))) + 'px');
         el.style.setProperty('--o', o.toFixed(3));
         lit.add(el);
       } else if (lit.has(el)) {
