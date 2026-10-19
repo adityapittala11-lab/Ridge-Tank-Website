@@ -12,10 +12,10 @@
   const save = m => { try { localStorage.setItem(KEY(), JSON.stringify(m.slice(-60))); } catch (e) { /* ignore */ } };
 
   const STARTERS = [
-    'Write an email to teachers asking them to mention our next meeting in class.',
-    'Write a thank-you email to our guest speaker after the meeting.',
-    'Only 8 people came last time. How do we get 30 to the next meeting?',
-    'Plan a 45-minute meeting agenda for our next unit.'
+    'Write a professional email asking for a meeting next week.',
+    'Help me plan out my week.',
+    'Explain this topic to me simply:',
+    'Fix the grammar and tone of this message:'
   ];
 
   // Light formatting for replies: paragraphs, bullet lines, **bold**. Everything is escaped first.
@@ -68,8 +68,8 @@
 
     const card = h('section', { class: 'card as-card' },
       h('div', { class: 'card-head' },
-        h('div', null, h('span', { class: 'card-label' }, 'Officer Assistant'),
-          h('p', { class: 'muted small' }, 'Solve problems, plan meetings and write emails. Only officers can see this. Chats stay on this device.')),
+        h('div', null, h('span', { class: 'card-label' }, 'Assistant'),
+          h('p', { class: 'muted small' }, 'Ask anything: problems, questions, emails. Only officers can see this. Chats stay on this device.')),
         clearBtn),
       list, composer);
     pane.appendChild(card);
