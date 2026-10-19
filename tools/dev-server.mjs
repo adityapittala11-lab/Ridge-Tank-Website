@@ -1,5 +1,5 @@
 // Local server for testing: serves the site at http://localhost:8934 and runs the same AI functions the live site uses
-// (api/shark.js and api/sharks.js) with the Groq key from .env.local. Start it with:  node tools/dev-server.mjs
+// (api/shark.js, api/sharks.js and api/db.js) with the Groq key from .env.local. Start it with:  node tools/dev-server.mjs
 // The key never leaves this computer. On the live site the same key comes from Vercel's environment variables instead.
 import http from 'node:http';
 import fs from 'node:fs';
@@ -21,9 +21,17 @@ function groqKey() {
   } catch { return ''; }
 }
 process.env.GROQ_API_KEY = groqKey();
+// DATABASE_URL (and ADMIN_EMAILS) can also live in .env.local for local testing.
+for (const name of ['DATABASE_URL', 'ADMIN_EMAILS', 'AUTH_SECRET']) {
+  if (process.env[name]) continue;
+  try {
+    const m = fs.readFileSync(path.join(ROOT, '.env.local'), 'utf8').match(new RegExp('^' + name + '=(.+)$', 'm'));
+    if (m) process.env[name] = m[1].trim();
+  } catch { /* no .env.local */ }
+}
 process.env.RT_DEV_NO_AUTH = '1'; // this computer only: skip the member login check so the sharks can be tried without signing in
 
-const FUNCTIONS = new Set(['shark', 'sharks']);
+const FUNCTIONS = new Set(['shark', 'sharks', 'db']);
 
 function sendJson(res, status, obj) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });

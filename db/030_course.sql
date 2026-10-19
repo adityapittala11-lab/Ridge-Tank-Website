@@ -1,6 +1,6 @@
 -- =====================================================================
 -- Ridge Tank v4: Tank Academy progress
--- Run once in Supabase > SQL Editor. Safe to run again.
+-- Runs automatically the first time the site talks to its database. Safe to run again.
 -- One row per finished shark round or weekly challenge. Only scores are stored, never what a member wrote.
 -- =====================================================================
 

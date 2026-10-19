@@ -1,6 +1,6 @@
 // Tank Academy: the year-long course. Levels open by date in blocks of five. You pass a level by scoring well
 // in a shark round. Each block's Edge is collected by checking in at a meeting once its five levels are done.
-// Progress lives in the course_rounds table (supabase/migration_v4_course.sql). Until that table exists,
+// Progress lives in the course_rounds table (db/030_course.sql). Until that table exists,
 // rounds are kept in this browser so the course still works.
 (function () {
   const RT = window.RT;
@@ -245,7 +245,7 @@
     return h('div', { class: 'ac-officer' },
       openForAll() ? h('span', { class: 'muted small' }, 'The course is open to everyone (academy.openNow in config.js).') : early, openForAll() ? null : h('span', { class: 'muted small' }, earlyOn() ? 'Every level is open on your account. Members still see the normal dates.' : 'Officers only. Members still see the normal dates.'),
       h('span', null, 'Show the course as it looks on'), input, store.get(LS.date, null) ? reset : null,
-      AC.local ? h('span', { class: 'ac-officer-note' }, 'Progress is saved in this browser until migration_v4_course.sql is run in Supabase.') : null);
+      AC.local ? h('span', { class: 'ac-officer-note' }, 'Progress is saved in this browser until the database has the course tables (db/030_course.sql).') : null);
   }
 
   // ---------------- your year ----------------
@@ -498,7 +498,6 @@
     const { data } = await RT.sb.auth.getSession();
     const token = data && data.session && data.session.access_token;
     if (token) headers.Authorization = 'Bearer ' + token;
-    if (/supabase\.co/.test(AI.url)) headers.apikey = cfg.supabaseKey;
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 20000);
     try {

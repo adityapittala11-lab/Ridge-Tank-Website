@@ -100,7 +100,7 @@
   const queued = [];
   let booted = false;
   sb.auth.onAuthStateChange((event, session) => {
-    // Never call Supabase inside this callback (it can deadlock the auth lock).
+    // Keep this callback light: do the loading after it returns.
     setTimeout(() => {
       if (!booted) queued.push([event, session]);
       else onAuthEvent(event, session);
@@ -494,33 +494,6 @@
     return wrap;
   }
 
-  const GOOGLE_G = '<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">' +
-    '<path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>' +
-    '<path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>' +
-    '<path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>' +
-    '<path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
-
-  // One tap with a Google account: no password, no confirmation email.
-  function googleButton(label) {
-    const btn = h('button', { class: 'btn btn-google btn-block btn-lg', type: 'button' },
-      h('span', { class: 'g-logo', html: GOOGLE_G }), h('span', null, label));
-    btn.addEventListener('click', () => busy(btn, async () => {
-      const settings = await RT.authSettings();
-      if (settings && settings.external && settings.external.google === false) {
-        toast('Google sign-in isn’t switched on yet. Use email for now.', 'error', 5000);
-        return;
-      }
-      const { error } = await sb.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: location.origin + location.pathname, queryParams: { prompt: 'select_account' } }
-      });
-      if (error) { toast(friendly(error), 'error'); return; }
-      await new Promise(r => setTimeout(r, 4000)); // keep the spinner while the browser heads to Google
-    }));
-    return btn;
-  }
-  const orDivider = text => h('div', { class: 'or-divider', role: 'separator' }, h('span', null, text));
-
   function gradeSwitch(value) {
     return segmented({
       items: ['9', '10', '11', '12'].map(g => ({ value: g, label: g + 'th' })),
@@ -658,10 +631,8 @@
       const pw = passwordInput('Your password', 'current-password');
       const err = h('p', { class: 'form-error', role: 'alert', hidden: true });
       const submit = h('button', { class: 'btn btn-primary btn-block btn-lg', type: 'submit' }, 'Log in');
-      const forgot = h('button', { class: 'link-btn', type: 'button', onclick: () => forgotModal(email.value) }, 'Forgot password?');
+      const forgot = h('button', { class: 'link-btn', type: 'button', onclick: () => forgotModal() }, 'Forgot password?');
       const form = h('form', { class: 'stack', novalidate: true },
-        googleButton('Continue with Google'),
-        orDivider('or use email'),
         field('Email', email), field('Password', pw), h('div', { class: 'row between' }, h('span'), forgot), err, submit,
         h('p', { class: 'muted small center' }, 'New here? ', h('a', { href: '#/signup' }, 'Create an account')));
       form.addEventListener('submit', e => {
@@ -697,9 +668,6 @@
       const err = h('p', { class: 'form-error', role: 'alert', hidden: true });
       const submit = h('button', { class: 'btn btn-primary btn-block btn-lg', type: 'submit' }, 'Create account');
       const form = h('form', { class: 'stack', novalidate: true },
-        h('div', { class: 'stack-sm' }, googleButton('Sign up with Google'),
-          h('p', { class: 'muted small center' }, 'Fastest way in. You’ll pick your grade on the next screen.')),
-        orDivider('or sign up with email'),
         field('Name', name),
         h('div', { class: 'field' }, h('span', { class: 'label' }, 'Grade'), grade),
         field('Email', email),
@@ -759,18 +727,15 @@
         h('button', { class: 'btn btn-ghost btn-block', type: 'button', onclick: () => go('login') }, 'Back to log in'));
     }
 
-    function forgotModal(prefill) {
-      const email = h('input', { class: 'input', type: 'email', placeholder: 'you@example.com', value: prefill || '', autocomplete: 'email' });
-      const send = h('button', { class: 'btn btn-primary', type: 'button' }, 'Send reset link');
-      const m = modal({ title: 'Reset your password', subtitle: 'We’ll email you a link to set a new one.', body: field('Email', email), actions: [send] });
-      send.addEventListener('click', () => busy(send, async () => {
-        const em = email.value.trim();
-        if (!/^\S+@\S+\.\S+$/.test(em)) { toast('Enter your email address.', 'error'); return; }
-        const { error } = await sb.auth.resetPasswordForEmail(em, { redirectTo: location.origin + location.pathname });
-        if (error) { toast(friendly(error), 'error'); return; }
-        m.close();
-        toast('If that email has an account, a reset link is on its way.', 'success', 5000);
-      }));
+    function forgotModal() {
+      const ok = h('button', { class: 'btn btn-primary', type: 'button' }, 'Got it');
+      const m = modal({
+        title: 'Forgot your password?',
+        subtitle: 'Ask any officer. They can set a new password for you, then you can log in and change it from your profile.',
+        body: h('p', { class: 'muted' }, 'Tell them the email you signed up with.'),
+        actions: [ok]
+      });
+      ok.addEventListener('click', () => m.close());
     }
 
     show(mode);
@@ -885,7 +850,7 @@
     S.ready = true;
     booted = true;
     if (/access_token=|error_description=|type=recovery/.test(location.hash)) history.replaceState(null, '', S.recovery ? '#/reset' : '#/');
-    // Tidy up anything Google/Supabase left in the query string after a sign-in round trip.
+    // Tidy up anything left in the query string.
     if (/[?&](code|error|error_description)=/.test(location.search)) history.replaceState(null, '', location.pathname + (location.hash || '#/'));
     route();
     if (RT.authErrorFromUrl) toast(RT.authErrorFromUrl, 'error', 6000);

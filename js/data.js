@@ -1,10 +1,10 @@
-// Supabase client, data loaders, and badge/points math shared by every screen.
+// Backend client (js/backend.js), data loaders, and badge/points math shared by every screen.
 (function () {
   const RT = (window.RT = window.RT || {});
   const cfg = window.RT_CONFIG;
   RT.views = RT.views || {};
 
-  // Remember what the URL looked like before supabase-js consumes any auth tokens in it.
+  // Remember what the URL looked like when the page loaded.
   RT.initialHash = location.hash;
   RT.recoveryFromUrl = /type=recovery/.test(location.hash);
   RT.authErrorFromUrl = (() => {
@@ -12,22 +12,8 @@
     return m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : null;
   })();
 
-  const sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey, {
-    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
-  });
+  const sb = window.RTDB.createClient();
   RT.sb = sb;
-
-  // Which sign-in methods are switched on in Supabase (e.g. whether Google is set up yet).
-  let settingsPromise = null;
-  RT.authSettings = () => {
-    if (!settingsPromise) {
-      settingsPromise = fetch(cfg.supabaseUrl + '/auth/v1/settings', { headers: { apikey: cfg.supabaseKey } })
-        .then(r => (r.ok ? r.json() : null))
-        .catch(() => null);
-    }
-    return settingsPromise;
-  };
-  RT.authSettings();
 
   RT.state = {
     ready: false,
@@ -157,7 +143,7 @@
     async meetings() {
       return check(await sb.from('meetings').select('*').order('meeting_date', { ascending: false }));
     },
-    // Net worth leaderboard (supabase/migration_v4.sql). Falls back to the old view until that's been run.
+    // Net worth leaderboard (db/040_market.sql). Falls back to the old view until that's been run.
     async board() {
       const r = await sb.from('member_standings').select('member_id, name, total_points, current_tier, earned, gain, locked, available');
       if (!r.error) { RT.market = Object.assign(RT.market || {}, { live: true }); return r.data; }

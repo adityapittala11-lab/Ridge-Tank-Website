@@ -1,7 +1,7 @@
 // Pitch the panel: the Academy's five sharks look at a whole product idea at once and help develop it. POST /api/sharks
 // Uses Groq. Needs one environment variable in Vercel: GROQ_API_KEY (Project Settings > Environment Variables).
 // Without it this answers 503 and the site falls back to its built-in practice sharks.
-// Only signed-in members can call it (their Supabase login is checked), and each member is capped per day.
+// Only signed-in members can call it (their login token is checked), and each member is capped per day.
 import { memberId, dailyLimit, jsonBody } from './_shared.js';
 
 const MODEL = process.env.SHARKS_MODEL || 'openai/gpt-oss-120b';

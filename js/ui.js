@@ -349,8 +349,8 @@
     const el = h('div', { class: 'stack-sm' },
       h('label', { class: 'field' },
         h('span', { class: 'label' }, required ? 'Phone number' : 'Phone number (optional)'), input,
-        h('span', { class: 'hint' }, 'Officers text club updates here. Only officers can see it.')),
-      h('label', { class: 'check-row' }, wa, h('span', null, 'I’m on WhatsApp (add me to the club group chat)')));
+        h('span', { class: 'hint' }, 'Officers text program updates here. Only officers can see it.')),
+      h('label', { class: 'check-row' }, wa, h('span', null, 'I’m on WhatsApp (add me to the program group chat)')));
     return {
       el, input,
       value: () => cleanPhone(input.value),   // tidy "+14805550123", or null

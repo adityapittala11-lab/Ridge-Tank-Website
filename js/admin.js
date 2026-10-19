@@ -584,7 +584,8 @@
           h('div', { class: 'row gap-sm' },
             h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => RT.copyText(m.login_code, 'Code copied') }, icon('copy', 14), 'Copy'),
             h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: newCode }, icon('refresh', 14), 'New code'))),
-        m.phone ? h('p', { class: 'small' }, 'Phone: ', h('a', { href: 'tel:' + m.phone, class: 'mono' }, m.phone)) : null,
+        m.phone ? h('p', { class: 'small' }, 'Phone: ', h('a', { href: 'tel:' + m.phone, class: 'mono' }, m.phone)) : '',
+        m.user_id && m.email ? h('div', { class: 'row' }, h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: setPassword }, icon('lock', 14), 'Set a new password')) : '',
         h('p', { class: 'muted small' }, m.user_id ? 'Their account is linked' + (m.email ? ' (' + m.email + ')' : '') + '.' : 'No account yet. They enter this code when they sign up.'));
     }
     async function unlinkCard() {
@@ -595,6 +596,18 @@
       syncPending();
       drawCard();
       onChange();
+    }
+    // For a member who forgot their password (there is no reset email): the officer picks a temporary one.
+    function setPassword() {
+      const pw = h('input', { class: 'input', type: 'text', placeholder: 'At least 8 characters', autocomplete: 'off', maxlength: 100 });
+      const go = h('button', { class: 'btn btn-primary', type: 'button' }, 'Set password');
+      const md = modal({ title: 'New password for ' + m.name, subtitle: 'Tell them the password. They can change it later from their profile.', body: RT.field('Temporary password', pw), actions: [go] });
+      go.addEventListener('click', () => busy(go, async () => {
+        const { error } = await sb.auth.adminSetPassword(m.email, pw.value);
+        if (error) { toast(friendly(error), 'error'); return; }
+        md.close();
+        toast('Password changed. Give it to ' + m.name.split(' ')[0] + '.', 'success');
+      }));
     }
     async function newCode() {
       if (!(await confirmDialog({ title: 'Make a new code?', message: 'The old code stops working. Use this if someone else saw it.', confirmText: 'New code' }))) return;

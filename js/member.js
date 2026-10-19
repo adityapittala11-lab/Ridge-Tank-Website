@@ -107,7 +107,7 @@
     const items = S.announcements.slice(0, 2);
     clear(el).append(h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Latest news'),
       h('a', { class: 'link-sm', href: '#/updates' }, 'All updates', icon('chevronRight', 14))));
-    if (!items.length) { el.appendChild(h('p', { class: 'muted' }, 'Nothing posted yet. Officers will post club news here.')); return; }
+    if (!items.length) { el.appendChild(h('p', { class: 'muted' }, 'Nothing posted yet. Officers will post program news here.')); return; }
     el.appendChild(h('ul', { class: 'timeline' }, items.map(a => h('li', null,
       h('span', { class: 'tl-icon' + (a.pinned ? ' burg' : '') }, icon(a.pinned ? 'pin' : 'megaphone', 16)),
       h('div', { class: 'grow min0' }, h('div', { class: 'ellipsis' }, a.title),
