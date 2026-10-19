@@ -1,5 +1,5 @@
 // The Tank Market: invest Bites in pitches, and the sign-up rewards draw.
-// Needs supabase/migration_v5_market.sql. Until that has been run, nothing here shows (the plain leaderboard keeps working).
+// Needs db/040_market.sql. Until that has been run, nothing here shows (the plain leaderboard keeps working).
 // Bounties live in bounties.js and admin2.js. Bite decay is automatic (see member_points in migration_v3.sql).
 // Member side: one card on Home. Officer side: switches on the Pitches tab and the rewards card on the Welcome tab.
 (function () {

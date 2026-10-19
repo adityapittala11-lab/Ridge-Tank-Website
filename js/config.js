@@ -1,9 +1,6 @@
-// Ridge Tank site settings. The publishable key is safe to ship in the browser;
-// every table is locked down with row level security (see supabase/migration_v2.sql and migration_v3.sql).
+// Ridge Tank site settings. Nothing secret lives here: the database address, the login secret and the AI key
+// are all Vercel environment variables (see README.md). Every table is locked down with row level security (db/*.sql).
 window.RT_CONFIG = {
-  supabaseUrl: 'https://stnhxldorcxzgevxvvpw.supabase.co',
-  supabaseKey: 'sb_publishable_UnjvpcC8MmbCDUU8DG_R6Q_JUVDlYzZ',
-
   school: 'Mountain Ridge High School',
   season: '2026-2027',
 
@@ -30,17 +27,17 @@ window.RT_CONFIG = {
   // {date} = next meeting date, {when} = "date, time, room" as far as it's known,
   // {form} and {site} = the links above.
   templates: {
-    fblaSubject: 'New club at Mountain Ridge: Ridge Tank',
+    fblaSubject: 'New program at Mountain Ridge: Ridge Tank',
     fblaEmail:
       'Hi everyone!\n\n' +
-      'Some of us are starting a new club called Ridge Tank. Think Shark Tank for Mountain Ridge: you pitch ideas, ' +
+      'Some of us are starting a new program called Ridge Tank. Think Shark Tank for Mountain Ridge: you pitch ideas, ' +
       'back other people’s ideas, and earn points and badges just for showing up. Our first meeting is {date}.\n\n' +
       'Want in? Sign up here (takes about a minute):\n{form}\n\n' +
       'You can also sign up on our website:\n{site}\n\n' +
       'An officer will text you with updates. See you there!\n\nThe Ridge Tank officers',
     welcomeText:
       'Hey {first}! It’s {officer} from Ridge Tank. Thanks for signing up. ' +
-      'We’ll send club updates here (meeting reminders, challenges, all of it). ' +
+      'We’ll send program updates here (meeting reminders, challenges, all of it). ' +
       'Want me to add you to the WhatsApp group too? Our first meeting is {when}.',
     reminderWeek:
       'Hey {first}, quick reminder: Ridge Tank’s first meeting is one week away ({when}). ' +

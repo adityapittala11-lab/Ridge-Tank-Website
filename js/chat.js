@@ -1,5 +1,5 @@
 // Club chat: sender + time above incoming bubbles, delivery status under yours.
-// Live updates over Supabase Realtime, with polling as a backup.
+// New messages arrive by quick polling (see channel() in js/backend.js), with a slower backup poll here.
 (function () {
   const RT = window.RT;
   const { h, clear, icon, toast, avatar, friendly, fmtTime, dayLabel, confirmDialog } = RT;

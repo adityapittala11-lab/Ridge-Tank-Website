@@ -2,5 +2,11 @@
   "name": "ridge-tank-website",
   "private": true,
   "type": "module",
-  "description": "Static site. The only server code is api/shark.js (Vercel Function) and tools/dev-server.mjs (local testing)."
+  "description": "Static site plus Vercel Functions: api/db.js (accounts + database), api/shark.js and api/sharks.js (AI sharks). tools/dev-server.mjs is for local testing.",
+  "scripts": {
+    "build:schema": "node tools/build-schema.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.13.0"
+  }
 }

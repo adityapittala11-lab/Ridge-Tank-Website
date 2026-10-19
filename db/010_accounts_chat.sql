@@ -247,13 +247,6 @@ grant  execute on function public.update_my_profile(text, text)     to authentic
 grant  execute on function public.my_referral_count()               to authenticated;
 
 -- 10) Live chat updates
-do $$
-begin
-  if not exists (select 1 from pg_publication_tables
-                  where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'messages') then
-    alter publication supabase_realtime add table public.messages;
-  end if;
-end $$;
+-- (No realtime publication here: the site polls for new messages.)
 
--- After you sign up on the site, run this once to make yourself admin:
--- insert into public.admins (user_id) select id from auth.users where email = 'adityapittala.11@gmail.com' on conflict do nothing;
+-- Officers: put their email addresses in the ADMIN_EMAILS environment variable (Vercel). They become admins when they log in.
