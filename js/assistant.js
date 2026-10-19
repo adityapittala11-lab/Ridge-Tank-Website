@@ -64,7 +64,7 @@
     const input = h('textarea', { class: 'composer-input', rows: 1, placeholder: 'Ask anything, or say “write an email to…”', maxlength: 8000, 'aria-label': 'Message the assistant' });
     const sendBtn = h('button', { class: 'send-btn', type: 'submit', 'aria-label': 'Send' }, icon('arrowUp', 18));
     const composer = h('form', { class: 'composer' }, input, sendBtn);
-    const clearBtn = h('button', { class: 'btn btn-ghost btn-sm', type: 'button' }, 'New chat');
+    const clearBtn = h('button', { class: 'btn btn-ghost btn-sm', type: 'button' }, icon('trash', 14), 'Clear history');
 
     const card = h('section', { class: 'card as-card' },
       h('div', { class: 'card-head' },
@@ -123,7 +123,14 @@
       }
     });
 
-    clearBtn.addEventListener('click', () => { msgs = []; save(msgs); draw(); input.focus(); });
+    clearBtn.addEventListener('click', () => {
+      if (!msgs.length) return;
+      if (!window.confirm('Clear your whole chat history? This cannot be undone.')) return;
+      msgs = [];
+      try { localStorage.removeItem(KEY()); } catch (e) { /* ignore */ }
+      draw(); input.focus();
+      toast('Chat history cleared.');
+    });
 
     draw();
     return null;
