@@ -1835,3 +1835,23 @@ html[data-theme="light"] .tier-chip.tier-mega { color: #7e1434; }
   .event-row .btn { width: 100%; }
   .station-name { font-size: 26px; }
 }
+
+/* Officer Assistant (Admin > Assistant) */
+.as-card { display: flex; flex-direction: column; gap: 12px; }
+.as-card .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.as-list { display: flex; flex-direction: column; gap: 12px; min-height: 280px; max-height: 60vh; overflow-y: auto; padding: 4px 2px; }
+.as-msg { max-width: 92%; padding: 12px 14px; border: 1px solid var(--line-2); background: rgb(var(--tint) / 0.03); }
+.as-msg.me { align-self: flex-end; background: rgb(30 143 91 / 0.18); border-color: rgb(63 191 127 / 0.35); }
+.as-msg.ai { align-self: flex-start; }
+.as-text { color: var(--ink); font: 15px/1.55 var(--font-ui); white-space: pre-wrap; margin: 0; }
+.as-msg.ai .as-text { white-space: normal; }
+.as-text p, .as-text h4 { margin: 0 0 8px; }
+.as-text h4 { font: 600 15px/1.4 var(--font-ui); color: var(--g-300); }
+.as-text ul { margin: 0 0 8px; padding-left: 20px; }
+.as-text li { margin: 2px 0; }
+.as-text code { font-family: ui-monospace, monospace; font-size: 13px; background: rgb(var(--tint) / 0.08); padding: 1px 4px; }
+.as-copy { margin-top: 6px; }
+.as-empty { display: flex; flex-direction: column; gap: 10px; }
+.as-starters { display: flex; flex-wrap: wrap; gap: 8px; }
+.as-chip { text-align: left; white-space: normal; }
+.as-typing { margin: 0; }

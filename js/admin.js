@@ -155,7 +155,8 @@
       { value: 'meetings', label: 'Calendar', icon: 'calendar' },
       { value: 'pitches', label: 'Pitches', icon: 'mic' },
       { value: 'bounties', label: 'Bounties', icon: 'target', badge: S.adminCounts.claims || 0 },
-      { value: 'badges', label: 'Badges', icon: 'award' }
+      { value: 'badges', label: 'Badges', icon: 'award' },
+      { value: 'assistant', label: 'Assistant', icon: 'sparkle' }
     ];
     const seg = segmented({ items: tabs, value: t.tab, className: 'admin-seg', ariaLabel: 'Officer tools', onChange: v => RT.go('admin/' + v) });
     const refreshBtn = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Reload data', title: 'Reload data' }, icon('refresh', 18));
