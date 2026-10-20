@@ -42,21 +42,57 @@
     return box;
   }
 
+  // The Assistant needs a second password. The unlock proof lives in this tab only, so closing the tab locks it again.
+  const UNLOCK = () => 'rt_assistant_unlock_' + (S.user ? S.user.id : 'x');
+  const getUnlock = () => { try { return sessionStorage.getItem(UNLOCK()) || ''; } catch (e) { return ''; } };
+  const setUnlock = v => { try { if (v) sessionStorage.setItem(UNLOCK(), v); else sessionStorage.removeItem(UNLOCK()); } catch (e) { /* ignore */ } };
+  async function authToken() {
+    try { const { data } = await sb.auth.getSession(); return data && data.session ? data.session.access_token : ''; } catch (e) { return ''; }
+  }
+  async function unlockWith(password) {
+    const r = await fetch('/api/assistant', { method: 'POST', headers: { 'content-type': 'application/json', Authorization: 'Bearer ' + await authToken() }, body: JSON.stringify({ mode: 'unlock', password }) });
+    let out = {};
+    try { out = await r.json(); } catch (e) { /* ignore */ }
+    if (!r.ok || !out.unlock) throw new Error(out.error || 'Could not unlock. Try again.');
+    setUnlock(out.unlock);
+  }
+
   async function ask(messages) {
     let token = '';
     try { const { data } = await sb.auth.getSession(); token = data && data.session ? data.session.access_token : ''; } catch (e) { /* ignore */ }
     const r = await fetch('/api/assistant', {
       method: 'POST',
-      headers: { 'content-type': 'application/json', Authorization: 'Bearer ' + token },
+      headers: { 'content-type': 'application/json', Authorization: 'Bearer ' + token, 'x-assistant-unlock': getUnlock() },
       body: JSON.stringify({ messages: messages.map(m => ({ role: m.role, content: m.content })) })
     });
     let out = {};
     try { out = await r.json(); } catch (e) { /* ignore */ }
+    if (out.locked) { setUnlock(''); const e = new Error('The Assistant locked itself. Enter the password again.'); e.locked = true; throw e; }
     if (!r.ok || !out.reply) throw new Error(out.error || 'The AI did not answer. Try again.');
     return out.reply;
   }
 
+  // Lock screen, shown until the password is entered.
+  function lockScreen(pane, onOpen) {
+    const pw = h('input', { class: 'input', type: 'password', placeholder: 'Assistant password', autocomplete: 'off', 'aria-label': 'Assistant password' });
+    const err = h('p', { class: 'form-error', role: 'alert', hidden: true });
+    const go = h('button', { class: 'btn btn-primary', type: 'submit' }, icon('lock', 16), 'Unlock');
+    const form = h('form', { class: 'stack', style: { maxWidth: '360px' } },
+      h('p', { class: 'muted' }, 'The Assistant is locked. Enter the password to use it. It locks again when you close this tab.'), pw, err, go);
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      RT.busy(go, async () => {
+        err.hidden = true;
+        try { await unlockWith(pw.value); pw.value = ''; clear(pane); onOpen(); }
+        catch (x) { err.textContent = x.message; err.hidden = false; pw.select(); }
+      });
+    });
+    clear(pane).appendChild(h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Assistant')), form));
+    setTimeout(() => pw.focus(), 50);
+  }
+
   RT.adminTabs.assistant = function (pane) {
+    if (!getUnlock()) { lockScreen(pane, () => RT.adminTabs.assistant(pane)); return null; }
     let msgs = load();
     let sending = false;
 
@@ -118,6 +154,7 @@
       } catch (err) {
         toast(err.message || 'The AI did not answer.', 'error');
         msgs.pop(); input.value = text; autosize();
+        if (err.locked) { clear(pane); lockScreen(pane, () => RT.adminTabs.assistant(pane)); return; }
       } finally {
         sending = false; sendBtn.disabled = false; draw();
       }

@@ -3,6 +3,16 @@
 // Uses Groq with the same GROQ_API_KEY as the sharks. Conversations are not saved on the server.
 import { memberId, jsonBody } from './_shared.js';
 import { getPool, ensureSchema } from './_pg.js';
+import { checkPassword, signUnlock, verifyUnlock, tooManyTries } from './_auth.js';
+
+// The Assistant is locked behind a second password on top of officer login. Only a salted hash of it is kept here,
+// never the password itself. To change it, set ASSISTANT_PASSWORD in Vercel (that overrides this).
+const PASSWORD_HASH = 'a5bb1819d774b3c2320c7d05fa29ff08:908c2e642a404002e2ee3faa4263f37d80f02b0f8288342cc54c4de6a4375778077fae5aa21d0c724a3bfa0dcaae603fc0ebe3b89db8f6735c8617581c8108b9';
+function passwordOk(pw) {
+  const env = process.env.ASSISTANT_PASSWORD;
+  if (env) return String(pw) === env;
+  return checkPassword(pw, PASSWORD_HASH);
+}
 
 const MODEL = process.env.ASSISTANT_MODEL || 'openai/gpt-oss-120b';
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
@@ -32,7 +42,17 @@ export default async function handler(req, res) {
   if (req.method === 'GET') return send(200, { aiConfigured: !!process.env.GROQ_API_KEY });
   if (req.method !== 'POST') return send(405, { error: 'Use POST.' });
   const key = process.env.GROQ_API_KEY;
-  if (!key) return send(503, { error: 'The AI is not set up yet (GROQ_API_KEY is missing in Vercel).' });
+  const early = jsonBody(req);
+  // Unlock step: needs officer login AND the password, then returns a proof good for 8 hours.
+  if (early.mode === 'unlock') {
+    const uid = await memberId(req);
+    if (!uid) return send(401, { error: 'Please log in first.' });
+    try { if (!(await isOfficer(uid))) return send(403, { error: 'Only officers can use the assistant.' }); }
+    catch (e) { return send(503, { error: 'Could not check your officer access. Try again in a moment.' }); }
+    if (tooManyTries('assistant:' + uid, 5)) return send(429, { error: 'Too many wrong tries. Wait 10 minutes.' });
+    if (!passwordOk(early.password)) return send(403, { error: 'Wrong password.' });
+    return send(200, { unlock: signUnlock(uid, 'assistant') });
+  }
 
   const id = await memberId(req);
   if (!id) return send(401, { error: 'Please log in first.' });
@@ -41,6 +61,10 @@ export default async function handler(req, res) {
   } catch (e) {
     return send(503, { error: 'Could not check your officer access. Try again in a moment.' });
   }
+
+  if (id !== 'dev' && !verifyUnlock(String(req.headers['x-assistant-unlock'] || ''), id, 'assistant')) return send(403, { error: 'locked', locked: true });
+
+  if (!key) return send(503, { error: 'The AI is not set up yet (GROQ_API_KEY is missing in Vercel).' });
 
   const body = jsonBody(req);
   const history = (Array.isArray(body.messages) ? body.messages : [])

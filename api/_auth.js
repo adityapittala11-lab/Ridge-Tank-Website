@@ -54,17 +54,38 @@ export function verifyToken(token) {
   }
 }
 
+// Short-lived "unlock" proofs for sensitive tools (the officer Assistant). Signed like a login token but only valid
+// for one scope and one user, so a login token can't be reused as an unlock.
+export function signUnlock(userId, scope, hours = 8) {
+  const exp = Math.floor(Date.now() / 1000) + hours * 3600;
+  const body = userId + '.' + scope + '.' + exp;
+  return b64(body) + '.' + b64(crypto.createHmac('sha256', secret()).update('unlock:' + body).digest());
+}
+export function verifyUnlock(token, userId, scope) {
+  try {
+    const [bb, sig] = String(token || '').split('.');
+    const body = unb64(bb).toString('utf8');
+    const [uid, sc, exp] = body.split('.');
+    if (uid !== userId || sc !== scope || Number(exp) < Math.floor(Date.now() / 1000)) return false;
+    const expected = crypto.createHmac('sha256', secret()).update('unlock:' + body).digest();
+    const given = unb64(sig);
+    return expected.length === given.length && crypto.timingSafeEqual(expected, given);
+  } catch (e) {
+    return false;
+  }
+}
+
 export function bearer(req) {
   return String((req.headers && (req.headers.authorization || req.headers.Authorization)) || '').replace(/^Bearer\s+/i, '').trim();
 }
 
 // Best-effort limit on password guesses: 15 tries per 10 minutes per address + email. Lives in memory.
 const tries = new Map();
-export function tooManyTries(key) {
+export function tooManyTries(key, max = 15) {
   const now = Date.now();
   const list = (tries.get(key) || []).filter(t => now - t < 600000);
   list.push(now);
   tries.set(key, list);
   if (tries.size > 5000) tries.clear();
-  return list.length > 15;
+  return list.length > max;
 }
