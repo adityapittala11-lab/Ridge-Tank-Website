@@ -41,11 +41,11 @@ window.RT_CONFIG = {
       'Want me to add you to the WhatsApp group too? Our first meeting is {when}.',
     reminderWeek:
       'Hey {first}, quick reminder: Ridge Tank’s first meeting is one week away ({when}). ' +
-      'You’ll get your card and learn how everything works. Hope to see you there!',
+      'You’ll learn how everything works. Hope to see you there!',
     reminderDay:
-      'Hey {first}, Ridge Tank meeting tomorrow ({when}). You’ll get your card when you walk in. See you there!',
+      'Hey {first}, Ridge Tank meeting tomorrow ({when}). Just walk in. See you there!',
     reminderToday:
-      'Today’s the day! Ridge Tank meeting: {when}. Bring yourself and we’ll hand you a card at the door.'
+      'Today’s the day! Ridge Tank meeting: {when}. Just walk in, no sign-up needed.'
   },
 
   // AI sharks for the Academy (Groq). The key is never in this file.

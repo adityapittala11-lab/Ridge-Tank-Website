@@ -54,7 +54,7 @@
   RT.progressBar = progressBar;
 
   // ---------------- home ----------------
-  // Home: five blocks, most useful first. 1) what to do next, 2) where you stand, 3) this week, 4) ways to earn, 5) card setup until it's done.
+  // Home: five blocks, most useful first. 1) what to do next, 2) where you stand, 3) this week, 4) ways to earn.
   RT.views.home = function (root) {
     const subLine = h('span');
     root.appendChild(RT.pageHead('Home', subLine));
@@ -68,8 +68,6 @@
       h('section', { class: 'card span-6 reveal', style: { '--i': 3 } }, RT.skeleton(3)));
     root.appendChild(grid);
     const [cStanding, cWeek, cBounties] = grid.children;
-    const cardSlot = h('div');
-    root.appendChild(cardSlot);
 
     loadMine().then(d => {
       const { cur, next } = RT.tierFor(d.mine.total_points, S.tiers);
@@ -77,7 +75,6 @@
       renderStanding(cStanding, d, cur, next);
       renderWeek(cWeek);
       renderBountiesMini(cBounties);
-      if (S.me.card_status !== 'linked') renderCardBanner(cardSlot);
       // The invest card shows only while investing is open at a meeting, and then it goes first.
       RT.market.memberCards(d).then(cards => {
         if (!cards || !root.isConnected) return;
@@ -134,30 +131,11 @@
       : h('p', { class: 'muted' }, 'Nothing posted yet. Officers will add the next meeting and news here.'));
   }
 
-  // Slim banner until the member's physical card is linked.
-  function renderCardBanner(el) {
-    clear(el).appendChild(h('section', { class: 'card card-banner reveal' },
-      icon('nfc', 20, 'muted'),
-      h('div', { class: 'grow min0' }, h('strong', null, 'Your Ridge Tank card is being made.'),
-        h('div', { class: 'muted small' }, 'Until you have it, an officer can check you in by name at meetings.'))));
-  }
-
-  function renderBountiesMini(el) {
-    const items = S.bounties.filter(b => RT.bountyInfo(b).open).slice(0, 3);
-    clear(el).append(h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Earn extra Bites'),
-      h('a', { class: 'link-sm', href: '#/bounties' }, 'All bounties', icon('chevronRight', 14))));
-    if (!items.length) { el.appendChild(h('p', { class: 'muted' }, 'No open bounties right now. New ones will show up here.')); return; }
-    el.appendChild(h('ul', { class: 'timeline' }, items.map(b => h('li', null,
-      h('span', { class: 'tl-icon burg' }, icon('target', 16)),
-      h('div', { class: 'grow min0' }, h('div', { class: 'ellipsis' }, b.title), h('div', { class: 'muted small ellipsis' }, RT.bountyMeta(b))),
-      h('span', { class: 'pts-gain mono' }, '+' + b.points)))));
-  }
-
   function renderActivity(el, d) {
     const items = [];
     d.attendance.forEach(a => {
       const m = meetingById(a.meeting_id);
-      items.push({ at: a.tapped_at || (m && m.meeting_date), icon: 'nfc', title: 'Checked in' + (m ? ' · ' + (m.name || 'Meeting') : ''), pts: Number(a.points_awarded) || 0 });
+      items.push({ at: a.tapped_at || (m && m.meeting_date), icon: 'check', title: 'Checked in' + (m ? ' · ' + (m.name || 'Meeting') : ''), pts: Number(a.points_awarded) || 0 });
     });
     d.pitches.forEach(p => {
       const m = meetingById(p.meeting_id);
@@ -169,7 +147,7 @@
 
     clear(el).appendChild(h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Recent activity'), h('span', { class: 'muted small' }, items.length ? items.length + ' total' : '')));
     if (!items.length) {
-      el.appendChild(h('div', { class: 'empty-mini' }, icon('nfc', 22, 'muted'), h('p', { class: 'muted' }, 'Nothing yet. Tap your card at the next meeting for your first 100 Bites.')));
+      el.appendChild(h('div', { class: 'empty-mini' }, icon('check', 22, 'muted'), h('p', { class: 'muted' }, 'Nothing yet. Come to the next meeting for your first 100 Bites.')));
       return;
     }
     el.appendChild(h('ul', { class: 'timeline' }, items.slice(0, 6).map(it =>

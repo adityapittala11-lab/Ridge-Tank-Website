@@ -148,7 +148,7 @@
           if (watching.length) {
             const poll = async () => {
               if (document.hidden || !session) return;
-              const r = await call({ op: 'select', table: 'messages', columns: 'id, member_id, user_id, body, created_at', order: [{ col: 'id', asc: false }], limit: 60 });
+              const r = await call({ op: 'select', table: 'messages', columns: 'id, member_id, user_id, body, created_at, reply_to', order: [{ col: 'id', asc: false }], limit: 60 });
               if (!r || !Array.isArray(r.data)) return;
               const now = new Map(r.data.map(m => [m.id, m]));
               if (known === null) { known = new Set(now.keys()); maxId = Math.max(0, ...now.keys()); return; }

@@ -127,7 +127,7 @@
     }
   }
 
-  // Email sign-ups carry their answers (name, grade, card code) in user metadata; use them to finish
+  // Email sign-ups carry their answers (name, grade, member code) in user metadata; use them to finish
   // joining. Google sign-ins skip that form, so they go through the "One more step" screen instead.
 
   async function autoOnboard() {
@@ -141,10 +141,10 @@
       if (meta.card_code) {
         S.me = await api.claim(meta.card_code);
         if (meta.phone) S.me = await api.updateProfile(S.me.name, S.me.grade || meta.grade || '', meta.phone, !!meta.whatsapp);
-        toast('Card linked. Welcome back to the Tank.', 'success');
+        toast('You’re linked. Welcome back to the Tank.', 'success');
       } else if (meta.full_name) {
         S.me = await api.register(meta.full_name, meta.grade || '', meta.ref || '', meta.phone || '', !!meta.whatsapp);
-        toast('You’re in. Your card request went to the officers.', 'success');
+        toast('You’re in. Welcome to the Tank.', 'success');
       }
     } catch (e) {
       S.onboardError = friendly(e);
@@ -489,7 +489,7 @@
         (!S.me && cfg.promo) ? h('div', { class: 'promo' }, h('strong', null, cfg.promo.title), h('span', null, cfg.promo.text)) : null));
 
     const steps = [
-      ['Show up and tap in', 'Come to a meeting and tap your Ridge Tank card at the door. That earns you 100 Bites, the program’s money.'],
+      ['Show up and check in', 'Come to a meeting and check in at the door. That earns you 100 Bites, the program’s money.'],
       ['Learn and pitch', 'Tank Academy’s AI sharks coach you from your first idea to a full pitch. Then pitch in the Tank and invest your Bites in the ideas you believe in.'],
       ['Climb the leaderboard', 'Bites move you up four tiers and unlock badges. Whoever finishes the year on top is King of the Tank.']
     ];
@@ -521,16 +521,15 @@
       ['Who can join?', 'Any ' + cfg.school + ' student, grades 9 to 12. No experience needed. Just walk in to a meeting.'],
       ['How do I sign up?', 'Just show up to a meeting. To track your Bites and rank online, hit “Join Ridge Tank” and make an account. It takes under a minute.'],
       ['Why do you want my phone number?', 'Only to add you to the program group chat (iMessage or WhatsApp) for meeting updates. Only officers can see it.'],
-      ['When is the first meeting?', cfg.nextMeeting + '. Everyone gets their own Ridge Tank card there, and we’ll show you how everything works.'],
+      ['When is the first meeting?', cfg.nextMeeting + '. Just walk in, and we’ll show you how everything works.'],
       ['Is there a reward for bringing a friend?', 'Yes. Bring a friend and you both get candy.'],
-      ['What are Bites?', 'Bites are the program’s money. You earn 100 every time you tap in at a meeting, and more for pitching and for bounties. You can invest them, and your Bites plus your winnings make up your net worth.'],
-      ['How does the card work?', 'You get a Ridge Tank card at the first meeting. Tap it on the reader at the door and you’re checked in. No sign-in sheet.'],
+      ['What are Bites?', 'Bites are the program’s money. You earn 100 every time you check in at a meeting, and more for pitching and for bounties. You can invest them, and your Bites plus your winnings make up your net worth.'],
+      ['How do I check in?', 'An officer checks you in at the door when you walk into a meeting. You earn 100 Bites each time.'],
       ['How do pitching and investing work?', 'Teams pitch in the Tank. During the meeting you put your Bites into the pitches you believe in. First place pays 3x, second 2x, third 1.5x, and a pitch that flops pays half. You don’t have to pitch to invest.'],
       ['What are bounties?', 'Side challenges the officers post for extra Bites, like bringing a friend. Tap “I did it” and an officer checks it.'],
       ['Why do my Bites fade?', 'Unspent Bites lose 10% at the start of each month. It keeps the game moving: put your Bites to work instead of sitting on them.'],
-      ['How do I see my Bites and rank?', 'Log in with your email and password. Your Home page shows your Bites, rank and badges. Your Profile shows your full history. If you already have a card, enter the code an officer gives you when you sign up.'],
+      ['How do I see my Bites and rank?', 'Log in with your email and password. Your Home page shows your Bites, rank and badges. Your Profile shows your full history. If an officer already added you to the roster, enter the member code they gave you when you sign up.'],
       ['What are tiers and badges?', 'Your net worth moves you through four tiers: Reef Shark, Tiger Shark, Great White and Megalodon. Badges are rewards for things like showing up, pitching and bringing friends.'],
-      ['What if I lose my card?', 'Tell an officer. They’ll link a new card to you and the old one stops working.'],
       ['Who can see my information?', 'Members see names, Bites and tiers on the leaderboard. Officers see a bit more so they can run check-in. Read the full details on the privacy page.']
     ];
     // Visitors see the questions that matter before joining; members get the full list on the About page.
@@ -575,7 +574,7 @@
       mode = m;
       seg.setValue(m);
       title.textContent = m === 'login' ? 'Log in to Ridge Tank' : 'Join Ridge Tank';
-      sub.textContent = m === 'login' ? 'Log in to see your Bites, badges, and the leaderboard.' : 'Takes a minute. Your physical card gets made after you sign up.';
+      sub.textContent = m === 'login' ? 'Log in to see your Bites, badges, and the leaderboard.' : 'Takes a minute.';
       const next = m === 'login' ? loginForm() : signupForm();
       next.classList.add('form-in');
       clear(formHost).appendChild(next);
@@ -613,12 +612,12 @@
       const pw = passwordInput('At least 8 characters', 'new-password');
       const code = h('input', { class: 'input mono', type: 'text', placeholder: 'e.g. Falcon4821', autocomplete: 'off', spellcheck: false, maxlength: 20 });
       const ref = h('input', { class: 'input mono', type: 'text', placeholder: 'Their code (optional)', autocomplete: 'off', spellcheck: false, maxlength: 20 });
-      const codeField = field('Card code', code, 'It’s printed on your card, or ask an officer.');
+      const codeField = field('Member code', code, 'An officer gave you this. Ask one if you lost it.');
       const refField = field('Invited by a member?', ref, 'Enter their code so they get credit.');
       codeField.hidden = true;
       const hasCard = segmented({
-        items: [{ value: 'new', label: 'I’m new' }, { value: 'card', label: 'I have a card' }],
-        value: 'new', className: 'seg-fill', ariaLabel: 'Do you already have a card?',
+        items: [{ value: 'new', label: 'I’m new' }, { value: 'card', label: 'I have a code' }],
+        value: 'new', className: 'seg-fill', ariaLabel: 'Did an officer already add you?',
         onChange: v => { codeField.hidden = v !== 'card'; refField.hidden = v === 'card'; if (v === 'card') code.focus(); }
       });
       const agree = h('input', { type: 'checkbox', class: 'check' });
@@ -630,7 +629,7 @@
         field('Email', email),
         phoneF.el,
         field('Password', pw),
-        h('div', { class: 'field' }, h('span', { class: 'label' }, 'Already have a Ridge Tank card?'), hasCard),
+        h('div', { class: 'field' }, h('span', { class: 'label' }, 'Did an officer already add you to the roster?'), hasCard),
         codeField, refField,
         h('label', { class: 'check-row' }, agree, h('span', null, 'I understand my name and Bites will show on the program leaderboard, which only members can see.')),
         err, submit,
@@ -652,7 +651,7 @@
         const pe = phoneF.error();
         if (pe) return fail(pe);
         if (p.length < 8) return fail('Use a password with at least 8 characters.');
-        if (withCard && !/^[A-Za-z]+\d{4}$/.test(c)) return fail('Card codes look like a word plus 4 numbers, e.g. Falcon4821.');
+        if (withCard && !/^[A-Za-z]+\d{4}$/.test(c)) return fail('Member codes look like a word plus 4 numbers, e.g. Falcon4821.');
         if (!agree.checked) return fail('Check the box about the leaderboard to continue.');
         busy(submit, async () => {
           const meta = { rt_signup: true, full_name: n, grade: g, phone: phoneF.value(), whatsapp: phoneF.whatsapp() };
@@ -717,7 +716,7 @@
       h('div', { class: 'field' }, h('span', { class: 'label' }, 'Grade'), grade),
       field('Invited by a member?', ref, 'Enter their code so they get credit.'),
       h('label', { class: 'check-row' }, agree, h('span', null, 'I understand my name and Bites will show on the members-only leaderboard.')));
-    const cardPane = h('div', { class: 'stack' }, field('Card code', code, 'It’s printed on your card. Lost it? Ask an officer.'));
+    const cardPane = h('div', { class: 'stack' }, field('Member code', code, 'An officer gave you this. Lost it? Ask one.'));
     const phoneF = RT.phoneFields({ phone: meta.phone || '', whatsapp: !!meta.whatsapp });
 
     const submit = h('button', { class: 'btn btn-primary btn-block btn-lg', type: 'button' });
@@ -727,9 +726,9 @@
       mode = m;
       clear(panes).appendChild(m === 'new' ? newPane : cardPane);
       panes.firstChild.classList.add('form-in');
-      submit.textContent = m === 'new' ? 'Join the program' : 'Link my card';
+      submit.textContent = m === 'new' ? 'Join the program' : 'Link my account';
     }
-    const seg = segmented({ items: [{ value: 'new', label: 'I’m new' }, { value: 'card', label: 'I have a card' }], value: mode, className: 'seg-fill', onChange: show });
+    const seg = segmented({ items: [{ value: 'new', label: 'I’m new' }, { value: 'card', label: 'I have a code' }], value: mode, className: 'seg-fill', onChange: show });
 
     submit.addEventListener('click', () => busy(submit, async () => {
       err.hidden = true;
@@ -740,13 +739,13 @@
           if (!agree.checked) throw new Error('Check the box about the leaderboard to continue.');
           if (phoneF.error()) throw new Error(phoneF.error());
           await api.register(name.value.trim(), grade.getValue(), ref.value.trim(), phoneF.value(), phoneF.whatsapp());
-          toast('You’re in. Your card request went to the officers.', 'success');
+          toast('You’re in. Welcome to the Tank.', 'success');
         } else {
-          if (!code.value.trim()) throw new Error('Enter the code from your card.');
+          if (!code.value.trim()) throw new Error('Enter the member code an officer gave you.');
           if (phoneF.error()) throw new Error(phoneF.error());
           const me = await api.claim(code.value.trim());
           await api.updateProfile(me.name, me.grade || '', phoneF.value(), phoneF.whatsapp());
-          toast('Card linked. Welcome back to the Tank.', 'success');
+          toast('You’re linked. Welcome back to the Tank.', 'success');
         }
         await RT.reloadMe();
         if (S.isAdmin) RT.refreshPending().then(updateAdminBadge);

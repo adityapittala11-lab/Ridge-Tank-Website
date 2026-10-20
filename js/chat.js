@@ -34,9 +34,11 @@
     const input = h('textarea', { class: 'composer-input', rows: 1, placeholder: 'Message everyone…', maxlength: 1000, 'aria-label': 'Message' });
     const counter = h('span', { class: 'composer-count mono', hidden: true });
     const sendBtn = h('button', { class: 'send-btn', type: 'submit', disabled: true, 'aria-label': 'Send message' }, icon('arrowUp', 18));
+    let replyTo = null;       // the message being answered
+    const replyBar = h('div', { class: 'reply-bar', hidden: true });
     const composer = h('form', { class: 'composer' }, input, counter, sendBtn);
 
-    const panel = h('section', { class: 'chat card reveal' }, head, h('div', { class: 'chat-body' }, scroller, newPill), composer);
+    const panel = h('section', { class: 'chat card reveal' }, head, h('div', { class: 'chat-body' }, scroller, newPill), replyBar, composer);
     root.appendChild(panel);
 
     // ---------- data ----------
@@ -67,7 +69,7 @@
 
     async function loadInitial() {
       list.appendChild(RT.skeleton(4, 'chat-skel'));
-      const { data, error } = await sb.from('messages').select('id, member_id, user_id, body, created_at').order('id', { ascending: false }).limit(PAGE);
+      const { data, error } = await sb.from('messages').select('id, member_id, user_id, body, created_at, reply_to').order('id', { ascending: false }).limit(PAGE);
       if (!alive) return;
       clear(list);
       if (error) { list.appendChild(h('div', { class: 'empty' }, h('p', { class: 'muted' }, friendly(error)))); return; }
@@ -83,7 +85,7 @@
     async function loadOlder() {
       if (!oldestLoaded) return;
       const prevH = scroller.scrollHeight;
-      const { data, error } = await sb.from('messages').select('id, member_id, user_id, body, created_at').lt('id', oldestLoaded).order('id', { ascending: false }).limit(PAGE);
+      const { data, error } = await sb.from('messages').select('id, member_id, user_id, body, created_at, reply_to').lt('id', oldestLoaded).order('id', { ascending: false }).limit(PAGE);
       if (error) { toast(friendly(error), 'error'); return; }
       await ensureNames(data);
       data.forEach(r => add(r));
@@ -97,7 +99,7 @@
 
     async function pollNew() {
       const lastReal = msgs.filter(m => typeof m.id === 'number').map(m => m.id).reduce((a, b) => Math.max(a, b), 0);
-      const { data, error } = await sb.from('messages').select('id, member_id, user_id, body, created_at').gt('id', lastReal).order('id', { ascending: true }).limit(PAGE);
+      const { data, error } = await sb.from('messages').select('id, member_id, user_id, body, created_at, reply_to').gt('id', lastReal).order('id', { ascending: true }).limit(PAGE);
       if (error || !alive || !data.length) return;
       await ensureNames(data);
       incoming(data);
@@ -216,29 +218,58 @@
       }
     }
 
+    const snippet = t => { const x = String(t || '').replace(/\s+/g, ' ').trim(); return x.length > 90 ? x.slice(0, 90) + '…' : x; };
+    function quoteEl(m) {
+      if (!m.reply_to) return null;
+      const orig = byId.get(m.reply_to);
+      const q = h('button', { class: 'bubble-quote', type: 'button', onclick: e => { e.stopPropagation(); jumpTo(m.reply_to); } },
+        h('b', null, orig ? (orig.user_id === S.user.id ? 'You' : nameOf(orig.member_id)) : 'Earlier message'),
+        h('span', null, orig ? snippet(orig.body) : 'Tap to find it'));
+      return q;
+    }
+    function jumpTo(id) {
+      const el = list.querySelector('[data-mid="' + id + '"]');
+      if (!el) { toast('That message is further up. Load earlier messages.', 'info'); return; }
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('flash');
+      setTimeout(() => el.classList.remove('flash'), 1400);
+    }
+    function startReply(m) {
+      replyTo = m;
+      RT.put(clear(replyBar),
+        h('div', { class: 'min0' }, h('b', null, 'Replying to ' + (m.user_id === S.user.id ? 'yourself' : nameOf(m.member_id))), h('div', { class: 'muted small ellipsis' }, snippet(m.body))),
+        h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Cancel reply', onclick: cancelReply }, icon('x', 16)));
+      replyBar.hidden = false;
+      input.focus();
+    }
+    function cancelReply() { replyTo = null; replyBar.hidden = true; clear(replyBar); }
+
     function bubble(m, mine) {
       const canDelete = typeof m.id === 'number' && (mine || S.isAdmin);
-      const b = h('div', { class: 'bubble-row' + (fresh.has(m.id) ? ' pop' : '') },
+      const canReply = typeof m.id === 'number';
+      const b = h('div', { class: 'bubble-row' + (fresh.has(m.id) ? ' pop' : ''), 'data-mid': String(m.id) },
+        canReply ? h('button', { class: 'bubble-reply', type: 'button', 'aria-label': 'Reply', title: 'Reply', onclick: () => startReply(m) }, icon('reply', 14)) : null,
         h('div', {
           class: 'bubble' + (m.status === 'failed' ? ' failed' : '') + (m.status === 'sending' ? ' sending' : ''),
           // On phones there's no hover, so tapping a message reveals its delete button.
-          onclick: canDelete ? () => b.classList.toggle('show-del') : null
-        }, m.body),
+          onclick: (canDelete || canReply) ? () => b.classList.toggle('show-del') : null
+        }, quoteEl(m), m.body),
         canDelete ? h('button', { class: 'bubble-del', type: 'button', 'aria-label': 'Delete message', title: 'Delete', onclick: () => del(m) }, icon('trash', 14)) : null);
       return b;
     }
 
     // ---------- sending ----------
     let tempSeq = 0;
-    async function send(body, existing) {
+    async function send(body, existing, replyId) {
       const temp = existing || {
-        id: 'tmp-' + (++tempSeq), member_id: S.me.id, user_id: S.user.id, body, created_at: new Date().toISOString(), status: 'sending'
+        id: 'tmp-' + (++tempSeq), member_id: S.me.id, user_id: S.user.id, body, created_at: new Date().toISOString(), status: 'sending', reply_to: replyId || null
       };
+      replyId = existing ? existing.reply_to : replyId;
       if (!existing) { add(temp, { animate: true }); sortMsgs(); }
       temp.status = 'sending';
       render();
       scrollToBottom(true);
-      const { data, error } = await sb.from('messages').insert({ body, member_id: S.me.id, user_id: S.user.id }).select('id, member_id, user_id, body, created_at').single();
+      const { data, error } = await sb.from('messages').insert({ body, member_id: S.me.id, user_id: S.user.id, reply_to: replyId || null }).select('id, member_id, user_id, body, created_at, reply_to').single();
       if (!alive) return;
       if (error) {
         temp.status = 'failed';
@@ -274,6 +305,7 @@
     input.addEventListener('input', autosize);
     input.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); composer.requestSubmit(); }
+      if (e.key === 'Escape' && replyTo) cancelReply();
     });
     composer.addEventListener('submit', e => {
       e.preventDefault();
@@ -281,7 +313,9 @@
       if (!body) return;
       input.value = '';
       autosize();
-      send(body);
+      const rid = replyTo && typeof replyTo.id === 'number' ? replyTo.id : null;
+      cancelReply();
+      send(body, null, rid);
       input.focus();
     });
 

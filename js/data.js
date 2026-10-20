@@ -32,7 +32,7 @@
     bountyTaken: new Map(),
     myClaims: [],
     unseenAnn: 0,
-    adminCounts: { cards: 0, welcome: 0, claims: 0 },
+    adminCounts: { welcome: 0, claims: 0 },
     pendingCount: 0,
     recovery: false
   };
@@ -376,18 +376,17 @@
   }
   RT.refreshBoard = refreshBoard;
 
-  // What officers still have to do: cards to make, people to welcome, bounty claims to check.
+  // What officers still have to do: people to welcome, bounty claims to check.
   async function refreshPending() {
     const S = RT.state;
     if (!S.isAdmin) return 0;
     const head = t => sb.from(t).select('id', { count: 'exact', head: true });
-    const [cards, welcome, claims] = await Promise.all([
-      head('members').eq('card_status', 'pending'),
+    const [welcome, claims] = await Promise.all([
       head('members').eq('contact_status', 'new').not('phone', 'is', null),
       head('bounty_claims').eq('status', 'pending')
     ]);
-    S.adminCounts = { cards: cards.count || 0, welcome: welcome.count || 0, claims: claims.count || 0 };
-    S.pendingCount = S.adminCounts.cards + S.adminCounts.welcome + S.adminCounts.claims;
+    S.adminCounts = { welcome: welcome.count || 0, claims: claims.count || 0 };
+    S.pendingCount = S.adminCounts.welcome + S.adminCounts.claims;
     return S.pendingCount;
   }
   RT.refreshPending = refreshPending;

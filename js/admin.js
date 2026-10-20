@@ -1,4 +1,4 @@
-// Officer tools: card check-in, card requests, members, meetings, pitch results + bites, badges.
+// Officer tools: check-in, members, meetings, pitch results + bites, badges.
 (function () {
   const RT = window.RT;
   const { h, clear, icon, toast, modal, confirmDialog, segmented, avatar, memberPicker, busy, friendly, fmtDate, fmtTime, localDateISO, ordinal } = RT;
@@ -9,16 +9,14 @@
   const A = { members: [], meetings: [], attendance: [], pitches: [], votes: [], awards: [], loaded: false, meetingId: null };
   RT.adminData = A;
 
-  const normalizeUid = raw => String(raw || '').replace(/[^0-9a-z]/gi, '').toUpperCase();
   const memberById = id => A.members.find(m => m.id === id);
   const nameOf = id => (memberById(id) || {}).name || S.directory.get(id) || 'Unknown';
   const meetingLabel = m => `${fmtDate(m.meeting_date)} · ${m.name || 'Meeting'}`;
   const pointsOf = id => { const r = S.board.find(b => b.member_id === id); return r ? r.total_points : 0; };
 
-  // Shared with js/admin2.js (Welcome queue, Bounties, Meetings, Card station).
+  // Shared with js/admin2.js (Welcome queue, Bounties, Meetings).
   RT.adminKit = {
-    A, memberById, nameOf, assignCard, captureCards, beep, normalizeUid, syncPending, codeModal, stripStat,
-    tapToLink, loadAll, openMember: (m, onChange) => memberModal(m, onChange || (() => {}))
+    A, memberById, nameOf, beep, syncPending, codeModal, stripStat, loadAll, openMember: (m, onChange) => memberModal(m, onChange || (() => {}))
   };
 
   async function loadAll() {
@@ -39,9 +37,8 @@
 
   // What officers still owe: cards to make, people to welcome (bounty claims are counted by their own tab).
   function syncPending() {
-    S.adminCounts.cards = A.members.filter(m => m.card_status === 'pending').length;
     S.adminCounts.welcome = A.members.filter(m => m.contact_status === 'new' && m.phone).length;
-    S.pendingCount = S.adminCounts.cards + S.adminCounts.welcome + S.adminCounts.claims;
+    S.pendingCount = S.adminCounts.welcome + S.adminCounts.claims;
     RT.updateAdminBadge();
   }
 
@@ -100,62 +97,17 @@
     } catch (e) { /* no audio */ }
   }
 
-  // Card readers act like a keyboard: they type the card ID and press Enter.
-  // Listen at the page level so nothing needs to stay focused.
-  // If someone left a text box selected, a reader's burst of keys (much faster than a person types)
-  // is still recognized as a card, and the typed ID is wiped back out of the box.
-  function captureCards(onUid, { inModal = false } = {}) {
-    let buf = '';
-    let times = [];
-    let last = 0;
-    let lastTarget = null;
-    function onKey(e) {
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-      // A page-level scanner stays quiet while a dialog is open; the dialog's own scanner takes over.
-      if (!inModal && document.body.classList.contains('modal-open')) return;
-      const t = e.target;
-      const inField = !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
-      const now = performance.now();
-      if (now - last > 400 || t !== lastTarget) { buf = ''; times = []; }
-      last = now;
-      lastTarget = t;
-      if (e.key === 'Enter') {
-        const fast = times.length >= 4 && (times[times.length - 1] - times[0]) / (times.length - 1) < 35;
-        if (buf.length >= 4 && (!inField || fast)) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (inField && typeof t.value === 'string' && t.value.endsWith(buf)) {
-            t.value = t.value.slice(0, -buf.length);
-            t.dispatchEvent(new Event('input', { bubbles: true }));
-          }
-          const v = buf;
-          buf = '';
-          times = [];
-          onUid(v);
-          return;
-        }
-        buf = '';
-        times = [];
-      } else if (e.key.length === 1) {
-        buf += e.key;
-        times.push(now);
-      }
-    }
-    document.addEventListener('keydown', onKey, true);
-    return () => document.removeEventListener('keydown', onKey, true);
-  }
-
   // ---------------- view ----------------
   RT.views.admin = function (root, t) {
     const tabs = [
-      { value: 'checkin', label: 'Check-in', icon: 'nfc' },
+      { value: 'checkin', label: 'Check-in', icon: 'check' },
       { value: 'welcome', label: 'Welcome', icon: 'send', badge: S.adminCounts.welcome || 0 },
-      { value: 'requests', label: 'Card requests', icon: 'card', badge: S.adminCounts.cards || 0 },
       { value: 'members', label: 'Members', icon: 'users' },
       { value: 'meetings', label: 'Calendar', icon: 'calendar' },
       { value: 'pitches', label: 'Pitches', icon: 'mic' },
       { value: 'bounties', label: 'Bounties', icon: 'target', badge: S.adminCounts.claims || 0 },
       { value: 'badges', label: 'Badges', icon: 'award' },
+      { value: 'fairplay', label: 'Fair play', icon: 'shield' },
       { value: 'assistant', label: 'Assistant', icon: 'sparkle' }
     ];
     const seg = segmented({ items: tabs, value: t.tab, className: 'admin-seg', ariaLabel: 'Officer tools', onChange: v => RT.go('admin/' + v) });
@@ -167,7 +119,6 @@
 
     const onPending = () => {
       seg.setBadge('welcome', S.adminCounts.welcome);
-      seg.setBadge('requests', S.adminCounts.cards);
       seg.setBadge('bounties', S.adminCounts.claims);
     };
     window.addEventListener('rt:pending', onPending);
@@ -175,7 +126,7 @@
     let tab = t.tab;
     let tabCleanup = null;
     // welcome, bounties, and meetings (the calendar) live in admin2.js
-    const TABS = Object.assign({ checkin: tabCheckin, requests: tabRequests, members: tabMembers, pitches: tabPitches, badges: tabBadges }, RT.adminTabs);
+    const TABS = Object.assign({ checkin: tabCheckin, members: tabMembers, pitches: tabPitches, badges: tabBadges }, RT.adminTabs);
 
     function show(name) {
       if (!TABS[name]) name = 'checkin';
@@ -234,25 +185,20 @@
 
     const status = h('div', { class: 'scan-status' });
     const result = h('div', { class: 'scan-result', 'aria-live': 'assertive' });
-    const manual = h('input', { class: 'input mono', type: 'text', placeholder: 'Or type a card ID and press Enter', autocomplete: 'off', spellcheck: false });
-    manual.addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); const v = manual.value; manual.value = ''; handleUid(v); }
-    });
-    const scanner = h('div', { class: 'card scanner' },
-      h('div', { class: 'scan-ring' }, h('span', { class: 'ring r1' }), h('span', { class: 'ring r2' }), h('span', { class: 'ring r3' }), h('span', { class: 'scan-core' }, icon('nfc', 30))),
-      status, result, manual);
+    const scanner = h('div', { class: 'card scanner' }, status, result);
 
     const count = h('span', { class: 'count-big mono' }, '0');
     const list = h('ul', { class: 'checked-list' });
     const picker = memberPicker({
       members: () => A.members,
       placeholder: 'Check someone in by name',
-      describe: m => (checkedIds().has(m.id) ? 'Checked in' : m.card_status === 'linked' ? '' : 'No card yet'),
+      describe: m => (checkedIds().has(m.id) ? 'Checked in' : ''),
       onPick: m => checkIn(m)
     });
+    scanner.append(h('div', { class: 'checkin-pick' }, picker));
     const side = h('div', { class: 'card checked-card' },
       h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Checked in'), count),
-      picker, list);
+      list);
 
     pane.append(
       h('div', { class: 'card meeting-bar' }, h('div', { class: 'grow min0' }, h('span', { class: 'card-label' }, 'Meeting'), sel), h('div', { class: 'row gap-sm wrap' }, startBtn, soundBtn)),
@@ -262,7 +208,7 @@
     function drawStatus() {
       clear(status);
       if (!A.meetingId) status.append(h('strong', null, 'No meeting selected'), h('span', { class: 'muted' }, 'Start today’s meeting to begin checking people in.'));
-      else status.append(h('strong', null, 'Ready for cards'), h('span', { class: 'muted' }, 'Tap a card on the reader. No need to click anything.'));
+      else status.append(h('strong', null, 'Ready to check people in'), h('span', { class: 'muted' }, 'Search a name below and tap it. Each person gets their Bites once.'));
       scanner.classList.toggle('idle', !A.meetingId);
     }
     function drawList() {
@@ -297,17 +243,6 @@
       drawList();
     }
 
-    async function handleUid(raw) {
-      const uid = normalizeUid(raw);
-      if (uid.length < 4) return;
-      const m = A.members.find(x => x.card_uid && normalizeUid(x.card_uid) === uid);
-      if (m) return checkIn(m);
-      flash('err', 'New card', 'Card ' + uid + ' isn’t linked to anyone yet.', [
-        h('button', { class: 'btn btn-primary btn-sm', type: 'button', onclick: () => linkCardFlow(uid, async mem => { await checkIn(mem); }) }, icon('link', 14), 'Link to a member'),
-        h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => newMemberWithCard(uid, async mem => { await checkIn(mem); }) }, icon('plus', 14), 'New member')
-      ]);
-    }
-
     async function undo(a) {
       const ok = await confirmDialog({ title: 'Undo check-in?', message: `${nameOf(a.member_id)} loses the ${a.points_awarded} Bites from this meeting.`, confirmText: 'Undo', danger: true });
       if (!ok) return;
@@ -318,57 +253,7 @@
     }
 
     drawList();
-    const stop = captureCards(handleUid);
-    return stop;
-  }
-
-  // Pick which member a new card belongs to.
-  function linkCardFlow(uid, after) {
-    const hint = h('p', { class: 'muted small' }, 'People waiting on a card are listed first.');
-    const waiting = A.members.filter(m => !m.card_uid).sort((a, b) => (a.card_status === 'pending' ? 0 : 1) - (b.card_status === 'pending' ? 0 : 1));
-    const quick = h('div', { class: 'quick-list' }, waiting.slice(0, 8).map(m =>
-      h('button', { class: 'quick-item', type: 'button', onclick: () => pick(m) }, avatar(m.name, 28), h('span', { class: 'grow ellipsis' }, m.name), h('span', { class: 'muted small' }, m.grade ? m.grade + 'th' : ''))));
-    const picker = memberPicker({ members: () => A.members, placeholder: 'Search everyone', onPick: m => pick(m), describe: m => (m.card_uid ? 'Has a card' : '') });
-    const md = modal({ title: 'Link this card', subtitle: 'Card ' + uid, body: h('div', { class: 'stack' }, picker, hint, quick) });
-    async function pick(m) {
-      if (m.card_uid && !(await confirmDialog({ title: 'Replace their card?', message: `${m.name} already has card ${m.card_uid}. The old card will stop working.`, confirmText: 'Replace' }))) return;
-      try {
-        await assignCard(m, uid);
-        md.close();
-        toast(`Card linked to ${m.name}`, 'success');
-        if (after) await after(memberById(m.id));
-      } catch (e) { toast(friendly(e), 'error'); }
-    }
-  }
-
-  async function assignCard(m, uid) {
-    const clash = A.members.find(x => x.id !== m.id && x.card_uid && normalizeUid(x.card_uid) === uid);
-    if (clash) throw new Error(`That card already belongs to ${clash.name}.`);
-    const { data, error } = await sb.from('members').update({ card_uid: uid, card_status: 'linked' }).eq('id', m.id).select().single();
-    if (error) throw error;
-    Object.assign(memberById(m.id), data);
-    syncPending();
-    return data;
-  }
-
-  function newMemberWithCard(uid, after) {
-    const name = h('input', { class: 'input', type: 'text', placeholder: 'First and last name', maxlength: 60, autofocus: true });
-    const grade = RT.gradeSwitch('');
-    const save = h('button', { class: 'btn btn-primary', type: 'button' }, 'Add & check in');
-    const md = modal({ title: 'New member', subtitle: uid ? 'Card ' + uid : '', body: h('div', { class: 'stack' }, RT.field('Name', name), h('div', { class: 'field' }, h('span', { class: 'label' }, 'Grade'), grade)), actions: [save] });
-    save.addEventListener('click', () => busy(save, async () => {
-      if (name.value.trim().length < 2) { toast('Enter their name.', 'error'); return; }
-      const row = { name: name.value.trim(), grade: grade.getValue() || null, card_uid: uid || null, card_status: uid ? 'linked' : 'pending' };
-      const { data, error } = await sb.from('members').insert(row).select().single();
-      if (error) { toast(friendly(error), 'error'); return; }
-      A.members.push(data);
-      A.members.sort((a, b) => a.name.localeCompare(b.name));
-      S.directory.set(data.id, data.name);
-      syncPending();
-      md.close();
-      codeModal([data]);
-      if (after) await after(data);
-    }));
+    return null;
   }
 
   // Show login codes so an officer can hand them out (members use them to link their account).
@@ -382,62 +267,6 @@
     });
   }
 
-  // ---------------- card requests ----------------
-  function tabRequests(pane) {
-    const pending = A.members.filter(m => m.card_status === 'pending').sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-    pane.appendChild(h('div', { class: 'section-row' },
-      h('div', null, h('h2', { class: 'h2' }, 'Card requests'), h('p', { class: 'muted small' }, 'Everyone here needs a physical card. Use Card station to link a whole stack of blank cards fast, or tap “Link card” for one person.')),
-      h('div', { class: 'row gap-sm' },
-        pending.length ? h('button', { class: 'btn btn-primary btn-sm', type: 'button', onclick: () => RT.adminKit2.cardStation(() => RT.rerenderAdminTab && RT.rerenderAdminTab()) }, icon('nfc', 16), 'Card station') : null,
-        h('span', { class: 'count-pill lg' }, String(pending.length)))));
-    if (!pending.length) {
-      pane.appendChild(h('div', { class: 'card empty' }, icon('check', 24, 'accent'), h('h3', null, 'All caught up'), h('p', { class: 'muted' }, 'No one is waiting on a card.')));
-      return null;
-    }
-    const list = h('div', { class: 'request-list' });
-    pending.forEach((m, i) => {
-      const online = !!m.user_id;
-      list.appendChild(h('div', { class: 'card request', style: { '--i': Math.min(i, 10) } },
-        avatar(m.name, 44),
-        h('div', { class: 'grow min0' },
-          h('div', { class: 'req-name' }, m.name, m.grade ? h('span', { class: 'muted' }, ' · ' + m.grade + 'th') : null),
-          h('div', { class: 'muted small ellipsis' }, (online ? 'Signed up online' : 'Added by an officer') + ' · ' + fmtDate(m.created_at, { month: 'short', day: 'numeric' }) + (m.email ? ' · ' + m.email : ''))),
-        h('span', { class: 'mono code-pill', title: 'Their code' }, m.login_code || ''),
-        h('button', { class: 'btn btn-primary btn-sm', type: 'button', onclick: () => tapToLink(m, () => { RT.rerenderAdminTab && RT.rerenderAdminTab(); }) }, icon('nfc', 16), 'Link card')));
-    });
-    pane.appendChild(list);
-    RT.rerenderAdminTab = () => { clear(pane); tabRequests(pane); };
-    return () => { RT.rerenderAdminTab = null; };
-  }
-
-  // Modal that waits for a tap on the reader, then links that card to the member.
-  function tapToLink(m, after) {
-    const manual = h('input', { class: 'input mono', type: 'text', placeholder: 'Or type the card ID', autocomplete: 'off', spellcheck: false });
-    const state = h('p', { class: 'muted center-text' }, 'Waiting for a card…');
-    const body = h('div', { class: 'stack center-text' },
-      h('div', { class: 'scan-ring sm' }, h('span', { class: 'ring r1' }), h('span', { class: 'ring r2' }), h('span', { class: 'scan-core' }, icon('nfc', 24))),
-      state, manual);
-    let stop = null;
-    const md = modal({ title: 'Tap ' + m.name.split(' ')[0] + '’s new card', subtitle: 'Hold the card on the reader until it beeps.', body, onClose: () => stop && stop() });
-    async function use(raw) {
-      const uid = normalizeUid(raw);
-      if (uid.length < 4) return;
-      state.textContent = 'Linking card ' + uid + '…';
-      try {
-        await assignCard(m, uid);
-        beep(true);
-        toast(`Card linked to ${m.name}`, 'success');
-        md.close();
-        if (after) after();
-      } catch (e) {
-        beep(false);
-        state.textContent = friendly(e);
-      }
-    }
-    stop = captureCards(use, { inModal: true });
-    manual.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); use(manual.value); manual.value = ''; } });
-  }
-
   // ---------------- members ----------------
   function tabMembers(pane) {
     const search = h('input', { class: 'input', type: 'search', placeholder: 'Search members', autocomplete: 'off' });
@@ -448,11 +277,10 @@
       if (!rows.length) { toast('No phone numbers yet.', 'info'); return; }
       RT.copyText(rows.map(m => m.name + ', ' + m.phone).join('\n'), rows.length + ' phone numbers copied');
     } }, icon('copy', 16), 'Copy phone numbers');
-    const linked = A.members.filter(m => m.card_status === 'linked').length;
     const withAcct = A.members.filter(m => m.user_id).length;
     pane.append(
       h('div', { class: 'stat-strip' },
-        stripStat('Members', A.members.length), stripStat('Cards linked', linked), stripStat('Waiting on card', A.members.length - linked), stripStat('Have accounts', withAcct)),
+        stripStat('Members', A.members.length), stripStat('Have accounts', withAcct), stripStat('Waiting to join', A.members.length - withAcct)),
       h('div', { class: 'toolbar' }, h('div', { class: 'input-icon grow' }, icon('search', 16), search), phonesBtn, addBtn));
     const table = h('div', { class: 'card table-card' });
     pane.appendChild(table);
@@ -462,13 +290,12 @@
       const digits = q.replace(/\D/g, '');
       const rows = A.members.filter(m => !q || m.name.toLowerCase().includes(q) || (m.email || '').toLowerCase().includes(q) || (m.login_code || '').toLowerCase().includes(q) || (digits.length >= 3 && (m.phone || '').includes(digits)));
       clear(table);
-      table.appendChild(h('div', { class: 'trow thead' }, h('span', null, 'Name'), h('span', null, 'Grade'), h('span', null, 'Bites'), h('span', null, 'Card'), h('span', null, 'Account'), h('span')));
+      table.appendChild(h('div', { class: 'trow thead' }, h('span', null, 'Name'), h('span', null, 'Grade'), h('span', null, 'Bites'), h('span', null, 'Account'), h('span')));
       if (!rows.length) { table.appendChild(h('div', { class: 'empty small' }, h('p', { class: 'muted' }, A.members.length ? 'No matches.' : 'No members yet. Add the roster to get started.'))); return; }
       rows.forEach(m => table.appendChild(h('button', { class: 'trow', type: 'button', onclick: () => memberModal(m, draw) },
         h('span', { class: 'cell-name' }, avatar(m.name, 30), h('span', { class: 'ellipsis' }, m.name)),
         h('span', { class: 'muted' }, m.grade ? m.grade + 'th' : '—'),
         h('span', { class: 'mono' }, String(pointsOf(m.id))),
-        h('span', null, h('span', { class: 'status-pill sm ' + (m.card_status === 'linked' ? 'ok' : 'wait') }, m.card_status === 'linked' ? 'Linked' : 'Pending')),
         h('span', { class: m.user_id ? 'accent' : 'muted' }, m.user_id ? icon('check', 16) : '—'),
         h('span', { class: 'muted' }, icon('chevronRight', 16)))));
     }
@@ -523,7 +350,7 @@
       const md = modal({ title: 'Add members', subtitle: 'One person per line. Grade, email and phone are picked up automatically if they’re there.', body: h('div', { class: 'stack-sm' }, ta, found), actions: [save], wide: true });
       save.addEventListener('click', () => busy(save, async () => {
         const rows = parsePasted(ta.value).map(r => ({
-          name: r.name, grade: r.grade, email: r.email, phone: r.phone, whatsapp_ok: r.whatsapp_ok, card_status: 'pending',
+          name: r.name, grade: r.grade, email: r.email, phone: r.phone, whatsapp_ok: r.whatsapp_ok,
           source: r.email || r.phone ? 'form' : 'officer'
         }));
         if (!rows.length) { toast('Add at least one name.', 'error'); return; }
@@ -554,7 +381,6 @@
     const saveBtn = h('button', { class: 'btn btn-primary btn-sm', type: 'button' }, 'Save');
     const attended = A.attendance.filter(a => a.member_id === m.id).length;
     const myAwards = A.awards.filter(a => a.member_id === m.id);
-    const cardBox = h('div', { class: 'detail-box' });
     const codeBox = h('div', { class: 'detail-box' });
     const phoneF = RT.phoneFields({ phone: m.phone || '', whatsapp: m.whatsapp_ok, required: false });
     const reach = h('div', { class: 'row gap-sm wrap' });
@@ -567,16 +393,6 @@
         h('a', { class: 'btn btn-ghost btn-sm', href: `https://wa.me/${m.phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, target: '_blank', rel: 'noopener' }, icon('whatsapp', 14), 'WhatsApp'));
     }
 
-    function drawCard() {
-      clear(cardBox).append(
-        h('div', { class: 'card-label' }, 'Card'),
-        h('div', { class: 'row between wrap gap-sm' },
-          h('div', null, h('span', { class: 'status-pill ' + (m.card_status === 'linked' ? 'ok' : 'wait') }, m.card_status === 'linked' ? 'Linked' : 'Pending'),
-            m.card_uid ? h('span', { class: 'mono muted small' }, '  ' + m.card_uid) : null),
-          h('div', { class: 'row gap-sm' },
-            h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => tapToLink(m, () => { drawCard(); onChange(); }) }, icon('nfc', 14), m.card_uid ? 'Replace card' : 'Link card'),
-            m.card_uid ? h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: unlinkCard }, 'Unlink') : null)));
-    }
     function drawCode() {
       clear(codeBox).append(
         h('div', { class: 'card-label' }, 'Login code'),
@@ -588,15 +404,6 @@
         m.phone ? h('p', { class: 'small' }, 'Phone: ', h('a', { href: 'tel:' + m.phone, class: 'mono' }, m.phone)) : '',
         m.user_id && m.email ? h('div', { class: 'row' }, h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: setPassword }, icon('lock', 14), 'Set a new password')) : '',
         h('p', { class: 'muted small' }, m.user_id ? 'Their account is linked' + (m.email ? ' (' + m.email + ')' : '') + '.' : 'No account yet. They enter this code when they sign up.'));
-    }
-    async function unlinkCard() {
-      if (!(await confirmDialog({ title: 'Unlink card?', message: 'Their card will stop checking them in until a new one is linked.', confirmText: 'Unlink', danger: true }))) return;
-      const { data, error } = await sb.from('members').update({ card_uid: null, card_status: 'pending' }).eq('id', m.id).select().single();
-      if (error) { toast(friendly(error), 'error'); return; }
-      Object.assign(m, data);
-      syncPending();
-      drawCard();
-      onChange();
     }
     // For a member who forgot their password (there is no reset email): the officer picks a temporary one.
     function setPassword() {
@@ -635,8 +442,45 @@
       onChange();
     }));
 
+    // ---- Bites: add or remove, with a reason, and see what officers changed before ----
+    const bitesBox = h('div', { class: 'detail-box' });
+    async function drawBites() {
+      const amt = h('input', { class: 'input mono', type: 'number', min: 1, step: 1, inputmode: 'numeric', placeholder: 'Bites', 'aria-label': 'Amount' });
+      const why = h('input', { class: 'input', type: 'text', maxlength: 200, placeholder: 'Why? (optional)', 'aria-label': 'Reason' });
+      const hist = h('ul', { class: 'timeline' });
+      const apply = async (sign, btn) => {
+        const n = Math.floor(Number(amt.value));
+        if (!(n >= 1)) { toast('Enter how many Bites.', 'error'); return; }
+        if (sign < 0 && n > pointsOf(m.id)) { toast(m.name.split(' ')[0] + ' only has ' + pointsOf(m.id) + ' Bites.', 'error'); return; }
+        await busy(btn, async () => {
+          const { error } = await sb.from('bite_adjustments').insert({ member_id: m.id, amount: sign * n, reason: why.value.trim() });
+          if (error) { toast(friendly(error), 'error'); return; }
+          await RT.refreshBoard();
+          const sub = document.querySelector('#modal-root [role="dialog"] h3 + p, #modal-root .modal h3 + p');
+          if (sub) sub.textContent = sub.textContent.replace(/^\d+ Bites/, pointsOf(m.id) + ' Bites');
+          toast((sign > 0 ? 'Added ' : 'Removed ') + n + ' Bites ' + (sign > 0 ? 'to ' : 'from ') + m.name.split(' ')[0], 'success');
+          onChange();
+          drawBites();
+        });
+      };
+      const addB = h('button', { class: 'btn btn-primary btn-sm', type: 'button' }, icon('plus', 14), 'Add');
+      const subB = h('button', { class: 'btn btn-ghost btn-sm', type: 'button' }, 'Remove');
+      addB.addEventListener('click', () => apply(1, addB));
+      subB.addEventListener('click', () => apply(-1, subB));
+      clear(bitesBox).append(
+        h('div', { class: 'row between wrap gap-sm' }, h('div', { class: 'card-label' }, 'Bites'), h('span', { class: 'mono' }, pointsOf(m.id) + ' now')),
+        h('div', { class: 'row gap-sm wrap' }, h('div', { style: { width: '110px' } }, amt), h('div', { class: 'grow' }, why), addB, subB),
+        hist);
+      const { data } = await sb.from('bite_adjustments').select('id, amount, reason, created_at').eq('member_id', m.id).order('created_at', { ascending: false }).limit(8);
+      (data || []).forEach(a => hist.appendChild(h('li', null,
+        h('span', { class: 'tl-icon' + (a.amount < 0 ? ' burg' : '') }, icon(a.amount < 0 ? 'x' : 'plus', 14)),
+        h('div', { class: 'grow min0' }, h('div', { class: 'ellipsis' }, a.reason || (a.amount < 0 ? 'Removed by an officer' : 'Added by an officer')), h('div', { class: 'muted small' }, fmtDate(a.created_at, { month: 'short', day: 'numeric' }))),
+        h('span', { class: 'pts-gain mono' }, (a.amount > 0 ? '+' : '') + a.amount))));
+    }
+
     const delBtn = h('button', { class: 'btn btn-danger btn-sm', type: 'button' }, icon('trash', 14), 'Delete member');
-    const md = modal({
+    let md = null;
+    md = modal({
       title: m.name,
       subtitle: `${pointsOf(m.id)} Bites · ${attended} meeting${attended === 1 ? '' : 's'} · joined ${fmtDate(m.join_date || m.created_at, { month: 'short', day: 'numeric', year: 'numeric' })}`,
       wide: true,
@@ -645,14 +489,14 @@
           h('div', { class: 'form-grid' }, RT.field('Name', name), h('div', { class: 'field' }, h('span', { class: 'label' }, 'Grade'), grade)),
           phoneF.el, reach,
           h('div', { class: 'row end' }, saveBtn)),
-        cardBox, codeBox,
+        bitesBox, codeBox,
         h('div', { class: 'detail-box' }, h('div', { class: 'card-label' }, 'Officer-given badges'),
           myAwards.length ? h('div', { class: 'row wrap gap-sm' }, myAwards.map(a => { const b = S.badges.find(x => x.id === a.badge_id); return h('span', { class: 'tag' }, icon(RT.badgeIcon(b ? b.name : ''), 14), b ? b.name : 'Badge'); })) : h('p', { class: 'muted small' }, 'None yet. Use the Badges tab to give one.')),
         h('div', { class: 'detail-box danger-zone' }, h('div', null, h('div', { class: 'card-label' }, 'Danger zone'), h('p', { class: 'muted small' }, 'Deletes their check-ins, pitches, badges, and messages too.')), delBtn))
     });
-    drawCard();
     drawCode();
     drawReach();
+    drawBites();
     delBtn.addEventListener('click', async () => {
       const ok = await confirmDialog({ title: 'Delete ' + m.name + '?', message: 'This removes them from the leaderboard for good.', confirmText: 'Delete forever', danger: true, requireText: m.name });
       if (!ok) return;

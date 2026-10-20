@@ -1893,3 +1893,28 @@ html[data-theme="light"] .tier-chip.tier-mega { color: #7e1434; }
 .stand-stat { min-height: 96px; }
 @media (max-width: 600px) { .hero-title { font-size: 13.5vw; } }
 .points-card .card-head { margin-bottom: 8px; }
+
+/* ---------- Academy fair play ---------- */
+.no-copy, .no-copy * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.no-copy textarea, .no-copy input { -webkit-user-select: text; user-select: text; }
+.ac-example { margin-top: 12px; padding: 12px 14px; border: 1px dashed var(--line-2, var(--line)); background: rgb(var(--tint) / 0.03); font-size: 14px; color: var(--ink-2); }
+.ac-example .card-label { margin-bottom: 6px; }
+.ac-fair { display: flex; gap: 8px; align-items: flex-start; margin-top: 10px; font-size: 12.5px; color: var(--ink-3); }
+.ac-fair svg { flex: none; margin-top: 2px; color: var(--g-300); }
+.ac-held { display: flex; gap: 12px; align-items: flex-start; margin: 14px 0; padding: 14px 16px; border: 1px solid rgba(210, 71, 110, 0.5); background: rgba(210, 71, 110, 0.08); }
+.ac-held svg { flex: none; margin-top: 2px; color: #f09ab2; }
+.ac-held ul { margin: 6px 0 0; padding-left: 18px; }
+.fp-row { display: flex; flex-direction: column; gap: 10px; }
+.fp-reasons { margin: 0; padding-left: 18px; }
+
+/* ---------- chat replies ---------- */
+.bubble-reply { flex: none; width: 26px; height: 26px; display: grid; place-items: center; color: var(--ink-4); opacity: 0; transition: opacity 0.15s, color 0.15s, background 0.15s; }
+.bubble-reply:focus-visible, .bubble-row.show-del .bubble-reply { opacity: 1; }
+@media (hover: hover) { .bubble-row:hover .bubble-reply { opacity: 1; } }
+.bubble-reply:hover { color: var(--g-300); background: rgb(var(--tint) / 0.08); }
+.bubble-quote { display: flex; flex-direction: column; gap: 2px; width: 100%; margin: 0 0 6px; padding: 6px 10px; text-align: left; border-left: 3px solid var(--g-400); background: rgb(var(--tint) / 0.08); font-size: 12.5px; color: inherit; opacity: 0.9; }
+.bubble-quote b { font-weight: 600; color: var(--g-300); }
+.bubble-quote span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 36ch; }
+.bubble-row.flash .bubble { outline: 2px solid var(--g-400); outline-offset: 2px; }
+.reply-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 16px; border-top: 1px solid var(--line); border-left: 3px solid var(--g-400); background: rgb(var(--tint) / 0.04); font-size: 13px; }
+.reply-bar[hidden] { display: none; }

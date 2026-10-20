@@ -62,7 +62,11 @@ function scoreRequest(b) {
     'persuasion: opens with something that makes you want to keep listening and ends with a clear ask.',
     'answers: answers each question directly, without dodging.',
     `This level's focus is ${b.focus}. Be honest, not generous.`,
-    `Reply with JSON only, exactly this shape: {"scores":{"clear":0,"customer":0,"numbers":0,"persuasion":0,"answers":0},"keep":"one sentence to the student about the best part","fix":["one specific next step","another specific next step"],"closer":"one or two sentences that ${b.speaker.name} says straight to the student, in first person, reacting to the round"}`,
+    'Also estimate ai_written, 0 to 100: how likely the student lines were produced by an AI chatbot instead of typed by a high school student.',
+    'Chatbot signs: polished marketing tone, generic statements that could fit any idea, buzzwords (seamless, leverage, game-changer, empower, revolutionize), neat parallel structure, lists, em dashes, a formal essay voice, answers far longer and smoother than the question needs.',
+    'Student signs: casual voice, short or uneven sentences, small typos, specific details from their own school or life, answers that only cover what was asked.',
+    'Good writing alone is not proof. Only go above 80 when it clearly reads like a chatbot. Never lower a score because of ai_written; judge the scores on content only.',
+    `Reply with JSON only, exactly this shape: {"ai_written":0,"scores":{"clear":0,"customer":0,"numbers":0,"persuasion":0,"answers":0},"keep":"one sentence to the student about the best part","fix":["one specific next step","another specific next step"],"closer":"one or two sentences that ${b.speaker.name} says straight to the student, in first person, reacting to the round"}`,
     `Write keep and fix to the student as "you". Write closer as ${b.speaker.name} talking, never describing ${b.speaker.name} in third person.`,
     RULES
   ].join('\n');
@@ -97,5 +101,6 @@ export async function handle(body, key) {
   const scores = {};
   CATS.forEach(k => { const v = Math.round(Number(j.scores && j.scores[k])); scores[k] = Number.isFinite(v) ? Math.max(0, Math.min(4, v)) : 0; });
   const fix = (Array.isArray(j.fix) ? j.fix : [j.fix]).map(tidy).filter(Boolean).slice(0, 2);
-  return { scores, keep: tidy(j.keep).slice(0, 240), fix, closer: tidy(j.closer).slice(0, 300) };
+  const aw = Math.round(Number(j.ai_written));
+  return { scores, keep: tidy(j.keep).slice(0, 240), fix, closer: tidy(j.closer).slice(0, 300), aiWritten: Number.isFinite(aw) ? Math.max(0, Math.min(100, aw)) : null };
 }

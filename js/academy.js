@@ -77,22 +77,6 @@
   }
   RT.academyLoad = load;
 
-  async function saveRound(row) {
-    const id = S.me.id;
-    if (!AC.local) {
-      const { data, error } = await RT.sb.from('course_rounds').insert(Object.assign({}, row, { member_id: id })).select().single();
-      if (!error) { AC.rounds.push(data); return data; }
-      if (!missingTable(error)) throw error;
-      AC.local = true;
-    }
-    const list = store.get(LS.local + id, []);
-    const saved = Object.assign({}, row, { id: 'local-' + Date.now(), member_id: id, created_at: new Date().toISOString() });
-    list.push(saved);
-    store.set(LS.local + id, list);
-    AC.rounds.push(saved);
-    return saved;
-  }
-
   // Everything the screens need, worked out from the saved rounds and today's date.
   function prog() {
     const t = today();
@@ -308,7 +292,7 @@
       for (let n = gate.a; n <= gate.b; n++) if (p.best[n]) have++;
       todo.push(h('li', null, h('i'), h('span', null, `Finish levels ${gate.a} to ${gate.b} (${have} of 5 done)`)));
     }
-    todo.push(h('li', null, h('i'), h('span', null, 'Tap your card at the door')));
+    todo.push(h('li', null, h('i'), h('span', null, 'Check in at the door')));
     el.append(
       h('div', { class: 'next-when' }, dd === 0 ? 'Today' : dd === 1 ? 'Tomorrow' : 'In ' + dd + ' days'),
       h('p', { class: 'muted small' }, longDate(m.d) + (m.location ? ' · ' + m.location : '')),
@@ -366,6 +350,88 @@
     return el;
   }
 
+  // ---------------- fair play: typing guard ----------------
+  // Every answer box in the Academy runs through this. It blocks pasting and dropping text, and keeps a few numbers
+  // about HOW the text got there (never the text itself): letters typed on the keyboard, text that showed up without a
+  // key press, fake key events, and the rhythm of the typing. The server uses them to tell a person from a paste,
+  // an AI tool or an auto-typer program (api/_integrity.js). People type unevenly; programs don't.
+  function newStats() { return { typed: 0, keys: 0, untrusted: 0, orphan: 0, backs: 0, pauses: 0, pastes: 0, ikiN: 0, ikiSum: 0, ikiSq: 0, dwellN: 0, dwellSum: 0, dwellSq: 0, mobile: false }; }
+  function guardBox(box, st, onPaste) {
+    let prevLen = box.value.length, lastKey = 0, lastKeyAt = 0;
+    const down = new Map();
+    const blockPaste = e => { e.preventDefault(); st.pastes++; toast('Pasting is off in the Academy. Type it yourself.', 'error'); if (onPaste) onPaste(); };
+    box.setAttribute('autocomplete', 'off');
+    box.addEventListener('paste', blockPaste);
+    box.addEventListener('drop', blockPaste);
+    box.addEventListener('dragover', e => e.preventDefault());
+    box.addEventListener('keydown', e => {
+      if (!e.isTrusted) { st.untrusted++; e.preventDefault(); return; }
+      const now = performance.now();
+      if (e.key === 'Unidentified' || e.keyCode === 229) st.mobile = true;
+      if (e.key && (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Delete' || e.key === 'Enter' || e.key === 'Unidentified')) {
+        st.keys++;
+        if (lastKey) {
+          const d = now - lastKey;
+          if (d >= 1000) st.pauses++;
+          if (d < 3000) { st.ikiN++; st.ikiSum += d; st.ikiSq += d * d; }
+        }
+        lastKey = now; lastKeyAt = now;
+      }
+      if (e.key === 'Backspace' || e.key === 'Delete') st.backs++;
+      if (!e.repeat) down.set(e.code || e.key, now);
+    });
+    box.addEventListener('keyup', e => {
+      if (!e.isTrusted) { st.untrusted++; return; }
+      const k = e.code || e.key, t0 = down.get(k);
+      if (t0 != null && !st.mobile) { const d = performance.now() - t0; if (d < 2000) { st.dwellN++; st.dwellSum += d; st.dwellSq += d * d; } }
+      down.delete(k);
+    });
+    box.addEventListener('beforeinput', e => {
+      if (!e.isTrusted) { st.untrusted++; e.preventDefault(); return; }
+      if (/^insertFrom(Paste|Drop|Yank)/.test(e.inputType || '')) blockPaste(e);
+    });
+    box.addEventListener('input', e => {
+      const len = box.value.length, delta = len - prevLen;
+      prevLen = len;
+      if (!e.isTrusted) { st.untrusted++; return; }
+      if (delta <= 0) return;
+      const type = e.inputType || '';
+      const fromKey = performance.now() - lastKeyAt < 1500;
+      // A key press accounts for what it typed (a letter, or a word from the phone keyboard). Anything beyond that
+      // appeared from somewhere else.
+      const expected = type === 'insertLineBreak' ? 1 : Math.max(1, (e.data || '').length);
+      if (fromKey || type === 'insertCompositionText') {
+        const ok = Math.min(delta, type === 'insertReplacementText' ? Math.min(expected, 20) : expected);
+        st.typed += ok;
+        if (delta > ok) st.orphan += delta - ok;
+      } else if (type === 'insertReplacementText' && delta <= 20) st.typed += delta; // spellcheck fix
+      else st.orphan += delta;
+    });
+    return st;
+  }
+  // The numbers for one answer, in the shape the server checks.
+  function statsOut(st) {
+    const sd = (n, sum, sq) => (n > 1 ? Math.sqrt(Math.max(0, sq / n - (sum / n) ** 2)) : 0);
+    const ikiMean = st.ikiN ? st.ikiSum / st.ikiN : 0, dwellMean = st.dwellN ? st.dwellSum / st.dwellN : 0;
+    return {
+      typed: st.typed, ms: Math.round(st.ikiSum), keys: st.keys, untrusted: st.untrusted, orphan: st.orphan, backs: st.backs, pauses: st.pauses,
+      ikiCv: ikiMean ? +(sd(st.ikiN, st.ikiSum, st.ikiSq) / ikiMean).toFixed(3) : null,
+      dwellMean: st.dwellN ? Math.round(dwellMean) : null, dwellCv: dwellMean ? +(sd(st.dwellN, st.dwellSum, st.dwellSq) / dwellMean).toFixed(3) : null,
+      dwellN: st.dwellN, mobile: st.mobile
+    };
+  }
+  // No copying the questions out to an AI tool: text marked .no-copy can't be selected, copied or right-clicked.
+  (function () {
+    const inNoCopy = n => !!(n && (n.nodeType === 1 ? n : n.parentElement) && (n.nodeType === 1 ? n : n.parentElement).closest('.no-copy'));
+    const stop = e => {
+      const sel = window.getSelection && window.getSelection();
+      if (inNoCopy(e.target) || (sel && sel.rangeCount && inNoCopy(sel.getRangeAt(0).commonAncestorContainer))) { e.preventDefault(); toast('Copying is off in the Academy.', 'error'); }
+    };
+    document.addEventListener('copy', stop, true);
+    document.addEventListener('cut', stop, true);
+    document.addEventListener('contextmenu', e => { if (inNoCopy(e.target) && !/^(TEXTAREA|INPUT)$/.test(e.target.tagName)) e.preventDefault(); }, true);
+  })();
+
   // ---------------- one level ----------------
   function sentences(text) { return text.split(/\.\s+(?=[A-Z\[])/).map(x => x.replace(/\.$/, '')); }
 
@@ -381,14 +447,19 @@
     else if (st === 'ahead') state = h('p', { class: 'ac-state off' }, icon('lock', 14), `Pass level ${p.cur} first`);
 
     const draftKey = LS.draft + S.me.id + '_' + n;
-    const draft = h('textarea', { class: 'input textarea', rows: 5, 'aria-label': 'Your build', placeholder: 'Write your piece here. It goes straight to the shark.' }, store.get(draftKey, ''));
+    const draft = h('textarea', { class: 'input textarea', rows: 5, 'aria-label': 'Your build', placeholder: 'Write your piece here, in your own words. It goes straight to the shark.' }, store.get(draftKey, ''));
+    // The typing numbers are saved with the draft, so a draft written over a few days still counts as typed.
+    const draftStats = Object.assign(newStats(), store.get(draftKey + '_stats', {}));
+    if (!draft.value) Object.assign(draftStats, newStats());
+    guardBox(draft, draftStats);
     const wc = h('span', { class: 'muted small' });
-    const updWc = () => { wc.textContent = ((draft.value.trim().match(/\S+/g) || []).length) + ' words'; store.set(draftKey, draft.value); };
+    const updWc = () => { wc.textContent = ((draft.value.trim().match(/\S+/g) || []).length) + ' words'; store.set(draftKey, draft.value); store.set(draftKey + '_stats', draftStats); };
     draft.addEventListener('input', updWc);
     updWc();
+    const example = h('div', { class: 'ac-example no-copy', hidden: true }, h('p', { class: 'card-label' }, 'Example (read only)'), h('p', null, C.samples[n]));
 
     const canPlay = (st === 'current' || st === 'done') && left > 0;
-    const start = h('button', { class: 'btn btn-primary btn-block', type: 'button', disabled: !canPlay, onclick: () => openRound(levelSpec(n, draft.value)) },
+    const start = h('button', { class: 'btn btn-primary btn-block', type: 'button', disabled: !canPlay, onclick: () => openRound(levelSpec(n, draft.value, draftStats)) },
       st === 'done' ? 'Play it again for more stars' : 'Start the shark round');
     const why = st === 'locked' ? 'This level opens ' + longDate(b.opens) + '.'
       : st === 'ahead' ? `Pass level ${p.cur} first.`
@@ -405,18 +476,19 @@
           state)),
       h('div', { class: 'ac-grid' },
         h('div', { class: 'stack' },
-          h('section', { class: 'card' },
+          h('section', { class: 'card no-copy' },
             h('h2', { class: 'ac-h' }, 'Learn', h('span', { class: 'muted' }, '3-minute read')),
             h('ul', { class: 'ac-bul' }, sentences(L.learn).map(x => h('li', null, x + '.'))),
             h('p', { class: 'ac-note' }, h('b', null, 'For three stars: '), L.mastery),
             L.mission ? h('p', { class: 'ac-note' }, h('b', null, 'Real-world mission: '), L.mission, ' Show an officer at the next meeting.') : null),
           h('section', { class: 'card' },
             h('h2', { class: 'ac-h' }, 'Build'),
-            h('p', { class: 'muted' }, L.build),
+            h('p', { class: 'muted no-copy' }, L.build),
             h('div', { class: 'ac-draft' }, draft),
             h('div', { class: 'row between', style: { marginTop: '10px' } }, wc,
-              h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => { draft.value = C.samples[n]; draft.dispatchEvent(new Event('input')); } }, 'See an example')))),
-        h('aside', { class: 'card ac-shark' },
+              h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: e => { example.hidden = !example.hidden; e.currentTarget.textContent = example.hidden ? 'See an example' : 'Hide the example'; } }, 'See an example')),
+            example)),
+        h('aside', { class: 'card ac-shark no-copy' },
           h('div', { class: 'ac-shark-top' }, portrait(ag, 64), h('div', null, h('h3', null, ag), h('p', { class: 'muted small' }, who ? who.role : ''))),
           h('p', { class: 'ac-quote' }, '“' + C.scripts[n].opener[1] + '”'),
           h('dl', { class: 'ac-facts' },
@@ -425,6 +497,7 @@
             h('div', null, h('dt', null, 'To pass'), h('dd', null, `${se.pass} of 20, with ${cap(FOCUS[ag])} at 3 or more`))),
           start,
           h('p', { class: 'ac-small' }, why),
+          h('p', { class: 'ac-fair' }, icon('shield', 14), h('span', null, 'Type it yourself. Pasting is off, and rounds that look copied, AI-written or auto-typed don’t count.')),
           h('p', { class: 'ac-small' }, AI.url && !AI.down
             ? 'The sharks are AI and react to what you write. Only your score is saved, not your answers.'
             : 'The sharks follow a script here and score with simple rules.'))));
@@ -465,11 +538,11 @@
     persuasion: ['You gave me a reason to keep listening.', 'Open with a scene or a surprising fact, and end with an ask.'],
     answers: ['You answered straight.', 'Answer the question first, then explain. No dodging.']
   };
-  function levelSpec(n, draft) {
+  function levelSpec(n, draft, draftStats) {
     const sc = C.scripts[n], s = seasonOf(n), ag = mainAgent(n), op = sc.opener[0];
     const lines = sc.lines.map(l => [l[0] || op, l[1]]);
     return { kind: 'level', item: n, sub: 'Level ' + n + ': ' + C.levels[n].t, ag, mode: sc.mode, opener: sc.opener, lines,
-      needed: sc.mode === 'grill' ? lines.length + 1 : lines.length, focus: FOCUS[ag], pass: C.seasons[s].pass, xp: C.seasons[s].xp, askTag: op, draft: draft || '' };
+      needed: sc.mode === 'grill' ? lines.length + 1 : lines.length, focus: FOCUS[ag], pass: C.seasons[s].pass, xp: C.seasons[s].xp, askTag: op, draft: draft || '', draftStats: draft ? draftStats : null };
   }
   function weeklySpec(i) {
     const c = C.challenges[i], ag = c.agent === 'All five' ? 'Great White' : c.agent, w = C.chat.weekly[c.agent] || C.chat.weekly.Nurse;
@@ -519,13 +592,16 @@
   let R = null; // the open round
   function openRound(spec) {
     closeRound();
-    R = { spec, msgs: [], answers: [], turns: 0, busy: false, done: false, verdict: null, saved: null, sampleIx: 0, timer: null };
+    R = { spec, msgs: [], answers: [], turns: 0, busy: false, done: false, verdict: null, saved: null, sampleIx: 0, timer: null,
+      tel: [], stats: spec.draftStats ? Object.assign(newStats(), spec.draftStats) : newStats(), pastes: 0, leaves: 0, lastLeave: 0 };
     const wrap = h('div', { class: 'ac-round-wrap', role: 'presentation' });
     wrap.addEventListener('click', e => { if (e.target === wrap) closeRound(); });
     R.wrap = wrap;
     (document.getElementById('modal-root') || document.body).appendChild(wrap);
     document.body.classList.add('modal-open');
     document.addEventListener('keydown', onKey, true);
+    window.addEventListener('blur', onLeave);
+    document.addEventListener('visibilitychange', onLeave);
     drawRound();
     say(spec.opener[0], spec.opener[1]);
   }
@@ -536,6 +612,18 @@
     R = null;
     document.body.classList.remove('modal-open');
     document.removeEventListener('keydown', onKey, true);
+    window.removeEventListener('blur', onLeave);
+    document.removeEventListener('visibilitychange', onLeave);
+  }
+  // Leaving the round (another tab or app) is counted. It only matters together with other signs.
+  function onLeave() {
+    if (!R || R.verdict || R.done) return;
+    if (document.visibilityState === 'visible' && document.hasFocus()) return;
+    const now = Date.now();
+    if (now - R.lastLeave < 1500) return;
+    R.lastLeave = now;
+    R.leaves++;
+    if (R.leaves === 2) setTimeout(() => toast('Leaving the round is tracked. Stay on this page until you finish.', 'error', 5000), 400);
   }
   function onKey(e) {
     if (!R) return;
@@ -554,16 +642,19 @@
     const panel = h('div', { class: 'ac-round', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Shark round with ' + sp.ag }, head);
     if (R.verdict) panel.appendChild(verdictEl());
     else {
-      const msgs = h('div', { class: 'ac-msgs' }, R.msgs.map(msgEl), R.busy ? h('div', { class: 'ac-msg' }, portrait(R.busyWho, 34), h('div', { class: 'ac-bub', 'aria-label': 'Typing' }, h('span', { class: 'ac-typing' }, h('i'), h('i'), h('i')))) : null);
+      const msgs = h('div', { class: 'ac-msgs no-copy' }, R.msgs.map(msgEl), R.busy ? h('div', { class: 'ac-msg' }, portrait(R.busyWho, 34), h('div', { class: 'ac-bub', 'aria-label': 'Typing' }, h('span', { class: 'ac-typing' }, h('i'), h('i'), h('i')))) : null);
       const off = R.busy || R.done;
       const box = h('textarea', { class: 'input textarea', rows: 3, 'aria-label': 'Your answer', disabled: off,
         placeholder: sp.mode === 'talk' && R.turns === 0 ? 'Ask a question…' : 'Type your answer…' });
       if (!off && R.turns === 0 && sp.draft) box.value = sp.draft;
+      if (!off && R.keep != null) { box.value = R.keep; R.keep = null; }
+      if (!off) guardBox(box, R.stats, () => { R.pastes++; });
       R.input = box;
       panel.append(msgs, h('div', { class: 'ac-comp' }, box,
-        h('div', { class: 'row between' }, h('span', { class: 'muted small' }, 'A few sentences. Numbers help.'),
+        R.hint ? h('div', { class: 'ac-example no-copy' }, h('p', { class: 'card-label' }, 'Example (read only)'), h('p', null, R.hint)) : null,
+        h('div', { class: 'row between' }, h('span', { class: 'muted small' }, 'A few sentences, in your own words. Pasting is off.'),
           h('span', { class: 'row gap-sm' },
-            h('button', { class: 'btn btn-ghost btn-sm', type: 'button', disabled: off, onclick: fillSample }, 'Fill an example'),
+            h('button', { class: 'btn btn-ghost btn-sm', type: 'button', disabled: off, onclick: fillSample }, R.hint ? 'Another example' : 'Show an example'),
             h('button', { class: 'btn btn-primary btn-sm', type: 'button', disabled: off, onclick: send }, 'Send', icon('send', 14))))));
       requestAnimationFrame(() => { msgs.scrollTop = msgs.scrollHeight; if (!off) box.focus({ preventScroll: true }); });
     }
@@ -606,6 +697,7 @@
     const v = R.input.value.trim();
     if (!v) { R.input.focus(); return; }
     R.msgs.push({ me: true, t: v }); R.answers.push(v); R.turns++;
+    R.tel.push(statsOut(R.stats)); R.stats = newStats(); R.hint = '';
     const sp = R.spec, idx = R.turns - 1;
     if (sp.mode === 'grill' && R.turns >= sp.needed) { finish(); return; }
     if (idx < sp.lines.length) respond(sp.lines[idx][0], sp.lines[idx][1], () => { if (sp.mode === 'talk' && R && R.turns >= sp.needed) finish(); });
@@ -616,57 +708,60 @@
     let v;
     if (R.turns === 0 && sp.kind === 'level' && sp.mode === 'grill') v = C.samples[sp.item];
     else { const pool = C.chat.samples[who] || C.chat.samples[sp.ag] || C.chat.samples.Nurse; v = pool[R.sampleIx % pool.length]; R.sampleIx++; }
-    R.input.value = v;
-    R.input.focus();
+    // Shown next to the box to read, never put in it. The server also rejects answers that copy an example.
+    R.keep = R.input.value;
+    R.hint = v;
+    drawRound();
   }
 
-  // Turns five category scores (0 to 4) into a total, pass or not, stars and XP. Same rules for AI and backup scoring.
-  function tally(sp, c, extra) {
-    let total = 0;
-    CATS.forEach(([k]) => { c[k] = Math.max(0, Math.min(4, Math.round(Number(c[k]) || 0))); total += c[k]; });
-    const fv = c[sp.focus], passed = total >= sp.pass && fv >= 3;
-    let stars = 0;
-    if (passed) { stars = 1; if (total >= sp.pass + 3) stars = 2; if (total >= 18 && fv === 4) stars = 3; }
-    const xp = passed ? sp.xp + (sp.kind === 'level' ? STAR_XP[stars] : 0) : 0;
-    return Object.assign({ c, total, passed, stars, xp }, extra || {});
-  }
-
-  // Backup scoring when the AI can't be reached: simple, explainable rules.
-  function words(s) { return (s.match(/\S+/g) || []).length; }
-  function score(sp, answers) {
-    const all = answers.join(' '), w = words(all), n = Math.max(1, answers.length), digits = (all.match(/\d+(\.\d+)?/g) || []).length;
-    const money = /[$%]|percent|dollar/i.test(all), sent = Math.max(1, (all.match(/[.!?]+/g) || []).length), avg = w / n;
-    const c = {};
-    c.clear = 1 + (w >= 25) + (w >= 60) + (w / sent <= 22);
-    c.customer = 1 + /(student|freshm|9th|10th|11th|12th|customer|parent|teacher|friend|people|buyer|kids)/i.test(all) + (digits >= 1) + /(where|hang|lunch|chat|table|group|online|school)/i.test(all) + /last time|tell me about|walk me through|what did you do|how much/i.test(all);
-    c.numbers = (digits >= 1) + (digits >= 3) + money + /(cost|price|profit|margin|break|revenue|percent)/i.test(all);
-    c.persuasion = 1 + /\?|what if|imagine|picture|last (tuesday|week)/i.test(all) + /(buy|join|try|ask|invest|\$)/i.test(all) + (w >= 18 && w <= 140);
-    c.answers = 1 + (avg >= 14) + !/(idk|dunno|not sure|i guess)/i.test(all) + answers.every(a => words(a) >= 6);
-    return tally(sp, c, { ai: false });
+  // The server grades the round, runs the fair-play checks and saves it (api/_round.js). The page can't save scores itself.
+  async function scoreOnServer(payload) {
+    const headers = { 'Content-Type': 'application/json' };
+    const { data } = await RT.sb.auth.getSession();
+    const token = data && data.session && data.session.access_token;
+    if (token) headers.Authorization = 'Bearer ' + token;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 30000);
+    try {
+      const r = await fetch((cfg.ai && cfg.ai.endpoint) || '/api/shark', { method: 'POST', headers, body: JSON.stringify(payload), signal: ctrl.signal });
+      const j = await r.json().catch(() => null);
+      if (!r.ok || !j) throw new Error((j && j.error) || 'The server didn’t answer. Try again.');
+      return j;
+    } catch (e) {
+      if (e.name === 'AbortError' || e instanceof TypeError) throw new Error('The server didn’t answer. Check your connection and try again.');
+      throw e;
+    } finally { clearTimeout(timer); }
   }
 
   function finish() {
     const mine = R, sp = mine.spec, before = prog();
     mine.done = true; mine.busy = true; mine.busyWho = sp.ag; drawRound();
-    const graded = askAI(Object.assign({ mode: 'score', focus: sp.focus, talk: sp.mode === 'talk', speaker: charInfo(sp.ag), transcript: transcriptOf(mine) }, roundInfo(sp)))
-      .then(j => tally(sp, Object.assign({}, j.scores), { ai: true, keep: j.keep, fix: j.fix, closer: j.closer }), () => score(sp, mine.answers));
-    Promise.all([graded, new Promise(r => setTimeout(r, 700))])
-      .then(([v]) => saveRound({ kind: sp.kind, item: sp.item, score: v.total, stars: v.stars, passed: v.passed, breakdown: Object.assign({ ai: v.ai }, v.c) })
-        .then(() => ({ v, ok: true }), e => ({ v, ok: false, e })))
-      .then(({ v, ok, e }) => {
-        v.firstPass = ok && v.passed && (sp.kind === 'level' ? !before.best[sp.item] : !before.weekly[sp.item]);
-        if (redraw) redraw();
-        if (!ok) toast('Your round could not be saved: ' + friendly(e), 'error', 6000);
-        else if (v.firstPass) toast(sp.kind === 'level' ? `Level ${sp.item} passed. +${v.xp} XP` : 'Challenge done. +40 XP', 'success');
-        if (R !== mine) return;
-        mine.busy = false; mine.verdict = v; mine.saved = ok;
-        drawRound();
-        setTimeout(() => { if (R === mine) R.wrap.querySelectorAll('.ac-bar i').forEach(b => { b.style.width = b.dataset.w; }); }, 60);
-      });
+    const payload = Object.assign({
+      mode: 'score', kind: sp.kind, item: sp.item, focus: sp.focus, talk: sp.mode === 'talk', speaker: charInfo(sp.ag), transcript: transcriptOf(mine),
+      telemetry: { answers: mine.tel, pastes: mine.pastes, leaves: mine.leaves }
+    }, roundInfo(sp));
+    Promise.all([scoreOnServer(payload).then(j => ({ j }), e => ({ e })), new Promise(r => setTimeout(r, 700))]).then(([{ j, e }]) => {
+      if (j && j.row) AC.rounds.push(j.row);
+      const v = j ? { c: j.scores, total: j.total, passed: j.passed, stars: j.stars, xp: j.xp, ai: j.ai, keep: j.keep, fix: j.fix, closer: j.closer, held: j.held, reasons: j.reasons || [] } : { error: friendly(e) };
+      v.firstPass = !!j && v.passed && (sp.kind === 'level' ? !before.best[sp.item] : !before.weekly[sp.item]);
+      if (redraw) redraw();
+      if (e) toast('Your round could not be saved: ' + friendly(e), 'error', 6000);
+      else if (v.firstPass) toast(sp.kind === 'level' ? `Level ${sp.item} passed. +${v.xp} XP` : 'Challenge done. +40 XP', 'success');
+      if (R !== mine) return;
+      mine.busy = false; mine.verdict = v; mine.saved = !!j;
+      drawRound();
+      setTimeout(() => { if (R === mine) R.wrap.querySelectorAll('.ac-bar i').forEach(b => { b.style.width = b.dataset.w; }); }, 60);
+    });
   }
 
   function verdictEl() {
     const v = R.verdict, sp = R.spec, cl = C.chat.closers[sp.ag] || C.chat.closers['Great White'];
+    if (v.error) {
+      return h('div', { class: 'ac-verdict' },
+        h('h2', null, 'Couldn’t score this round'),
+        h('p', { class: 'muted' }, v.error),
+        h('div', { class: 'row wrap gap-sm' }, h('button', { class: 'btn btn-primary', type: 'button', onclick: () => { closeRound(); RT.go('academy'); } }, 'Back to your year')));
+    }
     const order = CATS.map(k => k[0]).sort((a, b) => v.c[b] - v.c[a]), best = order[0], worst = order.slice(-2).reverse();
     const p = prog();
     const nextN = sp.kind === 'level' ? sp.item + 1 : null;
@@ -676,9 +771,10 @@
       h('div', { class: 'ac-vtop' },
         h('div', { class: 'ac-score' + (v.passed ? '' : ' no') }, h('span', { class: 'big-num' }, String(v.total)), h('span', { class: 'muted' }, 'out of 20')),
         h('div', { class: 'min0' },
-          h('h2', null, v.passed ? (sp.kind === 'level' ? 'Level passed' : 'Challenge done') : 'Not yet'),
+          h('h2', null, v.held ? 'This round didn’t count' : v.passed ? (sp.kind === 'level' ? 'Level passed' : 'Challenge done') : 'Not yet'),
           v.passed && sp.kind === 'level' ? h('p', { class: 'ac-starrow' }, starRow(v.stars, 18), v.stars + ' of 3 stars') : null,
-          h('p', { class: 'muted' }, v.passed ? (v.firstPass ? `+${v.xp} XP` : 'Saved. XP only counts the first pass, but your best stars count.') : `You need ${sp.pass} and a ${cap(sp.focus)} score of 3.`))),
+          h('p', { class: 'muted' }, v.held ? 'It used a try and earned no XP. An officer can review it.' : v.passed ? (v.firstPass ? `+${v.xp} XP` : 'Saved. XP only counts the first pass, but your best stars count.') : `You need ${sp.pass} and a ${cap(sp.focus)} score of 3.`))),
+      v.held ? h('div', { class: 'ac-held' }, icon('shield', 18), h('div', null, h('b', null, 'Fair play check'), h('ul', null, v.reasons.map(r => h('li', null, r))))) : null,
       h('div', { class: 'ac-cats' }, CATS.map(([k, label]) => h('div', { class: 'ac-cat' + (k === sp.focus ? ' f' : '') + (v.c[k] <= 1 ? ' low' : '') },
         h('span', { class: 'cl' }, label + (k === sp.focus ? ' (focus)' : '')),
         h('div', { class: 'ac-bar' }, h('i', { 'data-w': (v.c[k] * 25) + '%' })),

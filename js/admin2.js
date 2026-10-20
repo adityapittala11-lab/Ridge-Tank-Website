@@ -1,4 +1,4 @@
-// More officer tools: Welcome queue, Bounties, Meetings & calendar (+ bite decay rules), Card station.
+// More officer tools: Welcome queue, Bounties, Meetings & calendar (+ bite decay rules).
 // Registered into the admin screen through RT.adminTabs; shares helpers from RT.adminKit (see admin.js).
 (function () {
   const RT = window.RT;
@@ -484,96 +484,5 @@
     countLosing();
     draw();
     return null;
-  };
-
-  // ---------------- Card station ----------------
-  // Tap blank cards one after another; each one is linked to the next person who still needs one.
-  RT.adminKit2 = RT.adminKit2 || {};
-  RT.adminKit2.cardStation = function (after) {
-    const { A, assignCard, captureCards, beep, normalizeUid, syncPending } = kit();
-    let order = 'signup';
-    const history = [];
-    let queue = [];
-    let skipped = 0;
-    function build() {
-      const need = A.members.filter(m => m.card_status === 'pending' && !m.card_uid);
-      queue = order === 'az'
-        ? need.sort((a, b) => a.name.localeCompare(b.name))
-        : need.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-    }
-    build();
-    const total0 = queue.length;
-
-    const bar = h('span', { class: 'bar-track' }, h('span', { class: 'bar-fill' }));
-    const progress = h('div', { class: 'row between small' }, h('span', { class: 'muted' }), h('span', { class: 'muted' }));
-    const who = h('div', { class: 'station-who' });
-    const flash = h('div', { class: 'station-flash', 'aria-live': 'polite' });
-    const manual = h('input', { class: 'input mono', type: 'text', placeholder: 'Or type the card ID and press Enter', autocomplete: 'off', spellcheck: false });
-    const skipBtn = h('button', { class: 'btn btn-ghost btn-sm', type: 'button' }, 'Skip for now');
-    const undoBtn = h('button', { class: 'btn btn-ghost btn-sm', type: 'button' }, 'Undo last');
-    const orderSeg = segmented({ items: [{ value: 'signup', label: 'Sign-up order' }, { value: 'az', label: 'A to Z' }], value: order, className: 'seg-sm', ariaLabel: 'Order', onChange: v => { order = v; build(); draw(); } });
-    const body = h('div', { class: 'stack station' }, orderSeg, progress, bar, who, flash, manual, h('div', { class: 'row between' }, undoBtn, skipBtn));
-    let stop = null;
-    const md = modal({ title: 'Card station', subtitle: 'Tap a blank card, write the name on it, then tap the next one.', body, wide: true, onClose: () => { stop && stop(); after && after(); } });
-
-    function shortName(m) {
-      const p = String(m.name).trim().split(/\s+/);
-      return p.length > 1 ? p[0] + ' ' + p[p.length - 1][0] + '.' : p[0];
-    }
-    function draw() {
-      const done = total0 - queue.length;
-      progress.firstChild.textContent = `${done} of ${total0} linked`;
-      progress.lastChild.textContent = queue.length ? `${queue.length} to go` : '';
-      bar.firstChild.style.width = (total0 ? Math.round((done / total0) * 100) : 100) + '%';
-      undoBtn.disabled = !history.length;
-      skipBtn.hidden = queue.length < 2;
-      clear(who);
-      if (!queue.length) {
-        who.appendChild(h('div', { class: 'station-done' }, icon('check', 28, 'accent'), h('h3', null, total0 ? 'All cards linked' : 'No one needs a card'), h('p', { class: 'muted' }, 'Anyone who signs up later shows up in Card requests.')));
-        return;
-      }
-      const m = queue[0];
-      who.append(
-        h('div', { class: 'station-ring' }, h('span', { class: 'ring r1' }), h('span', { class: 'ring r2' }), h('span', { class: 'scan-core' }, icon('nfc', 28))),
-        h('div', { class: 'station-name' }, m.name),
-        h('div', { class: 'muted' }, [m.grade ? m.grade + 'th grade' : null, 'login code ' + (m.login_code || '')].filter(Boolean).join(' · ')),
-        h('div', { class: 'station-write' }, 'Write on the card:', h('strong', null, shortName(m))));
-    }
-
-    async function use(raw) {
-      const uid = normalizeUid(raw);
-      if (uid.length < 4 || !queue.length) return;
-      const m = queue[0];
-      try {
-        await assignCard(m, uid);
-        beep(true);
-        history.push(m.id);
-        queue.shift();
-        flash.className = 'station-flash ok show';
-        flash.textContent = `Linked to ${m.name}. Write “${shortName(m)}” on it.`;
-        draw();
-      } catch (e) {
-        beep(false);
-        flash.className = 'station-flash err show';
-        flash.textContent = friendly(e);
-      }
-    }
-    stop = captureCards(use, { inModal: true });
-    manual.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const v = manual.value; manual.value = ''; use(v); } });
-    skipBtn.addEventListener('click', () => { queue.push(queue.shift()); skipped++; draw(); });
-    undoBtn.addEventListener('click', () => busy(undoBtn, async () => {
-      const id = history.pop();
-      const m = A.members.find(x => x.id === id);
-      if (!m) return;
-      const { data, error } = await sb.from('members').update({ card_uid: null, card_status: 'pending' }).eq('id', m.id).select().single();
-      if (error) { toast(friendly(error), 'error'); history.push(id); return; }
-      Object.assign(m, data);
-      syncPending();
-      queue.unshift(m);
-      flash.className = 'station-flash show';
-      flash.textContent = `Unlinked ${m.name}. Tap a different card for them.`;
-      draw();
-    }));
-    draw();
   };
 })();
