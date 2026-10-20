@@ -100,6 +100,7 @@ async function dataOp(req, b) {
   try {
     if (!/^[0-9a-f-]{36}$/i.test(String(claims.sub))) return { data: null, error: { message: 'Please log in again.', code: 'PGRST301' } };
     // One round trip: open the transaction, drop to the logged-in role, and say who is asking (the id was just checked).
+    if (await isBanned(client, claims.sub, claims.email)) return { data: null, error: { message: BANNED_ERROR.message, code: 'PGRST301' } };
     await client.query("begin; set local statement_timeout = '8000'; set local role authenticated; select set_config('request.jwt.claim.sub', '" + claims.sub + "', true)");
     const m = await getMeta(client);
     const out = await runOp(client, m, b);
@@ -230,6 +231,16 @@ function sessionFor(u) {
   return { access_token: token, refresh_token: '', token_type: 'bearer', expires_at: claims.exp, expires_in: claims.exp - Math.floor(Date.now() / 1000), user: publicUser(u) };
 }
 
+// A banned member can't sign in and their existing sessions stop working. Matches by account or by email, so
+// signing up again with the same email doesn't get around it. Officers (admins) can't be banned this way.
+async function isBanned(client, userId, email) {
+  const r = await client.query(
+    'select 1 from public.members m where m.banned and (m.user_id = $1 or lower(m.email) = lower($2)) and not exists (select 1 from public.admins a where a.user_id = $1) limit 1',
+    [userId, email || '']);
+  return r.rows.length > 0;
+}
+const BANNED_ERROR = { message: 'This account has been removed from Ridge Tank. Ask an officer if you think this is a mistake.', code: 'banned' };
+
 async function makeAdminIfListed(client, u) {
   if (adminEmails().includes(String(u.email).toLowerCase())) {
     await client.query('insert into public.admins (user_id) values ($1) on conflict do nothing', [u.id]);
@@ -249,6 +260,7 @@ async function authOp(req, b) {
       if (action === 'signUp') {
         if (password.length < 8 || password.length > 200) return { data: { user: null, session: null }, error: { message: 'Password should be at least 8 characters.', code: 'weak_password' } };
         const meta = b.data && typeof b.data === 'object' ? b.data : {};
+        if (await isBanned(client, '00000000-0000-0000-0000-000000000000', email)) return { data: { user: null, session: null }, error: BANNED_ERROR };
         const exists = await client.query('select 1 from auth.users where lower(email) = $1', [email]);
         if (exists.rows.length) return { data: { user: null, session: null }, error: { message: 'User already registered', code: 'user_already_exists' } };
         const r = await client.query('insert into auth.users (email, encrypted_password, raw_user_meta_data, last_sign_in_at) values ($1, $2, $3, now()) returning *', [email, hashPassword(password), JSON.stringify(meta)]);
@@ -260,8 +272,9 @@ async function authOp(req, b) {
       if (!r.rows.length || !checkPassword(password, r.rows[0].encrypted_password)) {
         return { data: { user: null, session: null }, error: { message: 'Invalid login credentials', code: 'invalid_credentials' } };
       }
-      await client.query('update auth.users set last_sign_in_at = now() where id = $1', [r.rows[0].id]);
       await makeAdminIfListed(client, r.rows[0]);
+      if (await isBanned(client, r.rows[0].id, email)) return { data: { user: null, session: null }, error: BANNED_ERROR };
+      await client.query('update auth.users set last_sign_in_at = now() where id = $1', [r.rows[0].id]);
       return { data: { user: publicUser(r.rows[0]), session: sessionFor(r.rows[0]) }, error: null };
     }
 

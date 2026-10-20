@@ -172,12 +172,13 @@
     return { el: panel, close };
   }
 
-  function confirmDialog({ title = 'Are you sure?', message = '', confirmText = 'Confirm', danger = false, requireText } = {}) {
+  function confirmDialog({ title = 'Are you sure?', message = '', confirmText = 'Confirm', danger = false, requireText, body } = {}) {
     return new Promise(resolve => {
       let input = null;
       const okBtn = h('button', { class: 'btn ' + (danger ? 'btn-danger' : 'btn-primary'), type: 'button' }, confirmText);
       const cancelBtn = h('button', { class: 'btn btn-ghost', type: 'button' }, 'Cancel');
       const bodyKids = [h('p', { class: 'muted' }, message)];
+      if (body) bodyKids.push(body);
       if (requireText) {
         input = h('input', { class: 'input', type: 'text', placeholder: requireText, autocomplete: 'off', spellcheck: false });
         okBtn.disabled = true;

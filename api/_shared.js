@@ -2,14 +2,30 @@
 // The Groq key itself is only ever read from process.env.GROQ_API_KEY inside those functions. It is never in the repo.
 
 import { verifyToken, bearer } from './_auth.js';
+import { getPool } from './_pg.js';
 
 // Returns the signed-in member's user id, or null. Only tools/dev-server.mjs sets RT_DEV_NO_AUTH, so this computer
 // can be tested without logging in. It is never set on Vercel.
 export async function memberId(req) {
   if (process.env.RT_DEV_NO_AUTH === '1') return 'dev';
   const claims = verifyToken(bearer(req));
-  return claims ? claims.sub : null;
+  if (!claims) return null;
+  // Banned members are treated as logged out (checked at most every 30 seconds per person).
+  try {
+    const hit = banCache.get(claims.sub);
+    let banned;
+    if (hit && Date.now() - hit.at < 30000) banned = hit.banned;
+    else {
+      const r = await getPool().query('select 1 from public.members m where m.banned and (m.user_id = $1 or lower(m.email) = lower($2)) and not exists (select 1 from public.admins a where a.user_id = $1) limit 1', [claims.sub, claims.email || '']);
+      banned = r.rows.length > 0;
+      banCache.set(claims.sub, { at: Date.now(), banned });
+      if (banCache.size > 2000) banCache.clear();
+    }
+    if (banned) return null;
+  } catch (e) { /* if the check can't run, fall back to the signed login */ }
+  return claims.sub;
 }
+const banCache = new Map();
 
 // A per-member daily cap so one person can't use up the shared free quota. Best effort: the counts live in memory
 // and start over when Vercel restarts the function, which is fine for this.

@@ -293,7 +293,7 @@
       table.appendChild(h('div', { class: 'trow thead' }, h('span', null, 'Name'), h('span', null, 'Grade'), h('span', null, 'Bites'), h('span', null, 'Account'), h('span')));
       if (!rows.length) { table.appendChild(h('div', { class: 'empty small' }, h('p', { class: 'muted' }, A.members.length ? 'No matches.' : 'No members yet. Add the roster to get started.'))); return; }
       rows.forEach(m => table.appendChild(h('button', { class: 'trow', type: 'button', onclick: () => memberModal(m, draw) },
-        h('span', { class: 'cell-name' }, avatar(m.name, 30), h('span', { class: 'ellipsis' }, m.name)),
+        h('span', { class: 'cell-name' }, avatar(m.name, 30), h('span', { class: 'ellipsis' }, m.name), m.banned ? h('span', { class: 'status-pill sm wait' }, 'Banned') : null),
         h('span', { class: 'muted' }, m.grade ? m.grade + 'th' : '—'),
         h('span', { class: 'mono' }, String(pointsOf(m.id))),
         h('span', { class: m.user_id ? 'accent' : 'muted' }, m.user_id ? icon('check', 16) : '—'),
@@ -478,6 +478,37 @@
         h('span', { class: 'pts-gain mono' }, (a.amount > 0 ? '+' : '') + a.amount))));
     }
 
+    // ---- Ban: stops them logging in and cuts off any session they already have ----
+    const banBox = h('div', { class: 'detail-box danger-zone' });
+    function drawBan() {
+      const isOfficer = !!m.user_id && A.officerIds && A.officerIds.has(m.user_id);
+      if (!A.officerIds) { A.officerIds = new Set(); sb.from('admins').select('user_id').then(r => { (r.data || []).forEach(x => A.officerIds.add(x.user_id)); drawBan(); }); }
+      const btn = h('button', { class: m.banned ? 'btn btn-ghost btn-sm' : 'btn btn-danger btn-sm', type: 'button' }, icon(m.banned ? 'check' : 'x', 14), m.banned ? 'Unban member' : 'Ban member');
+      btn.addEventListener('click', async () => {
+        if (!m.banned) {
+          const reason = h('input', { class: 'input', type: 'text', maxlength: 200, placeholder: 'Reason (only officers see this)' });
+          const ok = await confirmDialog({ title: 'Ban ' + m.name + '?', message: 'They are logged out right away and can’t log in or sign up again with this email. You can unban them any time.', confirmText: 'Ban', danger: true, body: reason });
+          if (!ok) return;
+          await setBan(true, reason.value.trim());
+        } else {
+          if (!(await confirmDialog({ title: 'Unban ' + m.name + '?', message: 'They’ll be able to log in again.', confirmText: 'Unban' }))) return;
+          await setBan(false, null);
+        }
+      });
+      clear(banBox).append(
+        h('div', null, h('div', { class: 'card-label' }, m.banned ? 'Banned' : 'Ban'),
+          h('p', { class: 'muted small' }, m.banned ? 'Banned' + (m.banned_reason ? ': ' + m.banned_reason : '.') + ' They can’t log in.' : 'Cuts off their login. Their Bites and history stay.')),
+        isOfficer ? h('p', { class: 'muted small' }, 'Officers can’t be banned.') : btn);
+    }
+    async function setBan(on, reason) {
+      const { data, error } = await sb.from('members').update({ banned: on, banned_reason: on ? (reason || null) : null, banned_at: on ? new Date().toISOString() : null }).eq('id', m.id).select().single();
+      if (error) { toast(friendly(error), 'error'); return; }
+      Object.assign(m, data);
+      toast(on ? m.name + ' is banned' : m.name + ' is unbanned', 'success');
+      drawBan();
+      onChange();
+    }
+
     const delBtn = h('button', { class: 'btn btn-danger btn-sm', type: 'button' }, icon('trash', 14), 'Delete member');
     let md = null;
     md = modal({
@@ -489,7 +520,7 @@
           h('div', { class: 'form-grid' }, RT.field('Name', name), h('div', { class: 'field' }, h('span', { class: 'label' }, 'Grade'), grade)),
           phoneF.el, reach,
           h('div', { class: 'row end' }, saveBtn)),
-        bitesBox, codeBox,
+        bitesBox, codeBox, banBox,
         h('div', { class: 'detail-box' }, h('div', { class: 'card-label' }, 'Officer-given badges'),
           myAwards.length ? h('div', { class: 'row wrap gap-sm' }, myAwards.map(a => { const b = S.badges.find(x => x.id === a.badge_id); return h('span', { class: 'tag' }, icon(RT.badgeIcon(b ? b.name : ''), 14), b ? b.name : 'Badge'); })) : h('p', { class: 'muted small' }, 'None yet. Use the Badges tab to give one.')),
         h('div', { class: 'detail-box danger-zone' }, h('div', null, h('div', { class: 'card-label' }, 'Danger zone'), h('p', { class: 'muted small' }, 'Deletes their check-ins, pitches, badges, and messages too.')), delBtn))
@@ -497,6 +528,7 @@
     drawCode();
     drawReach();
     drawBites();
+    drawBan();
     delBtn.addEventListener('click', async () => {
       const ok = await confirmDialog({ title: 'Delete ' + m.name + '?', message: 'This removes them from the leaderboard for good.', confirmText: 'Delete forever', danger: true, requireText: m.name });
       if (!ok) return;
