@@ -1855,3 +1855,41 @@ html[data-theme="light"] .tier-chip.tier-mega { color: #7e1434; }
 .as-starters { display: flex; flex-wrap: wrap; gap: 8px; }
 .as-chip { text-align: left; white-space: normal; }
 .as-typing { margin: 0; }
+
+/* ---------- streamlined footer: brand + one row of links ---------- */
+.f-slim .f-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 18px 28px; padding: 30px 56px 22px; }
+.f-slim .f-brand { gap: 0; }
+.f-links nav { display: flex; flex-wrap: wrap; gap: 10px 26px; }
+.f-slim .f-bar { padding: 16px 0 20px; }
+@media (max-width: 760px) {
+  .f-slim .f-inner { padding: 26px 22px 18px; }
+  .f-slim .f-bar { margin: 0 22px; }
+  .f-links nav { gap: 10px 20px; }
+}
+
+/* ---------- streamlined landing + home ---------- */
+.hero-cta { align-items: center; }
+.hero-link { font-size: 15px; font-weight: 500; color: var(--ink-2); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: rgb(var(--tint) / 0.3); padding: 10px 6px; }
+.hero-link:hover { color: var(--ink); }
+.how-3 { list-style: none; margin: 0; }
+.how-3 li { display: flex; flex-direction: column; }
+.how-num { font-size: 12px; letter-spacing: 0.14em; color: var(--g-300); margin-bottom: 10px; }
+.closer .locked-card { display: flex; justify-content: space-between; flex-wrap: wrap; }
+
+.home-top > .card { margin-bottom: 16px; }
+.standing { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: stretch; }
+.stand-main { display: flex; flex-direction: column; gap: 14px; justify-content: center; }
+.stand-main .tier-progress { display: flex; flex-direction: column; gap: 8px; margin: 0; }
+.stand-stat { display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 16px 18px; border: 1px solid var(--line); background: rgb(var(--tint) / 0.03); transition: border-color 0.2s, background 0.2s; }
+.stand-stat:hover { border-color: rgba(63, 191, 127, 0.5); background: rgb(var(--tint) / 0.06); }
+.stand-stat .mini-val { font-size: 24px; }
+.card-banner { display: flex; align-items: center; gap: 14px; margin-top: 16px; padding: 16px 20px; }
+@media (max-width: 760px) {
+  .standing { grid-template-columns: 1fr 1fr; }
+  .stand-main { grid-column: 1 / -1; }
+}
+.home-grid { align-items: start; }
+.standing { align-items: center; }
+.stand-stat { min-height: 96px; }
+@media (max-width: 600px) { .hero-title { font-size: 13.5vw; } }
+.points-card .card-head { margin-bottom: 8px; }

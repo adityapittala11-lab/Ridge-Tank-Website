@@ -54,141 +54,103 @@
   RT.progressBar = progressBar;
 
   // ---------------- home ----------------
+  // Home: five blocks, most useful first. 1) what to do next, 2) where you stand, 3) this week, 4) ways to earn, 5) card setup until it's done.
   RT.views.home = function (root) {
     const subLine = h('span');
     root.appendChild(RT.pageHead('Home', subLine));
-    if (RT.academyHomeCard) root.appendChild(RT.academyHomeCard());
+    const top = h('div', { class: 'home-top' });
+    if (RT.academyHomeCard) top.appendChild(RT.academyHomeCard());
+    root.appendChild(top);
 
-    const grid = h('div', { class: 'dash-grid' },
-      h('section', { class: 'card span-7 reveal', style: { '--i': 1 } }, RT.skeleton(4)),
-      h('section', { class: 'card span-5 reveal', style: { '--i': 2 } }, RT.skeleton(4)),
-      h('section', { class: 'card span-4 reveal', style: { '--i': 3 } }, RT.skeleton(3)),
-      h('section', { class: 'card span-8 reveal', style: { '--i': 4 } }, RT.skeleton(5)),
-      h('section', { class: 'card span-6 reveal', style: { '--i': 5 } }, RT.skeleton(3)),
-      h('section', { class: 'card span-6 reveal', style: { '--i': 6 } }, RT.skeleton(3)),
-      h('section', { class: 'card span-6 reveal', style: { '--i': 7 } }, RT.skeleton(4)),
-      h('section', { class: 'card span-6 reveal', style: { '--i': 8 } }, RT.skeleton(5)));
+    const grid = h('div', { class: 'dash-grid home-grid' },
+      h('section', { class: 'card span-12 reveal', style: { '--i': 1 } }, RT.skeleton(3)),
+      h('section', { class: 'card span-6 reveal', style: { '--i': 2 } }, RT.skeleton(3)),
+      h('section', { class: 'card span-6 reveal', style: { '--i': 3 } }, RT.skeleton(3)));
     root.appendChild(grid);
-    const [cPoints, cCard, cNext, cActivity, cBounties, cNews, cBadges, cBoard] = grid.children;
+    const [cStanding, cWeek, cBounties] = grid.children;
+    const cardSlot = h('div');
+    root.appendChild(cardSlot);
 
     loadMine().then(d => {
       const { cur, next } = RT.tierFor(d.mine.total_points, S.tiers);
-      subLine.textContent = `${cur ? cur.name : 'Reef Shark'} · ${ordinal(d.mine.rank)} of ${S.board.length} on the leaderboard · ${d.mine.total_points} Bites`;
-      renderPoints(cPoints, d, cur, next);
-      renderCardStatus(cCard);
-      renderNext(cNext);
-      renderActivity(cActivity, d);
+      subLine.textContent = `Welcome back, ${String(S.me.name || '').split(' ')[0]}.`;
+      renderStanding(cStanding, d, cur, next);
+      renderWeek(cWeek);
       renderBountiesMini(cBounties);
-      renderNewsMini(cNews);
-      renderBadgesMini(cBadges, d);
-      renderBoardMini(cBoard);
-      // The invest card, once the market database update (migration_v5_market.sql) is in.
-      // While investing is open it goes to the top of the page, because that's what people need during a meeting.
+      if (S.me.card_status !== 'linked') renderCardBanner(cardSlot);
+      // The invest card shows only while investing is open at a meeting, and then it goes first.
       RT.market.memberCards(d).then(cards => {
-        if (!cards || !grid.isConnected) return;
-        cards.forEach(c => { if (c.dataset.open === '1') grid.insertBefore(c, grid.firstChild); else grid.appendChild(c); });
+        if (!cards || !root.isConnected) return;
+        cards.filter(c => c.dataset.open === '1').forEach(c => top.insertBefore(c, top.firstChild));
       }).catch(() => {});
     }).catch(e => toast(friendly(e), 'error'));
     return {};
   };
 
+  // One card: Bites, tier progress, rank and badges, with links to the full pages.
+  function renderStanding(el, d, cur, next) {
+    const need = next ? next.point_threshold - d.mine.total_points : 0;
+    const span = next ? next.point_threshold - (cur ? cur.point_threshold : 0) : 1;
+    const into = next ? d.mine.total_points - (cur ? cur.point_threshold : 0) : 1;
+    const earned = d.progress.filter(b => b.earned).length;
+    el.classList.add('points-card');
+    RT.put(clear(el),
+      h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Where you stand'), tierChip(cur && cur.name)),
+      h('div', { class: 'standing' },
+        h('div', { class: 'stand-main' },
+          h('div', { class: 'points-row' }, h('span', { class: 'big-num mono' }, String(d.mine.total_points)), h('span', { class: 'pts-unit' }, 'Bites')),
+          h('div', { class: 'tier-progress' },
+            progressBar(into, span, 'bar-lg'),
+            h('div', { class: 'small' }, next ? h('span', null, h('strong', null, String(need)), ' more Bites to ', next.name) : h('span', { class: 'accent' }, 'Top tier reached.')))),
+        h('a', { class: 'stand-stat', href: '#/leaderboard' }, h('div', { class: 'mini-val' }, ordinal(d.mine.rank) + ' of ' + S.board.length), h('div', { class: 'muted small' }, 'Leaderboard ›')),
+        h('a', { class: 'stand-stat', href: '#/profile' }, h('div', { class: 'mini-val' }, earned + '/' + d.progress.length), h('div', { class: 'muted small' }, 'Badges ›'))),
+      (() => {
+        const note = decayNote(d.decay);
+        return note ? h('div', { class: 'decay-note ' + note.tone }, icon('clock', 16), h('span', null, note.text)) : null;
+      })());
+  }
+
+  // Next meeting + the latest officer post, in one place.
+  function renderWeek(el) {
+    const today = RT.localDateISO();
+    const m = S.meetings.filter(x => x.meeting_date >= today).sort((a, b) => (a.meeting_date < b.meeting_date ? -1 : 1))[0];
+    const a = S.announcements[0];
+    clear(el).append(h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'This week'),
+      h('a', { class: 'link-sm', href: '#/updates' }, 'Updates & calendar', icon('chevronRight', 14))));
+    const rows = [];
+    if (m) {
+      const days = daysUntil(m.meeting_date);
+      const when = days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : `In ${days} days`;
+      rows.push(h('li', null, h('span', { class: 'tl-icon' }, icon('calendar', 16)),
+        h('div', { class: 'grow min0' }, h('div', { class: 'ellipsis' }, (m.name || 'Meeting') + ' · ' + when),
+          h('div', { class: 'muted small ellipsis' }, fmtDate(m.meeting_date, { weekday: 'long', month: 'short', day: 'numeric' }) + (m.location ? ' · ' + m.location : '')))));
+    }
+    if (a) {
+      rows.push(h('li', null, h('span', { class: 'tl-icon' + (a.pinned ? ' burg' : '') }, icon(a.pinned ? 'pin' : 'megaphone', 16)),
+        h('div', { class: 'grow min0' }, h('div', { class: 'ellipsis' }, a.title),
+          h('div', { class: 'muted small ellipsis' }, RT.timeAgo(a.created_at) + (a.body ? ' · ' + a.body.replace(/\s+/g, ' ').slice(0, 70) : '')))));
+    }
+    el.appendChild(rows.length ? h('ul', { class: 'timeline' }, rows)
+      : h('p', { class: 'muted' }, 'Nothing posted yet. Officers will add the next meeting and news here.'));
+  }
+
+  // Slim banner until the member's physical card is linked.
+  function renderCardBanner(el) {
+    clear(el).appendChild(h('section', { class: 'card card-banner reveal' },
+      icon('nfc', 20, 'muted'),
+      h('div', { class: 'grow min0' }, h('strong', null, 'Your Ridge Tank card is being made.'),
+        h('div', { class: 'muted small' }, 'Until you have it, an officer can check you in by name at meetings.'))));
+  }
+
   function renderBountiesMini(el) {
     const items = S.bounties.filter(b => RT.bountyInfo(b).open).slice(0, 3);
-    clear(el).append(h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Bounties'),
+    clear(el).append(h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Earn extra Bites'),
       h('a', { class: 'link-sm', href: '#/bounties' }, 'All bounties', icon('chevronRight', 14))));
     if (!items.length) { el.appendChild(h('p', { class: 'muted' }, 'No open bounties right now. New ones will show up here.')); return; }
     el.appendChild(h('ul', { class: 'timeline' }, items.map(b => h('li', null,
       h('span', { class: 'tl-icon burg' }, icon('target', 16)),
       h('div', { class: 'grow min0' }, h('div', { class: 'ellipsis' }, b.title), h('div', { class: 'muted small ellipsis' }, RT.bountyMeta(b))),
       h('span', { class: 'pts-gain mono' }, '+' + b.points)))));
-  }
-
-  function renderNewsMini(el) {
-    const items = S.announcements.slice(0, 2);
-    clear(el).append(h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Latest news'),
-      h('a', { class: 'link-sm', href: '#/updates' }, 'All updates', icon('chevronRight', 14))));
-    if (!items.length) { el.appendChild(h('p', { class: 'muted' }, 'Nothing posted yet. Officers will post program news here.')); return; }
-    el.appendChild(h('ul', { class: 'timeline' }, items.map(a => h('li', null,
-      h('span', { class: 'tl-icon' + (a.pinned ? ' burg' : '') }, icon(a.pinned ? 'pin' : 'megaphone', 16)),
-      h('div', { class: 'grow min0' }, h('div', { class: 'ellipsis' }, a.title),
-        h('div', { class: 'muted small ellipsis' }, RT.timeAgo(a.created_at) + (a.body ? ' · ' + a.body.replace(/\s+/g, ' ').slice(0, 70) : '')))))));
-  }
-
-  function renderPoints(el, d, cur, next) {
-    const num = h('span', { class: 'big-num mono' }, String(d.mine.total_points));
-    const need = next ? next.point_threshold - d.mine.total_points : 0;
-    const span = next ? next.point_threshold - (cur ? cur.point_threshold : 0) : 1;
-    const into = next ? d.mine.total_points - (cur ? cur.point_threshold : 0) : 1;
-    el.classList.add('points-card');
-    RT.put(clear(el),
-      h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Your Bites'), tierChip(cur && cur.name)),
-      h('div', { class: 'points-row' }, num, h('span', { class: 'pts-unit' }, 'Bites'),
-        h('span', { class: 'rank-pill' }, h('b', null, ordinal(d.mine.rank)), ' of ' + S.board.length)),
-      h('div', { class: 'tier-progress' },
-        progressBar(into, span, 'bar-lg'),
-        h('div', { class: 'row between small' },
-          h('span', { class: 'muted' }, cur ? cur.name : ''),
-          h('span', null, next ? h('span', null, h('strong', null, String(need)), ' more to ', next.name) : h('span', { class: 'accent' }, 'Top tier reached.')))),
-      (() => {
-        const note = decayNote(d.decay);
-        return note ? h('div', { class: 'decay-note ' + note.tone }, icon('clock', 16), h('span', null, note.text)) : null;
-      })(),
-      h('div', { class: 'mini-stats' },
-        miniStat('Meetings', d.stats.attendance),
-        miniStat('Streak', d.stats.streak),
-        miniStat('Pitches', d.stats.pitches),
-        miniStat('Badges', d.progress.filter(b => b.earned).length + ' of ' + d.progress.length)));
-  }
-
-  function miniStat(label, value) {
-    return h('div', { class: 'mini-stat' }, h('div', { class: 'mini-val' }, String(value)), h('div', { class: 'muted small' }, label));
-  }
-
-  function renderCardStatus(el) {
-    const linked = S.me.card_status === 'linked';
-    const steps = [
-      ['Account created', true],
-      ['Card requested', true],
-      ['Card made & linked', linked],
-      ['Tap in at meetings', linked]
-    ];
-    clear(el).append(
-      h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Your card'),
-        h('span', { class: 'status-pill ' + (linked ? 'ok' : 'wait') }, linked ? 'Linked' : 'Physical card pending')),
-      h('div', { class: 'nfc-card ' + (linked ? 'is-linked' : '') },
-        h('div', { class: 'nfc-top' }, h('span', { class: 'brand-name small' }, 'Ridge Tank'), icon('nfc', 20)),
-        h('div', { class: 'nfc-name' }, S.me.name),
-        h('div', { class: 'nfc-foot mono' }, linked ? 'Member card' : 'Being made')),
-      h('ol', { class: 'steps' }, steps.map(([label, doneStep]) => h('li', { class: doneStep ? 'done' : '' }, h('span', { class: 'step-dot' }, doneStep ? icon('check', 12) : null), label))),
-      h('p', { class: 'muted small' }, linked
-        ? 'Tap your card on the reader when you walk in. Your Bites show up here right away.'
-        : 'An officer is making your card. Until you have it, they can check you in by name.'));
-  }
-
-  function renderNext(el) {
-    const today = RT.localDateISO();
-    const upcoming = S.meetings.filter(m => m.meeting_date >= today).sort((a, b) => (a.meeting_date < b.meeting_date ? -1 : 1));
-    const m = upcoming[0];
-    clear(el).appendChild(h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Next meeting')));
-    if (!m) {
-      el.appendChild(h('div', { class: 'empty-mini' }, h('p', { class: 'muted' }, 'Nothing on the calendar yet. Officers will post the next date here.')));
-      return;
-    }
-    const days = daysUntil(m.meeting_date);
-    const when = days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : `In ${days} days`;
-    const later = upcoming.slice(1, 4);
-    RT.put(el,
-      h('div', { class: 'next-date' },
-        h('div', null, h('div', { class: 'next-when' }, when), h('div', { class: 'muted small' }, fmtDate(m.meeting_date, { weekday: 'long', month: 'long', day: 'numeric' })))),
-      h('div', { class: 'next-meta' },
-        h('div', null, h('span', { class: 'muted small' }, 'What'), h('div', null, m.name || 'Meeting')),
-        m.location ? h('div', null, h('span', { class: 'muted small' }, 'Where'), h('div', null, m.location)) : null),
-      later.length ? h('div', { class: 'later' },
-        h('div', { class: 'card-label' }, 'After that'),
-        h('ul', null, later.map(x => h('li', null,
-          h('span', { class: 'mono small later-date' }, fmtDate(x.meeting_date, { month: 'short', day: 'numeric' })),
-          h('span', { class: 'grow ellipsis' }, x.name || 'Meeting'),
-          x.location ? h('span', { class: 'muted small' }, x.location) : null)))) : null);
   }
 
   function renderActivity(el, d) {
@@ -215,35 +177,6 @@
         h('span', { class: 'tl-icon' + (it.burg ? ' burg' : '') }, icon(it.icon, 16)),
         h('div', { class: 'grow min0' }, h('div', { class: 'ellipsis' }, it.title), h('div', { class: 'muted small' }, it.at ? RT.dayLabel(String(it.at).length === 10 ? RT.parseLocalDate(it.at) : it.at) : '')),
         it.pts != null ? h('span', { class: 'pts-gain mono' }, '+' + it.pts) : null))));
-  }
-
-  function renderBadgesMini(el, d) {
-    const earned = d.progress.filter(b => b.earned);
-    const nextUp = d.progress
-      .filter(b => !b.earned && !b.manual && b.need > 1)
-      .sort((a, b) => b.have / b.need - a.have / a.need)[0];
-    RT.put(clear(el),
-      h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Badges'), h('a', { class: 'link-sm', href: '#/profile' }, 'See all', icon('chevronRight', 14))),
-      h('div', { class: 'badge-count' }, h('span', { class: 'big-num sm mono' }, String(earned.length)), h('span', { class: 'muted' }, ' of ' + d.progress.length + ' earned')),
-      earned.length
-        ? h('div', { class: 'badge-row' }, earned.slice(0, 7).map(b => h('span', { class: 'badge-dot', title: b.badge.name }, icon(RT.badgeIcon(b.badge.name), 18))))
-        : h('p', { class: 'muted small' }, 'Your first badge comes with your first meeting.'),
-      nextUp ? h('div', { class: 'next-badge' },
-        h('div', { class: 'row between small' }, h('span', null, 'Next: ', h('strong', null, nextUp.badge.name)), h('span', { class: 'mono muted' }, nextUp.have + '/' + nextUp.need)),
-        progressBar(nextUp.have, nextUp.need)) : null);
-  }
-
-  function renderBoardMini(el) {
-    const top = S.board.slice(0, 5);
-    const mineIdx = S.board.findIndex(r => r.member_id === S.me.id);
-    const rows = [...top];
-    if (mineIdx >= 5) rows.push(S.board[mineIdx]);
-    clear(el).appendChild(h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Leaderboard'), h('a', { class: 'link-sm', href: '#/leaderboard' }, 'Full list', icon('chevronRight', 14))));
-    if (!rows.length) { el.appendChild(h('p', { class: 'muted' }, 'No Bites yet this season.')); return; }
-    el.appendChild(h('ol', { class: 'mini-board' }, rows.map((r, i) =>
-      h('li', { class: (r.member_id === S.me.id ? 'me' : '') + (i === 5 ? ' gap-above' : '') },
-        h('span', { class: 'mono rank' }, String(r.rank)), avatar(r.name, 28), h('span', { class: 'grow ellipsis' }, r.name),
-        h('span', { class: 'mono' }, String(r.total_points))))));
   }
 
   // ---------------- leaderboard ----------------
@@ -388,7 +321,7 @@
     const codeCard = h('section', { class: 'card span-4 reveal code-card', style: { '--i': 1 } },
       h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Your code')),
       h('div', { class: 'code-display mono' }, me.login_code || '—'),
-      h('p', { class: 'muted small' }, 'Friends enter this when they sign up so you get credit toward Headhunter.'),
+      h('p', { class: 'muted small' }, 'Friends enter this when they sign up so you get credit toward the Headhunter badge.'),
       h('div', { class: 'ref-stat' }, h('div', { class: 'mini-val' }, refCount), h('div', { class: 'muted small' }, 'friends joined and showed up')),
       h('button', { class: 'btn btn-ghost btn-sm code-copy', type: 'button', onclick: () => RT.copyText(me.login_code || '', 'Code copied') }, icon('copy', 16), 'Copy code'));
     const statsCard = h('section', { class: 'card span-4 reveal', style: { '--i': 2 } }, RT.skeleton(5));
@@ -402,7 +335,8 @@
         h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: changePassword }, icon('lock', 16), 'Change password'),
         h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: RT.signOut }, icon('logout', 16), 'Sign out')));
 
-    root.append(heroCard, h('div', { class: 'dash-grid' }, codeCard, statsCard, ladderCard), badgesWrap, account);
+    const activityCard = h('section', { class: 'card reveal', style: { '--i': 5 } }, RT.skeleton(3));
+    root.append(heroCard, h('div', { class: 'dash-grid' }, codeCard, statsCard, ladderCard), badgesWrap, activityCard, account);
 
     loadMine().then(d => {
       const { cur, next } = RT.tierFor(d.mine.total_points, S.tiers);
@@ -435,6 +369,7 @@
         })));
 
       renderBadges(badgesWrap, d.progress);
+      renderActivity(activityCard, d);
     }).catch(e => toast(friendly(e), 'error'));
 
     function statRow(label, value) { return h('div', { class: 'stat-row' }, h('dt', { class: 'muted' }, label), h('dd', { class: 'mono' }, String(value))); }

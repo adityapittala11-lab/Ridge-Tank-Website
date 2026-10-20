@@ -196,21 +196,23 @@
   };
 
   // ---------------- shell: top bar, nav, menu ----------------
+  // Five places, same on every screen size. Everything else lives one tap away on those pages or in the avatar menu.
   function navItems() {
     const items = [
       { value: 'home', label: 'Home', icon: 'home' },
       { value: 'academy', label: 'Academy', icon: 'map' },
-      { value: 'leaderboard', label: 'Leaderboard', icon: 'trophy' },
       { value: 'bounties', label: 'Bounties', icon: 'target' },
-      { value: 'updates', label: 'Updates', icon: 'megaphone', badge: S.unseenAnn || 0 },
-      { value: 'chat', label: 'Chat', icon: 'chat' },
-      { value: 'profile', label: 'Profile', icon: 'user' }
+      { value: 'leaderboard', label: 'Leaderboard', icon: 'trophy' },
+      { value: 'chat', label: 'Chat', icon: 'chat' }
     ];
-    if (S.isAdmin) items.push({ value: 'admin', label: 'Admin', icon: 'shield', badge: S.pendingCount || 0 });
+    if (S.isAdmin) items.push({ value: 'admin', label: 'Officers', icon: 'shield', badge: S.pendingCount || 0 });
     return items;
   }
-  // Phones only have room for five; Bounties, Profile and Officer tools live in the menu up top.
-  const BOTTOM_TABS = ['home', 'academy', 'leaderboard', 'updates', 'chat'];
+  // Phones show the same five; Officer tools ride in the avatar menu.
+  const BOTTOM_TABS = ['home', 'academy', 'bounties', 'leaderboard', 'chat'];
+
+  // Number on the avatar: new updates, plus officer to-dos for officers.
+  function chipCount() { return (S.unseenAnn || 0) + (S.isAdmin ? (S.pendingCount || 0) : 0); }
 
   function renderShell() {
     clear(topEl);
@@ -231,7 +233,7 @@
     if (S.me) {
       navSeg = segmented({ items: navItems(), value: key, className: 'nav-seg', ariaLabel: 'Main navigation', onChange: v => go(v) });
       mid.appendChild(navSeg);
-      bottomSeg = segmented({ items: navItems().filter(i => BOTTOM_TABS.includes(i.value)).map(i => (i.value === 'leaderboard' ? Object.assign({}, i, { label: 'Board' }) : i)), value: key, vertical: true, className: 'bottom-seg', ariaLabel: 'Main navigation', onChange: v => go(v) });
+      bottomSeg = segmented({ items: navItems().filter(i => BOTTOM_TABS.includes(i.value)), value: key, vertical: true, className: 'bottom-seg', ariaLabel: 'Main navigation', onChange: v => go(v) });
       bottomEl.appendChild(bottomSeg);
     } else if (!S.user) {
       right.appendChild(h('a', { class: 'btn btn-ghost btn-sm hide-sm', href: '#/', onclick: e => { e.preventDefault(); RT.jump('faq'); } }, 'FAQ'));
@@ -241,7 +243,7 @@
 
     menuBtn = menuButton({ label: 'Open menu', onToggle: open => (open ? openMenu() : closeMenu()) });
     // On phones the Admin tab isn't in the bottom bar, so the to-do count rides on the avatar instead.
-    chipBadge = h('span', { class: 'chip-badge', hidden: !(S.isAdmin && S.pendingCount) }, String(S.pendingCount || ''));
+    chipBadge = h('span', { class: 'chip-badge', hidden: !chipCount() }, String(chipCount() || ''));
     const chip = h('div', { class: 'menu-chip' + (S.user ? '' : ' only-sm') },
       S.me ? h('button', { class: 'chip-avatar', type: 'button', 'aria-label': 'Open menu', onclick: () => menuBtn.click() }, avatar(S.me.name, 30), chipBadge) : null,
       menuBtn);
@@ -294,9 +296,10 @@
     if (S.me) {
       items.push(h('div', { class: 'menu-user' }, avatar(S.me.name, 40),
         h('div', { class: 'min0' }, h('div', { class: 'menu-name' }, S.me.name), h('div', { class: 'muted small ellipsis' }, S.user.email || ''))));
-      items.push(link('#/home', 'Home', 'home'), link('#/academy', 'Academy', 'map'), link('#/academy/panel', 'Pitch the panel', 'fin'), link('#/leaderboard', 'Leaderboard', 'trophy'), link('#/bounties', 'Bounties', 'target'),
-        link('#/updates', 'Updates', 'megaphone', S.unseenAnn ? h('span', { class: 'count-pill' }, String(S.unseenAnn)) : null),
-        link('#/updates/calendar', 'Calendar', 'calendar'), link('#/chat', 'Program chat', 'chat'), link('#/about', 'About the program', 'target'), link('#/profile', 'Profile & badges', 'user'));
+      // Only what isn't already in the main bar, so nothing shows up twice.
+      items.push(link('#/profile', 'Profile & badges', 'user'),
+        link('#/updates', 'Updates & calendar', 'megaphone', S.unseenAnn ? h('span', { class: 'count-pill' }, String(S.unseenAnn)) : null),
+        link('#/about', 'About & FAQ', 'fin'));
       if (S.isAdmin) items.push(link('#/admin/checkin', 'Officer tools', 'shield', S.pendingCount ? h('span', { class: 'count-pill' }, String(S.pendingCount)) : null));
       items.push(h('div', { class: 'menu-sep' }));
       items.push(h('button', { class: 'menu-item', type: 'button', onclick: signOut }, icon('logout', 18), h('span', { class: 'grow' }, 'Sign out')));
@@ -350,8 +353,8 @@
       sg.setBadge('updates', S.unseenAnn);
     });
     if (chipBadge) {
-      chipBadge.textContent = String(S.pendingCount || '');
-      chipBadge.hidden = !(S.isAdmin && S.pendingCount);
+      chipBadge.textContent = String(chipCount() || '');
+      chipBadge.hidden = !chipCount();
     }
     window.dispatchEvent(new CustomEvent('rt:pending', { detail: S.pendingCount }));
   }
@@ -376,42 +379,14 @@
   }
   RT.jump = jump;
 
-  function footerColumns() {
-    if (!S.user) {
-      return [
-        { title: 'Explore', links: [
-          { label: 'Overview', href: '#/' },
-          { label: 'How it works', jump: 'how' },
-          { label: 'Tiers', jump: 'tiers' },
-          { label: 'Badges', jump: 'badges' },
-          { label: 'FAQ', jump: 'faq' }] },
-        { title: 'Members', links: [
-          { label: 'Log in', href: '#/login' },
-          { label: 'Join Ridge Tank', href: '#/signup' },
-          { label: 'Leaderboard', href: '#/leaderboard', lock: true },
-          { label: 'Bounties', href: '#/bounties', lock: true },
-          { label: 'Program chat', href: '#/chat', lock: true }] },
-        { title: 'Program', links: [
-          { label: 'Officers', jump: 'officers' },
-          { label: 'Privacy', href: 'privacy.html' }] }
-      ];
-    }
-    return [
-      { title: 'Explore', links: [
-        { label: 'Home', href: '#/home' },
-        { label: 'Academy', href: '#/academy' },
-        { label: 'Leaderboard', href: '#/leaderboard' },
-        { label: 'Bounties', href: '#/bounties' }] },
-      { title: 'Program', links: [
-        { label: 'Updates', href: '#/updates' },
-        { label: 'Calendar', href: '#/updates/calendar' },
-        { label: 'About the program', href: '#/about' },
-        { label: 'Program chat', href: '#/chat' }] },
-      { title: 'Account', links: [
-        { label: 'Profile & badges', href: '#/profile' },
-        { label: 'Privacy', href: 'privacy.html' },
-        { label: 'Sign out', onClick: signOut }].concat(S.isAdmin ? [{ label: 'Officer tools', href: '#/admin/checkin' }, { label: 'Card requests', href: '#/admin/requests' }] : []) }
-    ];
+  // One short row of links. The main bar already covers every page, so the footer doesn't repeat it.
+  function footerLinks() {
+    if (!S.user) return [
+      { label: 'How it works', jump: 'how' },
+      { label: 'FAQ', jump: 'faq' },
+      { label: 'Log in', href: '#/login' },
+      { label: 'Privacy', href: 'privacy.html' }];
+    return [{ label: 'Privacy', href: 'privacy.html' }];
   }
 
   function footerLink(l) {
@@ -430,22 +405,19 @@
     const brand = anim(0.1, 'f-brand',
       h('a', { class: 'brand', href: S.me ? '#/home' : '#/', 'aria-label': 'Ridge Tank home' },
         h('span', { class: 'brand-mark' }, icon('fin', 18)), h('span', { class: 'brand-name' }, 'Ridge Tank')),
-      h('p', { class: 'f-tag' }, 'Mountain Ridge’s Shark Tank program. Show up, pitch your ideas, and climb the leaderboard.'),
       social.length ? h('div', { class: 'f-social' }, social.map(s =>
         h('a', { class: 'icon-btn', href: s.href, target: '_blank', rel: 'noopener noreferrer', 'aria-label': s.label }, icon(s.icon || 'link', 18)))) : null);
 
-    const cols = footerColumns().map((c, i) => anim(0.2 + i * 0.1, 'f-col',
-      h('h3', null, c.title),
-      h('ul', null, c.links.map(l => h('li', null, footerLink(l))))));
+    const links = anim(0.2, 'f-links', h('nav', { 'aria-label': 'Footer' }, footerLinks().map(footerLink)));
 
-    const bar = anim(0.55, 'f-bar',
+    const bar = anim(0.3, 'f-bar',
       h('span', null, `© ${new Date().getFullYear()} Ridge Tank · ${cfg.school}`),
       h('a', { class: 'f-top', href: '#/', onclick: e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' }); } },
         'Back to top', icon('arrowUp', 14)));
 
-    footerEl.appendChild(h('div', { class: 'f-panel' },
+    footerEl.appendChild(h('div', { class: 'f-panel f-slim' },
       h('span', { class: 'f-glow', 'aria-hidden': 'true' }),
-      h('div', { class: 'f-inner' }, brand, h('nav', { class: 'f-cols', 'aria-label': 'Footer' }, ...cols)),
+      h('div', { class: 'f-inner' }, brand, links),
       bar));
 
     // Each piece animates in the first time it scrolls into view.
@@ -511,23 +483,19 @@
       h('div', { class: 'hero-inner' },
         title,
         h('p', { class: 'hero-sub' }, 'Mountain Ridge’s Shark Tank program. Pitch your ideas, back other people’s, and climb the leaderboard all year.'),
-        h('div', { class: 'hero-cta' },
-          S.me
-            ? h('a', { class: 'btn btn-primary btn-lg', href: '#/home' }, 'Go to your dashboard')
-            : [h('a', { class: 'btn btn-primary btn-lg', href: '#/signup' }, 'Join Ridge Tank'),
-               h('a', { class: 'btn btn-ghost btn-lg', href: '#/login' }, 'Log in'),
-               h('a', { class: 'btn btn-ghost btn-lg', href: '#faq', onclick: e => { e.preventDefault(); RT.jump('faq'); } }, 'FAQ')]),
+        S.me ? null : h('div', { class: 'hero-cta' },
+          h('a', { class: 'btn btn-primary btn-lg', href: '#/signup' }, 'Join Ridge Tank'),
+          h('a', { class: 'hero-link', href: '#/login' }, 'Already a member? Log in')),
         (!S.me && cfg.promo) ? h('div', { class: 'promo' }, h('strong', null, cfg.promo.title), h('span', null, cfg.promo.text)) : null));
 
     const steps = [
-      ['Tap in', 'Every meeting, tap your Ridge Tank card on the reader at the door. That earns you 100 Bites. No sign-in sheet.'],
-      ['Learn with the sharks', 'Tank Academy is a year-long course. Five AI sharks coach you through 40 levels, from your first idea to a full pitch, and you can pitch any idea to the whole panel any time.'],
-      ['Pitch and invest', 'Teams pitch in the Tank and everyone invests their Bites in the ideas they believe in. Back a winner and your money grows.'],
-      ['Climb', 'Your net worth moves you up four tiers and unlocks badges. Bounties pay extra, and your Bites fade if you stop showing up. Whoever finishes the year on top is King of the Tank.']
+      ['Show up and tap in', 'Come to a meeting and tap your Ridge Tank card at the door. That earns you 100 Bites, the program’s money.'],
+      ['Learn and pitch', 'Tank Academy’s AI sharks coach you from your first idea to a full pitch. Then pitch in the Tank and invest your Bites in the ideas you believe in.'],
+      ['Climb the leaderboard', 'Bites move you up four tiers and unlock badges. Whoever finishes the year on top is King of the Tank.']
     ];
     const how = h('section', { class: 'section', id: 'how' },
       h('div', { class: 'section-head' }, h('h2', { class: 'section-title' }, 'How it works')),
-      h('div', { class: 'how-list' }, steps.map(([t, d]) => h('div', null, h('h3', null, t), h('p', null, d)))));
+      h('ol', { class: 'how-list how-3' }, steps.map(([t, d], i) => h('li', null, h('span', { class: 'how-num mono' }, '0' + (i + 1)), h('h3', null, t), h('p', null, d)))));
 
     const tierInfo = [
       ['Reef Shark', 0, 'Where everyone starts.'],
@@ -536,52 +504,41 @@
       ['Megalodon', 5000, 'A full year, all in.']
     ];
     const tiers = h('section', { class: 'section', id: 'tiers' },
-      h('div', { class: 'section-head' }, h('h2', { class: 'section-title' }, 'From Reef Shark to Megalodon.'), h('p', { class: 'section-sub' }, 'Your Bites decide your tier. Everyone starts as a Reef Shark.')),
+      h('div', { class: 'section-head' }, h('h2', { class: 'section-title' }, 'What you earn'), h('p', { class: 'section-sub' }, 'Your Bites decide your tier. Everyone starts as a Reef Shark, and there are 19 badges to collect along the way.')),
       h('div', { class: 'tier-track' }, tierInfo.map(([name, pts, d]) =>
         h('div', { class: 'tier-stop ' + RT.tierClass(name) },
           h('div', { class: 'tier-node' }), h('div', { class: 'tier-pts mono' }, pts + ' Bites'), h('div', { class: 'tier-name' }, name), h('p', { class: 'muted small' }, d)))));
 
-    const sampleBadges = ['First Bite', 'Feeding Frenzy', 'On the Hunt', 'In the Tank', 'Tank Champion', 'Crowd Favorite', 'Headhunter', 'King of the Tank'];
-    const badgeDesc = {
-      'First Bite': 'Your first meeting', 'Feeding Frenzy': '10 meetings', 'On the Hunt': '5 meetings in a row',
-      'In the Tank': 'Your first pitch', 'Tank Champion': 'Win a Tank competition', 'Crowd Favorite': 'Most Bites invested in you in a session',
-      'Headhunter': 'Bring a friend who joins', 'King of the Tank': '#1 at the end of the year'
-    };
-    const badges = h('section', { class: 'section', id: 'badges' },
-      h('div', { class: 'section-head' }, h('h2', { class: 'section-title' }, 'Badges'), h('p', { class: 'section-sub' }, 'There are 19 to earn. Here are 8 of them.')),
-      h('ul', { class: 'badge-list' }, sampleBadges.map(b =>
-        h('li', null, icon(RT.badgeIcon(b), 18), h('b', null, b), h('span', { class: 'muted' }, badgeDesc[b])))));
-
-    const locked = h('section', { class: 'section' },
+    const closer = h('section', { class: 'section closer' },
       h('div', { class: 'card locked-card' },
-        h('div', { class: 'locked-copy' },
-          h('h3', null, 'The leaderboard is members-only'),
-          h('p', { class: 'muted' }, 'Join or log in to see where you rank, track your badges, and talk in the program chat.')),
-        h('div', { class: 'row gap-sm wrap' },
-          h('a', { class: 'btn btn-primary', href: '#/signup' }, 'Join Ridge Tank'),
-          h('a', { class: 'btn btn-ghost', href: '#/login' }, 'Log in'))));
+        h('div', { class: 'locked-copy' }, h('h3', null, 'Ready to jump in?'),
+          h('p', { class: 'muted' }, 'Make an account to track your Bites, rank and badges.')),
+        h('a', { class: 'btn btn-primary', href: '#/signup' }, 'Join Ridge Tank')));
 
     // Questions new people ask. Answers are in plain words on purpose.
     const faqs = [
       ['What is Ridge Tank?', 'A Shark Tank program at ' + cfg.school + '. You pitch ideas, invest in other people’s pitches, and climb a leaderboard all year.'],
-      ['Who can join?', 'Any ' + cfg.school + ' student, grades 9 to 12. Sign up on this site or through the sign-up form.'],
-      ['How do I sign up?', 'Hit “Join Ridge Tank” and fill in your name, grade, email and phone number. It takes under a minute. You can also use the Google sign-up form from the announcement.'],
+      ['Who can join?', 'Any ' + cfg.school + ' student, grades 9 to 12. No experience needed. Just walk in to a meeting.'],
+      ['How do I sign up?', 'Just show up to a meeting. To track your Bites and rank online, hit “Join Ridge Tank” and make an account. It takes under a minute.'],
       ['Why do you want my phone number?', 'Only to add you to the program group chat (iMessage or WhatsApp) for meeting updates. Only officers can see it.'],
       ['When is the first meeting?', cfg.nextMeeting + '. Everyone gets their own Ridge Tank card there, and we’ll show you how everything works.'],
-      ['What are the sign-up rewards?', cfg.promo ? cfg.promo.text : 'Ask an officer.'],
+      ['Is there a reward for bringing a friend?', 'Yes. Bring a friend and you both get candy.'],
       ['What are Bites?', 'Bites are the program’s money. You earn 100 every time you tap in at a meeting, and more for pitching and for bounties. You can invest them, and your Bites plus your winnings make up your net worth.'],
       ['How does the card work?', 'You get a Ridge Tank card at the first meeting. Tap it on the reader at the door and you’re checked in. No sign-in sheet.'],
       ['How do pitching and investing work?', 'Teams pitch in the Tank. During the meeting you put your Bites into the pitches you believe in. First place pays 3x, second 2x, third 1.5x, and a pitch that flops pays half. You don’t have to pitch to invest.'],
       ['What are bounties?', 'Side challenges the officers post for extra Bites, like bringing a friend. Tap “I did it” and an officer checks it.'],
       ['Why do my Bites fade?', 'Unspent Bites lose 10% at the start of each month. It keeps the game moving: put your Bites to work instead of sitting on them.'],
-      ['How do I see my Bites and rank?', 'Log in with your email and password. Your Home page shows your Bites, rank, badges and recent activity. If you already have a card, enter the code an officer gives you when you sign up.'],
+      ['How do I see my Bites and rank?', 'Log in with your email and password. Your Home page shows your Bites, rank and badges. Your Profile shows your full history. If you already have a card, enter the code an officer gives you when you sign up.'],
       ['What are tiers and badges?', 'Your net worth moves you through four tiers: Reef Shark, Tiger Shark, Great White and Megalodon. Badges are rewards for things like showing up, pitching and bringing friends.'],
       ['What if I lose my card?', 'Tell an officer. They’ll link a new card to you and the old one stops working.'],
       ['Who can see my information?', 'Members see names, Bites and tiers on the leaderboard. Officers see a bit more so they can run check-in. Read the full details on the privacy page.']
     ];
+    // Visitors see the questions that matter before joining; members get the full list on the About page.
+    const SHORT = ['What is Ridge Tank?', 'Who can join?', 'When is the first meeting?', 'Is there a reward for bringing a friend?', 'What are Bites?', 'Why do you want my phone number?', 'Who can see my information?'];
+    const shown = S.me ? faqs : faqs.filter(([q]) => SHORT.includes(q));
     const faq = h('section', { class: 'section', id: 'faq' },
       h('div', { class: 'section-head' }, h('p', { class: 'eyebrow' }, 'FAQ'), h('h2', { class: 'section-title' }, 'Questions, answered.')),
-      h('div', { class: 'faq-list' }, faqs.map(([q, a]) => h('details', { class: 'faq-item' },
+      h('div', { class: 'faq-list' }, shown.map(([q, a]) => h('details', { class: 'faq-item' },
         h('summary', null, h('span', null, q), icon('chevronDown', 18)),
         h('p', { class: 'muted' }, a)))),
       h('p', { class: 'muted small faq-foot' }, 'Still stuck? Ask any officer at a meeting, or read the ', h('a', { href: 'privacy.html' }, 'privacy page'), '.'));
@@ -592,7 +549,7 @@
         h('div', { class: 'officer' }, avatar(o.name, 48),
           h('div', null, h('div', { class: 'officer-name' }, o.name), h('div', { class: 'muted small' }, o.role + (o.note ? ' · ' + o.note : '')))))));
 
-    root.append(hero, how, tiers, badges, ...(S.me ? [] : [locked]), faq, officers);
+    root.append(S.me ? pageHead('About', 'How Ridge Tank works, plus answers to common questions.') : hero, how, tiers, faq, ...(S.me ? [] : [closer]), officers);
     return {};
   };
 

@@ -204,7 +204,7 @@
     let sub = t.sub || '';
     const tabFor = s => (s === 'edges' || s === 'panel' ? s : 'year');
     const seg = segmented({
-      items: [{ value: 'year', label: 'Your year' }, { value: 'panel', label: 'Pitch the panel' }, { value: 'edges', label: 'Edges and the Crown' }],
+      items: [{ value: 'year', label: 'Your year' }, { value: 'panel', label: 'Pitch practice' }, { value: 'edges', label: 'Rewards' }],
       value: tabFor(sub), ariaLabel: 'Academy', onChange: v => RT.go(v === 'year' ? 'academy' : 'academy/' + v)
     });
     const subLine = h('span', null, 'Loading your year');
@@ -287,7 +287,7 @@
         h('div', { class: 'min0' }, h('p', { class: 'card-label' }, label), h('h2', null, p.cur ? L.t : 'All 40 levels done'), sub)),
       h('div', { class: 'ac-sbar' }, h('p', { class: 'card-label' }, `Season ${p.season}: ${inSeason} of 10 levels done`), bar),
       h('div', { class: 'ac-foot' },
-        h('p', { class: 'muted' }, h('b', null, String(p.done)), ' of 40 levels · ', h('b', null, p.xp.toLocaleString()), ' XP · ', p.rank, ' rank · ', h('b', null, String(WALLET[p.rank])), ' bites notes for live nights'),
+        h('p', { class: 'muted' }, h('b', null, String(p.done)), ' of 40 levels · ', h('b', null, p.xp.toLocaleString()), ' XP · ', p.rank, ' rank'),
         cta));
   }
 
