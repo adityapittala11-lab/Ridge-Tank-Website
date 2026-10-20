@@ -212,8 +212,8 @@ async function runOp(client, m, b) {
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const clientIp = req => String((req.headers && (req.headers['x-forwarded-for'] || req.headers['x-real-ip'])) || '').split(',')[0].trim() || 'ip';
 
-// Founding officer, always an admin (account already claimed). Others go in the ADMIN_EMAILS env var.
-const FOUNDER_ADMINS = ['adityapittala.11@gmail.com'];
+// Officers who are always admins (Aditya, Kavin). Others go in the ADMIN_EMAILS env var.
+const FOUNDER_ADMINS = ['adityapittala.11@gmail.com', 'kavin.spork@gmail.com'];
 
 function adminEmails() {
   const fromEnv = String(process.env.ADMIN_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
