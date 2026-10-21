@@ -7,7 +7,8 @@
 // rules in db/*.sql (row level security) decide what each person can read and change.
 import pg from 'pg';
 import { getPool, ensureSchema } from './_pg.js';
-import { hashPassword, checkPassword, signToken, verifyToken, bearer, tooManyTries, hashSignal } from './_auth.js';
+import { hashPassword, checkPassword, signToken, verifyToken, bearer, tooManyTries, hashSignal, signPurposeToken } from './_auth.js';
+import { sendMail, confirmEmail, mailConfigured } from './_mail.js';
 import { jsonBody } from './_shared.js';
 
 // Numbers stay numbers and dates stay "2026-10-21" (not shifted by a timezone).
@@ -255,20 +256,40 @@ async function isBanned(client, userId, email) {
   return r.rows.length > 0;
 }
 
-// Sign-up is limited to school email addresses (set ALLOWED_EMAIL_DOMAINS in Vercel to change it, or to empty to allow
-// any). Officers listed in ADMIN_EMAILS are always allowed.
+// Who may sign up: well-known email providers and the school's own addresses. Throwaway "temp mail" sites aren't on the
+// list, so they can't be used. Set ALLOWED_EMAIL_DOMAINS in Vercel (comma separated) to change the list, or to empty to
+// allow any address. Officers in ADMIN_EMAILS are always allowed.
+const DEFAULT_DOMAINS = ['gmail.com', 'googlemail.com', 'outlook.com', 'hotmail.com', 'live.com', 'msn.com', 'yahoo.com', 'ymail.com', 'icloud.com', 'me.com', 'mac.com', 'aol.com', 'proton.me', 'protonmail.com', 'learner.dvusd.org', 'dvusd.org'];
 function emailAllowed(email) {
   if (adminEmails().includes(email)) return true;
   const raw = process.env.ALLOWED_EMAIL_DOMAINS;
-  const list = (raw == null ? 'learner.dvusd.org,dvusd.org' : raw).split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  const list = (raw == null ? DEFAULT_DOMAINS.join(',') : raw).split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
   if (!list.length) return true;
   const dom = email.split('@')[1] || '';
-  return list.some(d => dom === d || dom.endsWith('.' + d));
+  return list.includes(dom) || dom.endsWith('.dvusd.org');
 }
-const BANNED_ERROR = { message: 'This account has been removed from Ridge Tank. Ask an officer if you think this is a mistake.', code: 'banned' };
 
-// Remember which browser and network an account was used from, so officers can spot one person with two accounts.
-// Only a random browser id and a scrambled network address are kept. Never blocks a login if it fails.
+// One person, one account: gmail ignores dots and "+tags", so a.b+1@gmail.com and ab@gmail.com are the same inbox.
+export function emailKey(email) {
+  let [local, dom] = String(email).trim().toLowerCase().split('@');
+  local = (local || '').split('+')[0];
+  if (dom === 'gmail.com' || dom === 'googlemail.com') { local = local.replace(/\./g, ''); dom = 'gmail.com'; }
+  return local + '@' + dom;
+}
+
+const siteOrigin = req => {
+  if (process.env.SITE_URL) return String(process.env.SITE_URL).replace(/\/+$/, '');
+  const h = req.headers || {};
+  const host = h['x-forwarded-host'] || h.host || '';
+  return (h['x-forwarded-proto'] || (/^localhost|^127\./.test(host) ? 'http' : 'https')) + '://' + host;
+};
+
+async function sendConfirmation(req, user) {
+  const link = siteOrigin(req) + '/api/verify?token=' + encodeURIComponent(signPurposeToken('verify-email', user.id, 48));
+  const m = confirmEmail((user.raw_user_meta_data || {}).full_name, link);
+  await sendMail({ to: user.email, subject: m.subject, text: m.text, html: m.html });
+}
+
 async function recordSignals(client, req, userId, device) {
   try {
     const ip = clientIp(req);
@@ -299,14 +320,25 @@ async function authOp(req, b) {
       if (action === 'signUp') {
         if (password.length < 8 || password.length > 200) return { data: { user: null, session: null }, error: { message: 'Password should be at least 8 characters.', code: 'weak_password' } };
         const meta = b.data && typeof b.data === 'object' ? b.data : {};
-        if (!emailAllowed(email)) return { data: { user: null, session: null }, error: { message: 'Sign up with your school email (it ends in @learner.dvusd.org).', code: 'email_not_allowed' } };
+        if (!emailAllowed(email)) return { data: { user: null, session: null }, error: { message: 'Use a Gmail, Outlook, Yahoo, iCloud or school (learner.dvusd.org) email. Temporary email addresses aren’t allowed.', code: 'email_not_allowed' } };
         if (await isBanned(client, '00000000-0000-0000-0000-000000000000', email)) return { data: { user: null, session: null }, error: BANNED_ERROR };
-        const exists = await client.query('select 1 from auth.users where lower(email) = $1', [email]);
+        const key = emailKey(email);
+        const exists = await client.query('select 1 from auth.users where lower(email) = $1 or email_key = $2', [email, key]);
         if (exists.rows.length) return { data: { user: null, session: null }, error: { message: 'User already registered', code: 'user_already_exists' } };
-        const r = await client.query('insert into auth.users (email, encrypted_password, raw_user_meta_data, last_sign_in_at) values ($1, $2, $3, now()) returning *', [email, hashPassword(password), JSON.stringify(meta)]);
+        const officer = adminEmails().includes(email);
+        if (!officer && !mailConfigured()) return { data: { user: null, session: null }, error: { message: 'Sign-up email isn’t connected yet. Ask an officer to finish setting it up.', code: 'mail_not_set_up' } };
+        // Officers are trusted; everyone else must click the link we email them before they can log in.
+        const r = await client.query('insert into auth.users (email, email_key, encrypted_password, raw_user_meta_data, email_confirmed_at, last_sign_in_at) values ($1, $2, $3, $4, ' + (officer ? 'now()' : 'null') + ', ' + (officer ? 'now()' : 'null') + ') returning *', [email, key, hashPassword(password), JSON.stringify(meta)]);
         await makeAdminIfListed(client, r.rows[0]);
         await recordSignals(client, req, r.rows[0].id, b.device);
-        return { data: { user: publicUser(r.rows[0]), session: sessionFor(r.rows[0]) }, error: null };
+        if (officer) return { data: { user: publicUser(r.rows[0]), session: sessionFor(r.rows[0]) }, error: null };
+        try {
+          await sendConfirmation(req, r.rows[0]);
+        } catch (e) {
+          await client.query('delete from auth.users where id = $1', [r.rows[0].id]);
+          return { data: { user: null, session: null }, error: { message: 'We couldn’t send an email to that address. Check it and try again.', code: 'mail_failed' } };
+        }
+        return { data: { user: publicUser(r.rows[0]), session: null }, error: null };
       }
 
       const r = await client.query('select * from auth.users where lower(email) = $1', [email]);
@@ -315,9 +347,19 @@ async function authOp(req, b) {
       }
       await makeAdminIfListed(client, r.rows[0]);
       if (await isBanned(client, r.rows[0].id, email)) return { data: { user: null, session: null }, error: BANNED_ERROR };
+      if (!r.rows[0].email_confirmed_at) return { data: { user: null, session: null }, error: { message: 'Email not confirmed', code: 'email_not_confirmed' } };
       await client.query('update auth.users set last_sign_in_at = now() where id = $1', [r.rows[0].id]);
       await recordSignals(client, req, r.rows[0].id, b.device);
       return { data: { user: publicUser(r.rows[0]), session: sessionFor(r.rows[0]) }, error: null };
+    }
+
+    // Send the confirmation link again. Always answers "ok" so it can't be used to find out who has an account.
+    if (action === 'resend') {
+      const email = String(b.email || '').trim().toLowerCase();
+      if (tooManyTries('resend|' + clientIp(req) + '|' + email)) return { data: { ok: true }, error: null };
+      const r = await client.query('select * from auth.users where lower(email) = $1 and email_confirmed_at is null', [email]);
+      if (r.rows.length && mailConfigured()) { try { await sendConfirmation(req, r.rows[0]); } catch (e) { /* ignore */ } }
+      return { data: { ok: true }, error: null };
     }
 
     if (action === 'updateUser') {

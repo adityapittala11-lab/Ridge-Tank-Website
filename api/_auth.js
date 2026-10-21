@@ -39,7 +39,7 @@ export function signToken(user) {
 }
 
 // Returns { sub, email, exp } for a good token, or null.
-export function verifyToken(token) {
+function decode(token) {
   try {
     const [h, p, s] = String(token || '').split('.');
     if (!h || !p || !s) return null;
@@ -52,6 +52,12 @@ export function verifyToken(token) {
   } catch (e) {
     return null;
   }
+}
+
+// Login tokens only. A single-purpose token (confirmation link) is never accepted here.
+export function verifyToken(token) {
+  const p = decode(token);
+  return p && !p.purpose ? p : null;
 }
 
 // Short-lived "unlock" proofs for sensitive tools (the officer Assistant). Signed like a login token but only valid
@@ -93,4 +99,18 @@ export function tooManyTries(key, max = 15) {
   tries.set(key, list);
   if (tries.size > 5000) tries.clear();
   return list.length > max;
+}
+
+// Short-lived, single-purpose tokens (for example the link in a confirmation email). Same signing as login tokens,
+// but the "purpose" means one can never be used as the other.
+export function signPurposeToken(purpose, subject, hours = 48) {
+  const now = Math.floor(Date.now() / 1000);
+  const header = b64(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const payload = b64(JSON.stringify({ sub: subject, purpose, iat: now, exp: now + hours * 3600 }));
+  return header + '.' + payload + '.' + b64(crypto.createHmac('sha256', secret()).update(header + '.' + payload).digest());
+}
+
+export function verifyPurposeToken(token, purpose) {
+  const p = decode(token);
+  return p && p.purpose === purpose ? p : null;
 }

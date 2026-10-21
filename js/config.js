@@ -17,8 +17,8 @@ window.RT_CONFIG = {
     { name: 'Navya', role: 'Communications' }
   ],
 
-  // Sign-up needs a school email ending in one of these (the server enforces it too). null = any email.
-  schoolEmail: ['learner.dvusd.org', 'dvusd.org'],
+  // Sign-up needs an email from one of these providers (the server enforces it too). Throwaway/temp mail sites aren't on it.
+  allowedEmailDomains: ['gmail.com', 'googlemail.com', 'outlook.com', 'hotmail.com', 'live.com', 'msn.com', 'yahoo.com', 'ymail.com', 'icloud.com', 'me.com', 'mac.com', 'aol.com', 'proton.me', 'protonmail.com', 'learner.dvusd.org', 'dvusd.org'],
 
   // Where people sign up. Fill these in once they exist; the message templates pick them up.
   links: {

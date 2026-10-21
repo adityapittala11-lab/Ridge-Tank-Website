@@ -393,13 +393,12 @@
     const S = RT.state;
     if (!S.isAdmin) return 0;
     const head = t => sb.from(t).select('id', { count: 'exact', head: true });
-    const [welcome, claims, approvals] = await Promise.all([
+    const [welcome, claims] = await Promise.all([
       head('members').eq('contact_status', 'new').not('phone', 'is', null),
-      head('bounty_claims').eq('status', 'pending'),
-      head('members').eq('status', 'pending')
+      head('bounty_claims').eq('status', 'pending')
     ]);
-    S.adminCounts = { welcome: welcome.count || 0, claims: claims.count || 0, approvals: approvals.count || 0 };
-    S.pendingCount = S.adminCounts.welcome + S.adminCounts.claims + S.adminCounts.approvals;
+    S.adminCounts = { welcome: welcome.count || 0, claims: claims.count || 0 };
+    S.pendingCount = S.adminCounts.welcome + S.adminCounts.claims;
     return S.pendingCount;
   }
   RT.refreshPending = refreshPending;

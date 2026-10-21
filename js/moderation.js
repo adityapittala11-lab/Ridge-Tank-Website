@@ -74,87 +74,62 @@
 
   RT.moderation = { MUTE_CHOICES, isMuted, mutedFor, setMute, banMember, muteMenu };
 
-  // ---------------- Officer tools > Approvals ----------------
+  // ---------------- Officer tools > Accounts ----------------
+  // Possible duplicate accounts (same browser or network) and the list of banned emails.
   RT.adminTabs = RT.adminTabs || {};
-  RT.adminTabs.approvals = function (pane) {
-    const list = h('div', { class: 'stack' }, RT.skeleton(3));
+  RT.adminTabs.accounts = function (pane) {
+    const dupBox = h('section', { class: 'card' });
     const bannedBox = h('section', { class: 'card' });
     pane.append(
       h('section', { class: 'card' },
-        h('h3', null, 'Approvals'),
-        h('p', { class: 'muted' }, 'New sign-ups wait here until you approve them. Check the name against your roster. Anything that looks fake, tap Ban and they’re removed.')),
-      list, bannedBox);
+        h('h3', null, 'Accounts'),
+        h('p', { class: 'muted' }, 'Everyone confirms their email before they can log in, so every account is a real inbox. Here is who might be using two accounts, and who is banned.')),
+      dupBox, bannedBox);
 
-    let rows = [];
-    let dupes = new Map();   // member id -> [{ other_name, kind }]
     async function load() {
-      const [p, b, d] = await Promise.all([
-        sb.from('members').select('*').eq('status', 'pending').order('created_at', { ascending: true }),
-        sb.from('banned_emails').select('*').order('banned_at', { ascending: false }),
-        sb.rpc('duplicate_signals')
-      ]);
-      if (p.error) throw p.error;
-      rows = p.data || [];
-      dupes = new Map();
-      (d.data || []).forEach(x => { if (!dupes.has(x.member_id)) dupes.set(x.member_id, []); dupes.get(x.member_id).push(x); });
-      S.adminCounts.approvals = rows.length;
-      S.pendingCount = (S.adminCounts.welcome || 0) + (S.adminCounts.claims || 0) + rows.length;
-      RT.updateAdminBadge();
-      draw();
+      const [d, b] = await Promise.all([sb.rpc('duplicate_signals'), sb.from('banned_emails').select('*').order('banned_at', { ascending: false })]);
+      const pairs = d.data || [];
+      let people = new Map();
+      if (pairs.length) {
+        const ids = [...new Set(pairs.flatMap(x => [x.member_id, x.other_id]))];
+        const r = await sb.from('members').select('id, name, email, created_at').in('id', ids);
+        people = new Map((r.data || []).map(x => [x.id, x]));
+      }
+      drawDupes(pairs, people);
       drawBanned(b.data || []);
     }
 
-    function draw() {
-      clear(list);
-      if (!rows.length) { list.appendChild(h('div', { class: 'card empty' }, icon('check', 22, 'muted'), h('p', { class: 'muted' }, 'No one is waiting.'))); return; }
-      if (rows.length > 1) {
-        const all = h('button', { class: 'btn btn-ghost btn-sm', type: 'button' }, 'Approve everyone (' + rows.length + ')');
-        all.addEventListener('click', () => busy(all, async () => {
-          if (!(await confirmDialog({ title: 'Approve all ' + rows.length + '?', message: 'Only do this if you recognize every name on the list.', confirmText: 'Approve all' }))) return;
-          const { error } = await sb.from('members').update({ status: 'approved' }).eq('status', 'pending');
-          if (error) { toast(friendly(error), 'error'); return; }
-          toast('Everyone approved', 'success');
-          load().catch(e => toast(friendly(e), 'error'));
-        }));
-        list.appendChild(h('div', { class: 'row end' }, all));
-      }
-      rows.forEach(m => {
-        const ok = h('button', { class: 'btn btn-primary btn-sm', type: 'button' }, icon('check', 14), 'Approve');
-        const no = h('button', { class: 'btn btn-danger btn-sm', type: 'button' }, icon('x', 14), 'Fake / ban');
-        ok.addEventListener('click', () => busy(ok, async () => {
-          const { error } = await sb.from('members').update({ status: 'approved' }).eq('id', m.id);
-          if (error) { toast(friendly(error), 'error'); return; }
-          toast(m.name + ' approved', 'success');
-          load().catch(e => toast(friendly(e), 'error'));
-        }));
-        no.addEventListener('click', async () => { if (await banMember(m)) load().catch(e => toast(friendly(e), 'error')); });
-        list.appendChild(h('div', { class: 'card approval' },
-          avatar(m.name, 40),
-          h('div', { class: 'grow min0' },
-            h('div', { class: 'approval-name' }, m.name, m.grade ? h('span', { class: 'muted' }, ' · ' + m.grade + 'th') : null),
-            h('div', { class: 'muted small ellipsis' }, [m.email, m.phone ? RT.fmtPhone(m.phone) : null, 'signed up ' + fmtDate(m.created_at, { month: 'short', day: 'numeric' })].filter(Boolean).join(' · ')),
-            dupeLine(m)),
-          h('div', { class: 'row gap-sm' }, no, ok)));
-      });
-    }
-
     // "Same device" is a strong hint of one person with two accounts. "Same network" is weak: the whole school shares Wi-Fi.
-    function dupeLine(m) {
-      const list = dupes.get(m.id) || [];
-      const dev = list.filter(x => x.kind === 'device');
-      const net = list.filter(x => x.kind === 'network' && !dev.some(y => y.other_id === x.other_id));
-      if (!dev.length && !net.length) return null;
-      const names = arr => arr.slice(0, 3).map(x => x.other_name).join(', ') + (arr.length > 3 ? ' +' + (arr.length - 3) : '');
-      return h('div', null,
-        dev.length ? h('div', { class: 'dup-line strong' }, 'Same device as: ' + names(dev)) : null,
-        net.length ? h('div', { class: 'dup-line muted', title: 'Everyone on the same Wi-Fi shares a network, so this alone proves nothing.' }, 'Same network as: ' + names(net) + ' (could just be school Wi-Fi)') : null);
+    function drawDupes(pairs, people) {
+      clear(dupBox);
+      const by = new Map();
+      pairs.forEach(x => { if (!by.has(x.member_id)) by.set(x.member_id, []); by.get(x.member_id).push(x); });
+      const rows = [...by.entries()].map(([id, list]) => ({ id, list, strong: list.some(x => x.kind === 'device') })).sort((a, b) => b.strong - a.strong);
+      dupBox.append(h('h3', null, 'Possible duplicate accounts'));
+      if (!rows.length) { dupBox.append(h('p', { class: 'muted small' }, 'No matches. Nobody shares a browser or network.')); return; }
+      dupBox.append(h('p', { class: 'muted small' }, 'Same device = same phone or laptop (strong hint). Same network = same internet connection (weak, the school Wi-Fi does this to everyone).'));
+      const list = h('div', { class: 'entry-list' });
+      rows.forEach(r => {
+        const m = people.get(r.id); if (!m) return;
+        const dev = r.list.filter(x => x.kind === 'device');
+        const net = r.list.filter(x => x.kind === 'network' && !dev.some(y => y.other_id === x.other_id));
+        const names = arr => arr.slice(0, 3).map(x => x.other_name).join(', ') + (arr.length > 3 ? ' +' + (arr.length - 3) : '');
+        const ban = h('button', { class: 'btn btn-ghost btn-sm', type: 'button' }, 'Ban…');
+        ban.addEventListener('click', async () => { if (await banMember(m)) load().catch(() => {}); });
+        list.appendChild(h('div', { class: 'entry' }, avatar(m.name, 32),
+          h('div', { class: 'grow min0' }, h('div', { class: 'ellipsis' }, m.name, h('span', { class: 'muted small' }, ' · ' + (m.email || ''))),
+            dev.length ? h('div', { class: 'dup-line strong' }, 'Same device as: ' + names(dev)) : null,
+            net.length ? h('div', { class: 'dup-line muted' }, 'Same network as: ' + names(net)) : null),
+          ban));
+      });
+      dupBox.append(list);
     }
 
     function drawBanned(items) {
       clear(bannedBox);
-      if (!items.length) { bannedBox.hidden = true; return; }
-      bannedBox.hidden = false;
-      bannedBox.append(h('h3', null, 'Blocked emails'), h('p', { class: 'muted small' }, 'These emails can’t sign up. Lift the block if a ban was a mistake (they’ll have to make a new account).'),
+      bannedBox.append(h('h3', null, 'Blocked emails'));
+      if (!items.length) { bannedBox.append(h('p', { class: 'muted small' }, 'No one is banned.')); return; }
+      bannedBox.append(h('p', { class: 'muted small' }, 'These emails can’t sign up. Lift the block if a ban was a mistake (they’ll have to make a new account).'),
         h('div', { class: 'entry-list' }, items.map(b => {
           const un = h('button', { class: 'btn btn-ghost btn-sm', type: 'button' }, 'Lift block');
           un.addEventListener('click', () => busy(un, async () => {
@@ -166,7 +141,7 @@
         })));
     }
 
-    load().catch(e => { clear(list); list.appendChild(h('div', { class: 'card empty' }, h('p', { class: 'muted' }, friendly(e)))); });
+    load().catch(e => { clear(dupBox); dupBox.append(h('p', { class: 'muted' }, friendly(e))); });
     return null;
   };
 })();

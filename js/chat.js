@@ -26,12 +26,26 @@
       if (r.data) modMembers = new Map(r.data.map(x => [x.id, x]));
     }
 
+    // Officers: wipe the whole chat (asks first).
+    function clearBtn() {
+      const b = h('button', { class: 'btn btn-ghost btn-sm', type: 'button', title: 'Delete every message' }, icon('trash', 14), 'Clear chat');
+      b.addEventListener('click', async () => {
+        const ok = await confirmDialog({ title: 'Delete every message?', message: 'This clears the whole chat for everyone and can’t be undone.', confirmText: 'Clear chat', danger: true, requireText: 'CLEAR' });
+        if (!ok) return;
+        const { error } = await sb.from('messages').delete().gt('id', 0);
+        if (error) { toast(friendly(error), 'error'); return; }
+        toast('Chat cleared', 'success');
+        RT.rerender();
+      });
+      return b;
+    }
+
     const liveDot = h('span', { class: 'live-pill' }, h('span', { class: 'live-dot' }), 'Connecting');
     const head = h('header', { class: 'chat-head' },
       h('div', { class: 'chat-title' },
         h('span', { class: 'chat-icon' }, icon('chat', 18)),
         h('div', null, h('h2', null, 'Program chat'), h('p', { class: 'muted small' }, S.isAdmin ? 'You post, members reply.' : 'Officers post here. Reply to any message.'))),
-      liveDot);
+      h('div', { class: 'row gap-sm' }, S.isAdmin ? clearBtn() : null, liveDot));
 
     const list = h('div', { class: 'chat-list' });
     const olderBtn = h('button', { class: 'btn btn-ghost btn-sm older-btn', type: 'button', hidden: true }, 'Load earlier messages');

@@ -35,7 +35,6 @@
       if (MEMBER_ROUTES.has(b) || b === 'admin' || b === 'welcome') return { key: 'auth', mode: 'login' };
       return { key: 'landing' };
     }
-    if (S.pending) return { key: 'pending' };
     if (!S.me) return { key: 'welcome' };
     if (b === 'admin') return S.isAdmin ? { key: 'admin', tab: r.sub || 'checkin' } : { key: 'home' };
     if (b === 'updates') return { key: 'updates', tab: r.sub === 'calendar' ? 'calendar' : 'news' };
@@ -596,10 +595,11 @@
       const email = h('input', { class: 'input', type: 'email', placeholder: 'you@example.com', autocomplete: 'email', required: true });
       const pw = passwordInput('Your password', 'current-password');
       const err = h('p', { class: 'form-error', role: 'alert', hidden: true });
+      const resendHost = h('div', { class: 'row center' });
       const submit = h('button', { class: 'btn btn-primary btn-block btn-lg', type: 'submit' }, 'Log in');
       const forgot = h('button', { class: 'link-btn', type: 'button', onclick: () => forgotModal() }, 'Forgot password?');
       const form = h('form', { class: 'stack', novalidate: true },
-        field('Email', email), field('Password', pw), h('div', { class: 'row between' }, h('span'), forgot), err, submit,
+        field('Email', email), field('Password', pw), h('div', { class: 'row between' }, h('span'), forgot), err, resendHost, submit,
         h('p', { class: 'muted small center' }, 'New here? ', h('a', { href: '#/signup' }, 'Create an account')));
       form.addEventListener('submit', e => {
         e.preventDefault();
@@ -607,7 +607,15 @@
         if (!email.value.trim() || !pw.input.value) { err.textContent = 'Enter your email and password.'; err.hidden = false; return; }
         busy(submit, async () => {
           const { error } = await sb.auth.signInWithPassword({ email: email.value.trim(), password: pw.input.value });
-          if (error) { err.textContent = friendly(error); err.hidden = false; return; }
+          if (error) {
+            err.textContent = friendly(error);
+            err.hidden = false;
+            if (/not confirmed/i.test(error.message || '')) {
+              const em = email.value.trim();
+              clear(resendHost).appendChild(h('button', { class: 'link-btn', type: 'button', onclick: e => busy(e.currentTarget, async () => { await sb.auth.resend(em); toast('Sent. Check your inbox and spam.', 'success'); }) }, 'Send the confirmation email again'));
+            }
+            return;
+          }
           toast('Logged in', 'success', 1600);
         });
       });
@@ -636,7 +644,7 @@
       const form = h('form', { class: 'stack', novalidate: true },
         field('Name', name),
         h('div', { class: 'field' }, h('span', { class: 'label' }, 'Grade'), grade),
-        field('School email', email, cfg.schoolEmail ? 'Use your school email (it ends in @' + cfg.schoolEmail[0] + '). Your name must be your real first and last name. New sign-ups are checked by an officer.' : 'New sign-ups are checked by an officer.'),
+        field('Email', email, 'Use a Gmail, Outlook, Yahoo, iCloud or school (learner.dvusd.org) email. We’ll send you a link to confirm it.'),
         phoneF.el,
         field('Password', pw),
         h('div', { class: 'field' }, h('span', { class: 'label' }, 'Did an officer already add you to the roster?'), hasCard),
@@ -658,7 +666,7 @@
         if (!RT.validName(n)) return fail('Use your real first and last name.');
         if (!g) return fail('Pick your grade.');
         if (!/^\S+@\S+\.\S+$/.test(em)) return fail('Enter a real email address.');
-        if (cfg.schoolEmail && !new RegExp('@(.+\\.)?(' + cfg.schoolEmail.map(d => d.replace(/\./g, '\\.')).join('|') + ')$', 'i').test(em)) return fail('Sign up with your school email (it ends in @' + cfg.schoolEmail[0] + ').');
+        if (cfg.allowedEmailDomains && !cfg.allowedEmailDomains.includes(em.split('@')[1].toLowerCase()) && !/@([^@]+\.)?dvusd\.org$/i.test(em)) return fail('Use a Gmail, Outlook, Yahoo, iCloud or school (learner.dvusd.org) email. Temporary email addresses aren’t allowed.');
         const pe = phoneF.error();
         if (pe) return fail(pe);
         if (p.length < 8) return fail('Use a password with at least 8 characters.');
@@ -687,11 +695,17 @@
     }
 
     function checkEmail(em) {
+      const again = h('button', { class: 'btn btn-ghost btn-block', type: 'button' }, 'Send the email again');
+      again.addEventListener('click', () => busy(again, async () => {
+        await sb.auth.resend(em);
+        toast('Sent again. Check your inbox and spam.', 'success');
+      }));
       return h('div', { class: 'stack center-text form-in' },
         h('div', { class: 'big-icon' }, icon('mail', 28)),
-        h('p', null, 'We sent a confirmation link to ', h('strong', null, em), '.'),
-        h('p', { class: 'muted small' }, 'Open it, then come back here and log in. Check spam if you don’t see it in a couple of minutes.'),
-        h('button', { class: 'btn btn-ghost btn-block', type: 'button', onclick: () => go('login') }, 'Back to log in'));
+        h('p', null, 'We sent a link to ', h('strong', null, em), '.'),
+        h('p', { class: 'muted small' }, 'Open the email and tap Confirm, then log in. It can take a minute. Check spam or junk if you don’t see it.'),
+        again,
+        h('button', { class: 'link-btn center', type: 'button', onclick: () => go('login') }, 'Back to log in'));
     }
 
     function forgotModal() {
@@ -710,26 +724,6 @@
   };
 
   // ---------------- onboarding (signed in, no member profile yet) ----------------
-  // Shown to a new sign-up until an officer approves them.
-  RT.views.pending = function (root) {
-    const me = S.pending;
-    const again = h('button', { class: 'btn btn-primary btn-block', type: 'button' }, icon('refresh', 16), 'Check again');
-    again.addEventListener('click', () => busy(again, async () => {
-      await RT.reloadMe();
-      if (S.pending) toast('Still waiting. An officer will approve you soon.', 'info');
-      else RT.rerender();
-    }));
-    root.appendChild(h('div', { class: 'auth-wrap' },
-      h('div', { class: 'card auth-card reveal' },
-        h('div', { class: 'auth-brand' }, h('span', { class: 'brand-mark lg' }, icon('clock', 22))),
-        h('h1', { class: 'auth-title' }, 'Almost in'),
-        h('p', { class: 'muted' }, me ? `Thanks, ${String(me.name).split(' ')[0]}. ` : '', 'An officer checks every new sign-up so only real members get in. You’ll be approved soon, usually before or at the next meeting.'),
-        h('p', { class: 'muted small' }, 'Signed up under the wrong name? Sign out and make a new account with your real first and last name.'),
-        again,
-        h('button', { class: 'link-btn center', type: 'button', onclick: signOut }, 'Sign out'))));
-    return {};
-  };
-
   RT.views.welcome = function (root) {
     const meta = (S.user && S.user.user_metadata) || {};
     const startMode = meta.card_code ? 'card' : 'new';
@@ -841,6 +835,8 @@
     if (/[?&](code|error|error_description)=/.test(location.search)) history.replaceState(null, '', location.pathname + (location.hash || '#/'));
     route();
     if (RT.authErrorFromUrl) toast(RT.authErrorFromUrl, 'error', 6000);
+    if (/confirmed=1/.test(RT.initialHash || '')) toast('Email confirmed. You can log in now.', 'success', 6000);
+    else if (/confirmed=(expired|error)/.test(RT.initialHash || '')) toast('That confirmation link didn’t work. Log in and tap “Send the confirmation email again”.', 'error', 8000);
     queued.splice(0).forEach(([ev, se]) => onAuthEvent(ev, se));
     document.documentElement.classList.add('app-ready');
   }
