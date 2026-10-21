@@ -112,7 +112,10 @@ def backtest(df, slippage=0.0, target=10.0, flip_exit=False, stop=None):
                 # check the entry bar itself for the target before moving on
                 i2 = i + 1
                 tp = entry + pos * target
-                if (pos == 1 and h[i2] >= tp) or (pos == -1 and l[i2] <= tp):
+                sl = None if stop is None else entry - pos * stop
+                if sl is not None and ((pos == 1 and l[i2] <= sl) or (pos == -1 and h[i2] >= sl)):
+                    close(i2, pos, sl); pos = 0  # stop checked first (worst case)
+                elif (pos == 1 and h[i2] >= tp) or (pos == -1 and l[i2] <= tp):
                     close(i2, pos, tp); pos = 0
     t = pd.DataFrame(trades, columns=["entry_time", "exit_time", "side", "entry", "exit"])
     t["points"] = (t.exit - t.entry) * t.side
