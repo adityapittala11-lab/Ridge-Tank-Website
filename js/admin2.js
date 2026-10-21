@@ -176,15 +176,33 @@
     const who = id => (A.members.find(m => m.id === id) || {}).name || S.directory.get(id) || 'Member';
 
     const head = h('div', { class: 'section-row' },
-      h('div', null, h('h2', { class: 'h2' }, 'Bounties'), h('p', { class: 'muted small' }, 'Challenges members can claim for bonus Bites. Approve a claim and the points land right away.')),
+      h('div', null, h('h2', { class: 'h2' }, 'Bounties'), h('p', { class: 'muted small' }, 'Challenges members can claim for bonus Bites. An AI sorts new claims first, so the real ones are at the top and the junk is tucked away. You make every final call.')),
       h('button', { class: 'btn btn-primary btn-sm', type: 'button', onclick: () => editBounty() }, icon('plus', 16), 'New bounty'));
     const queue = h('div', { class: 'request-list' });
+    const junkBox = h('details', { class: 'card junk-claims' });
     const list = h('div', { class: 'stack-sm' });
     const recent = h('div', { class: 'card claim-list' });
+    const resetBtn = h('button', { class: 'btn btn-danger btn-sm', type: 'button' }, icon('trash', 14), 'Delete all claims and start over');
+    resetBtn.addEventListener('click', async () => {
+      const ok = await confirmDialog({ title: 'Delete every bounty claim?', message: 'This deletes all claims (waiting, approved and rejected) and takes back any Bites they gave. Everyone can claim again. The bounties themselves stay.', confirmText: 'Delete all claims', danger: true, requireText: 'RESET' });
+      if (!ok) return;
+      const { data, error } = await sb.rpc('reset_bounty_claims');
+      if (error) { toast(friendly(error), 'error'); return; }
+      await RT.refreshBoard();
+      toast((data || 0) + ' claims deleted. Fresh start.', 'success');
+      load();
+    });
+    const checkBtn = h('button', { class: 'btn btn-ghost btn-sm', type: 'button' }, icon('sparkle', 14), 'Check new claims with AI');
+    checkBtn.addEventListener('click', () => busy(checkBtn, async () => {
+      const r = await RT.triage({ all: true });
+      toast(r ? (r.checked ? r.checked + ' claims checked' : 'Everything is already checked') : 'Could not reach the checker', r ? 'success' : 'error');
+      load();
+    }));
     pane.append(head,
-      h('div', { class: 'card-label sec-label' }, 'To review'), queue,
+      h('div', { class: 'row between wrap gap-sm' }, h('div', { class: 'card-label sec-label' }, 'To review'), checkBtn), queue, junkBox,
       h('div', { class: 'card-label sec-label' }, 'All bounties'), list,
-      h('div', { class: 'card-label sec-label' }, 'Recently reviewed'), recent);
+      h('div', { class: 'card-label sec-label' }, 'Recently reviewed'), recent,
+      h('div', { class: 'card danger-zone reset-zone' }, h('div', null, h('div', { class: 'card-label' }, 'Start over'), h('p', { class: 'muted small' }, 'Wipes every claim so everyone can try again.')), resetBtn));
 
     async function load() {
       const [b, c] = await Promise.all([
@@ -228,10 +246,18 @@
 
     function draw() {
       clear(queue); clear(list); clear(recent);
-      const pending = state.claims.filter(c => c.status === 'pending').sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      const allPending = state.claims.filter(c => c.status === 'pending');
+      const rank = c => (c.ai_verdict === 'genuine' ? 0 : c.ai_verdict === 'unsure' ? 1 : c.ai_verdict ? 3 : 2);
+      const pending = allPending.filter(c => c.ai_verdict !== 'junk').sort((a, b) => rank(a) - rank(b) || new Date(a.created_at) - new Date(b.created_at));
+      const junk = allPending.filter(c => c.ai_verdict === 'junk').sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       if (!pending.length) {
-        queue.appendChild(h('div', { class: 'card empty small' }, h('p', { class: 'muted' }, state.loaded ? 'Nothing waiting for review.' : 'Loading…')));
+        queue.appendChild(h('div', { class: 'card empty small' }, h('p', { class: 'muted' }, state.loaded ? (junk.length ? 'Nothing real is waiting. The AI set ' + junk.length + ' aside below.' : 'Nothing waiting for review.') : 'Loading…')));
       }
+      const aiTag = c => {
+        const v = c.ai_verdict;
+        const label = v === 'genuine' ? 'AI: looks real' : v === 'unsure' ? 'AI: not sure' : 'AI: not checked';
+        return h('div', { class: 'ai-line' }, h('span', { class: 'ai-tag ' + (v || 'none') }, label), c.ai_reason ? h('span', { class: 'muted small' }, c.ai_reason) : null);
+      };
       pending.forEach(c => {
         const { b, title, note } = claimLine(c);
         queue.appendChild(h('div', { class: 'card request' },
@@ -239,11 +265,39 @@
           h('div', { class: 'grow min0' },
             h('div', { class: 'req-name' }, who(c.member_id), h('span', { class: 'muted' }, ' · ' + title)),
             note ? h('div', { class: 'small claim-note' }, /^https?:\/\//i.test(note) ? h('a', { href: note, target: '_blank', rel: 'noopener noreferrer' }, note) : '“' + note + '”') : h('div', { class: 'muted small' }, 'No note'),
+            aiTag(c),
             h('div', { class: 'muted small' }, timeAgo(c.created_at))),
           h('div', { class: 'row gap-sm wrap end' },
             h('button', { class: 'btn btn-primary btn-sm', type: 'button', onclick: e => busy(e.currentTarget, () => review(c, true)) }, icon('check', 14), 'Approve +' + (b ? b.points : '')),
             h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => rejectModal(c, b) }, 'Not approved'))));
       });
+
+      // Claims the AI set aside. Tucked away, but one click brings them back.
+      clear(junkBox);
+      junkBox.hidden = !junk.length;
+      if (junk.length) {
+        const rejectAll = h('button', { class: 'btn btn-danger btn-sm', type: 'button' }, 'Reject all ' + junk.length);
+        rejectAll.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); busy(rejectAll, async () => {
+          if (!(await confirmDialog({ title: 'Reject all ' + junk.length + '?', message: 'They get “not approved”. You can still take any of them back later.', confirmText: 'Reject all', danger: true }))) return;
+          for (const c of junk) { try { Object.assign(c, await api.reviewClaim(c.id, false, 'Not enough detail')); } catch (err) { /* keep going */ } }
+          S.adminCounts.claims = state.claims.filter(x => x.status === 'pending').length;
+          RT.updateAdminBadge();
+          toast('Rejected', 'success');
+          draw();
+        }); });
+        junkBox.append(h('summary', null, h('span', null, icon('shield', 14), ' Set aside by AI (' + junk.length + ')'), rejectAll),
+          h('div', { class: 'junk-list' }, junk.map(c => {
+            const { b, title, note } = claimLine(c);
+            return h('div', { class: 'claim-row junk-row' },
+              h('div', { class: 'grow min0' },
+                h('div', { class: 'ellipsis' }, who(c.member_id) + ' · ' + title),
+                h('div', { class: 'small claim-note' }, note ? '“' + note + '”' : 'No note'),
+                h('div', { class: 'muted small' }, 'AI: ' + (c.ai_reason || 'looked like junk'))),
+              h('div', { class: 'row gap-sm wrap end' },
+                h('button', { class: 'chip-btn', type: 'button', onclick: async () => { const { error } = await sb.from('bounty_claims').update({ ai_verdict: 'unsure' }).eq('id', c.id); if (error) { toast(friendly(error), 'error'); return; } c.ai_verdict = 'unsure'; draw(); } }, 'Actually review it'),
+                h('button', { class: 'chip-btn', type: 'button', onclick: () => review(c, false, 'Not enough detail') }, 'Reject')));
+          })));
+      }
 
       if (!state.bounties.length) list.appendChild(h('div', { class: 'card empty small' }, h('p', { class: 'muted' }, state.loaded ? 'No bounties yet. Make the first one.' : 'Loading…')));
       state.bounties.forEach(b => {

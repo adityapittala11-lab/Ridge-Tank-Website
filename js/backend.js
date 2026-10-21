@@ -5,6 +5,19 @@
   const SESSION_KEY = 'rt_session_v1';
   const ENDPOINT = '/api/db';
 
+  // A random id for this browser, made once. Officers use it to spot one person with two accounts.
+  function deviceId() {
+    try {
+      let d = localStorage.getItem('rt_device');
+      if (!/^[A-Za-z0-9_-]{8,64}$/.test(d || '')) {
+        const a = new Uint8Array(12); crypto.getRandomValues(a);
+        d = Array.from(a, x => x.toString(16).padStart(2, '0')).join('');
+        localStorage.setItem('rt_device', d);
+      }
+      return d;
+    } catch (e) { return ''; }
+  }
+
   function createClient() {
     const listeners = new Set();
     let session = readSession();
@@ -59,12 +72,12 @@
         return { data: { subscription: { unsubscribe() { listeners.delete(cb); } } } };
       },
       async signUp({ email, password, options }) {
-        const out = await call({ op: 'auth', action: 'signUp', email, password, data: options && options.data });
+        const out = await call({ op: 'auth', action: 'signUp', email, password, data: options && options.data, device: deviceId() });
         if (out.data && out.data.session) { writeSession(out.data.session); emit('SIGNED_IN'); }
         return { data: out.data || { user: null, session: null }, error: out.error || null };
       },
       async signInWithPassword({ email, password }) {
-        const out = await call({ op: 'auth', action: 'signIn', email, password });
+        const out = await call({ op: 'auth', action: 'signIn', email, password, device: deviceId() });
         if (out.data && out.data.session) { writeSession(out.data.session); emit('SIGNED_IN'); }
         return { data: out.data || { user: null, session: null }, error: out.error || null };
       },

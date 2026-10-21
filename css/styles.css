@@ -1934,3 +1934,17 @@ html[data-theme="light"] .tier-chip.tier-mega { color: #7e1434; }
 .mod-ban { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
 .approval { display: flex; align-items: center; gap: 16px; padding: 18px 22px; }
 .approval-name { font-weight: 600; font-size: 17px; }
+
+/* ---------- bounty claim triage + reset ---------- */
+.ai-line { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 6px 0 4px; }
+.ai-tag { padding: 2px 8px; font: 600 11px/1.5 var(--font-mono); letter-spacing: 0.04em; border: 1px solid var(--line-2); color: var(--ink-3); }
+.ai-tag.genuine { color: var(--g-300); border-color: rgba(63, 191, 127, 0.5); background: rgba(63, 191, 127, 0.1); }
+.ai-tag.unsure { color: var(--ink-2); }
+.junk-claims { padding: 0; }
+.junk-claims summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 22px; cursor: pointer; list-style: none; font-weight: 600; }
+.junk-claims summary::-webkit-details-marker { display: none; }
+.junk-list { border-top: 1px solid var(--line); padding: 8px 22px 16px; }
+.junk-row { display: flex; align-items: center; gap: 14px; padding: 12px 0; }
+.reset-zone { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 28px; }
+.dup-line { margin-top: 4px; font-size: 13px; }
+.dup-line.strong { color: var(--b-300); font-weight: 600; }

@@ -7,7 +7,7 @@
 // rules in db/*.sql (row level security) decide what each person can read and change.
 import pg from 'pg';
 import { getPool, ensureSchema } from './_pg.js';
-import { hashPassword, checkPassword, signToken, verifyToken, bearer, tooManyTries } from './_auth.js';
+import { hashPassword, checkPassword, signToken, verifyToken, bearer, tooManyTries, hashSignal } from './_auth.js';
 import { jsonBody } from './_shared.js';
 
 // Numbers stay numbers and dates stay "2026-10-21" (not shifted by a timezone).
@@ -267,6 +267,19 @@ function emailAllowed(email) {
 }
 const BANNED_ERROR = { message: 'This account has been removed from Ridge Tank. Ask an officer if you think this is a mistake.', code: 'banned' };
 
+// Remember which browser and network an account was used from, so officers can spot one person with two accounts.
+// Only a random browser id and a scrambled network address are kept. Never blocks a login if it fails.
+async function recordSignals(client, req, userId, device) {
+  try {
+    const ip = clientIp(req);
+    const dev = /^[A-Za-z0-9_-]{8,64}$/.test(String(device || '')) ? String(device) : '';
+    const net = ip && ip !== 'ip' ? hashSignal(ip) : '';
+    if (!dev && !net) return;
+    await client.query('insert into auth.account_signals (user_id, device_id, ip_hash) values ($1, $2, $3) on conflict (user_id, device_id, ip_hash) do update set seen_at = now()', [userId, dev, net]);
+    await client.query('delete from auth.account_signals where user_id = $1 and (device_id, ip_hash) not in (select device_id, ip_hash from auth.account_signals where user_id = $1 order by seen_at desc limit 10)', [userId]);
+  } catch (e) { /* ignore */ }
+}
+
 async function makeAdminIfListed(client, u) {
   if (adminEmails().includes(String(u.email).toLowerCase())) {
     await client.query('insert into public.admins (user_id) values ($1) on conflict do nothing', [u.id]);
@@ -292,6 +305,7 @@ async function authOp(req, b) {
         if (exists.rows.length) return { data: { user: null, session: null }, error: { message: 'User already registered', code: 'user_already_exists' } };
         const r = await client.query('insert into auth.users (email, encrypted_password, raw_user_meta_data, last_sign_in_at) values ($1, $2, $3, now()) returning *', [email, hashPassword(password), JSON.stringify(meta)]);
         await makeAdminIfListed(client, r.rows[0]);
+        await recordSignals(client, req, r.rows[0].id, b.device);
         return { data: { user: publicUser(r.rows[0]), session: sessionFor(r.rows[0]) }, error: null };
       }
 
@@ -302,6 +316,7 @@ async function authOp(req, b) {
       await makeAdminIfListed(client, r.rows[0]);
       if (await isBanned(client, r.rows[0].id, email)) return { data: { user: null, session: null }, error: BANNED_ERROR };
       await client.query('update auth.users set last_sign_in_at = now() where id = $1', [r.rows[0].id]);
+      await recordSignals(client, req, r.rows[0].id, b.device);
       return { data: { user: publicUser(r.rows[0]), session: sessionFor(r.rows[0]) }, error: null };
     }
 
