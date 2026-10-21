@@ -76,7 +76,9 @@ def supertrend(df, period, mult):
     return d
 
 
-def backtest(df, slippage=0.0):
+def backtest(df, slippage=0.0, target=10.0, flip_exit=False, stop=None):
+    """Exit at a fixed point target (limit order, filled when the bar's high/low touches it).
+    flip_exit=True also exits when the Supertrends stop agreeing; stop=N adds an N-point stop."""
     df = df.copy()
     df["ema"] = df.close.ewm(span=50, adjust=False).mean()
     dirs = np.vstack([supertrend(df, p, m) for p, m in SUPERTRENDS])
@@ -84,19 +86,34 @@ def backtest(df, slippage=0.0):
     long_ok = all_up & (df.close.values > df.ema.values)
     short_ok = all_dn & (df.close.values < df.ema.values)
 
-    o, idx = df.open.values, df.index
+    o, h, l, idx = df.open.values, df.high.values, df.low.values, df.index
     trades, pos, entry, e_t = [], 0, 0.0, None
-    for i in range(len(df) - 1):
-        # signal evaluated on bar i close, filled at bar i+1 open (no look-ahead)
-        if pos == 1 and not all_up[i]:
-            trades.append((e_t, idx[i + 1], 1, entry, o[i + 1] - slippage)); pos = 0
-        elif pos == -1 and not all_dn[i]:
-            trades.append((e_t, idx[i + 1], -1, entry, o[i + 1] + slippage)); pos = 0
-        if pos == 0:
+
+    def close(i, side, px):
+        trades.append((e_t, idx[i], side, entry, px))
+
+    for i in range(1, len(df)):
+        if pos != 0:  # manage open trade on bar i
+            tp = entry + pos * target
+            sl = None if stop is None else entry - pos * stop
+            if sl is not None and ((pos == 1 and l[i] <= sl) or (pos == -1 and h[i] >= sl)):
+                close(i, pos, sl); pos = 0
+            elif (pos == 1 and h[i] >= tp) or (pos == -1 and l[i] <= tp):
+                close(i, pos, max(tp, o[i]) if pos == 1 else min(tp, o[i])); pos = 0
+            elif flip_exit and ((pos == 1 and not all_up[i - 1]) or (pos == -1 and not all_dn[i - 1])):
+                close(i, pos, o[i] - pos * slippage); pos = 0
+        if pos == 0 and i < len(df) - 1:
+            # signal on bar i close, fill at bar i+1 open; target checked from bar i+1
             if long_ok[i]:
                 pos, entry, e_t = 1, o[i + 1] + slippage, idx[i + 1]
             elif short_ok[i]:
                 pos, entry, e_t = -1, o[i + 1] - slippage, idx[i + 1]
+            if pos != 0:
+                # check the entry bar itself for the target before moving on
+                i2 = i + 1
+                tp = entry + pos * target
+                if (pos == 1 and h[i2] >= tp) or (pos == -1 and l[i2] <= tp):
+                    close(i2, pos, tp); pos = 0
     t = pd.DataFrame(trades, columns=["entry_time", "exit_time", "side", "entry", "exit"])
     t["points"] = (t.exit - t.entry) * t.side
     t["pnl_usd"] = t.points * POINT_VALUE
@@ -122,6 +139,9 @@ if __name__ == "__main__":
     ap.add_argument("--csv")
     ap.add_argument("--from", dest="start", default="2025-01-01")
     ap.add_argument("--to", dest="end", default="2025-12-31")
+    ap.add_argument("--target", type=float, default=10.0, help="profit target in points")
+    ap.add_argument("--stop", type=float, default=None, help="optional stop in points")
+    ap.add_argument("--flip-exit", action="store_true", help="also exit when Supertrends disagree")
     ap.add_argument("--slippage", type=float, default=0.0, help="points per fill")
     a = ap.parse_args()
     if a.csv:
@@ -130,7 +150,7 @@ if __name__ == "__main__":
         df = load_massive(os.environ["MASSIVE_API_KEY"], a.start, a.end)
     else:
         sys.exit("Give --csv FILE or set MASSIVE_API_KEY")
-    t = backtest(df, a.slippage)
+    t = backtest(df, a.slippage, a.target, a.flip_exit, a.stop)
     report(t)
     t.to_csv("nq_trades.csv", index=False)
     print("Trades saved to nq_trades.csv")
