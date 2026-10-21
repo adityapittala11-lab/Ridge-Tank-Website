@@ -75,6 +75,11 @@ export function verifyUnlock(token, userId, scope) {
   }
 }
 
+// A one-way scramble of a network address or device id, for spotting duplicate accounts. The value itself is never stored.
+export function hashSignal(value) {
+  return crypto.createHmac('sha256', secret()).update('signal:' + String(value || '')).digest('hex').slice(0, 32);
+}
+
 export function bearer(req) {
   return String((req.headers && (req.headers.authorization || req.headers.Authorization)) || '').replace(/^Bearer\s+/i, '').trim();
 }

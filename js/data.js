@@ -180,6 +180,15 @@
     }
   };
   RT.api = api;
+
+  // Asks the server's claim checker (api/triage.js) to label bounty claims genuine / unsure / junk. Never throws.
+  RT.triage = async body => {
+    try {
+      const { data } = await sb.auth.getSession();
+      const r = await fetch('/api/triage', { method: 'POST', headers: { 'content-type': 'application/json', Authorization: 'Bearer ' + (data && data.session ? data.session.access_token : '') }, body: JSON.stringify(body) });
+      return r.ok ? await r.json() : null;
+    } catch (e) { return null; }
+  };
   RT.check = check;
 
   // ---------- leaderboard helpers ----------

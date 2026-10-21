@@ -137,7 +137,8 @@
         if (needs && !val) { toast(b.proof === 'link' ? 'Paste a link first.' : 'Add a short note first.', 'error'); return; }
         if (b.proof === 'link' && !/^https?:\/\/\S+\.\S+/i.test(val)) { toast('That link should start with http:// or https://', 'error'); return; }
         try {
-          await api.claimBounty(b.id, val);
+          const claim = await api.claimBounty(b.id, val);
+          if (claim && claim.id != null) RT.triage({ claimId: claim.id }); // sorts it for the officers; fire and forget
           await refresh();
           m.close();
           toast('Sent. Officers will take a look.', 'success');

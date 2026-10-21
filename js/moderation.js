@@ -86,13 +86,17 @@
       list, bannedBox);
 
     let rows = [];
+    let dupes = new Map();   // member id -> [{ other_name, kind }]
     async function load() {
-      const [p, b] = await Promise.all([
+      const [p, b, d] = await Promise.all([
         sb.from('members').select('*').eq('status', 'pending').order('created_at', { ascending: true }),
-        sb.from('banned_emails').select('*').order('banned_at', { ascending: false })
+        sb.from('banned_emails').select('*').order('banned_at', { ascending: false }),
+        sb.rpc('duplicate_signals')
       ]);
       if (p.error) throw p.error;
       rows = p.data || [];
+      dupes = new Map();
+      (d.data || []).forEach(x => { if (!dupes.has(x.member_id)) dupes.set(x.member_id, []); dupes.get(x.member_id).push(x); });
       S.adminCounts.approvals = rows.length;
       S.pendingCount = (S.adminCounts.welcome || 0) + (S.adminCounts.claims || 0) + rows.length;
       RT.updateAdminBadge();
@@ -128,9 +132,22 @@
           avatar(m.name, 40),
           h('div', { class: 'grow min0' },
             h('div', { class: 'approval-name' }, m.name, m.grade ? h('span', { class: 'muted' }, ' · ' + m.grade + 'th') : null),
-            h('div', { class: 'muted small ellipsis' }, [m.email, m.phone ? RT.fmtPhone(m.phone) : null, 'signed up ' + fmtDate(m.created_at, { month: 'short', day: 'numeric' })].filter(Boolean).join(' · '))),
+            h('div', { class: 'muted small ellipsis' }, [m.email, m.phone ? RT.fmtPhone(m.phone) : null, 'signed up ' + fmtDate(m.created_at, { month: 'short', day: 'numeric' })].filter(Boolean).join(' · ')),
+            dupeLine(m)),
           h('div', { class: 'row gap-sm' }, no, ok)));
       });
+    }
+
+    // "Same device" is a strong hint of one person with two accounts. "Same network" is weak: the whole school shares Wi-Fi.
+    function dupeLine(m) {
+      const list = dupes.get(m.id) || [];
+      const dev = list.filter(x => x.kind === 'device');
+      const net = list.filter(x => x.kind === 'network' && !dev.some(y => y.other_id === x.other_id));
+      if (!dev.length && !net.length) return null;
+      const names = arr => arr.slice(0, 3).map(x => x.other_name).join(', ') + (arr.length > 3 ? ' +' + (arr.length - 3) : '');
+      return h('div', null,
+        dev.length ? h('div', { class: 'dup-line strong' }, 'Same device as: ' + names(dev)) : null,
+        net.length ? h('div', { class: 'dup-line muted', title: 'Everyone on the same Wi-Fi shares a network, so this alone proves nothing.' }, 'Same network as: ' + names(net) + ' (could just be school Wi-Fi)') : null);
     }
 
     function drawBanned(items) {
