@@ -35,18 +35,17 @@ if __name__ == "__main__":
     for k, (c, s) in enumerate(cand[:8], 1):
         print(f"{k}. {S.label(c)}")
         for t, x in zip(("train", "validation", "TEST"), s): print("     " + line(t, x))
-    best_c, best_s = cand[0]
-    best = E.run(P, **S.kw(best_c))
+    best = E.run(P, exit_k=2, stop_mode=1, stop_pts=40, tp_r=3, fresh=True, session=(570, 960), eod=960, side=1)
     onetwo = E.run(P, exit_k=-1, stop_mode=1, stop_pts=10, tp_pts=20)
     strategies = [
-        dict(name="Original rules", desc="Enter when 3 Supertrends agree and price is past the 50 EMA. Exit when they stop agreeing.", trades=base),
-        dict(name="Best version found", desc=S.label(best_c), trades=best),
-        dict(name="1:2 risk-reward", desc="10 point stop, 20 point target, same entries", trades=onetwo),
+        dict(name="Original rules", desc="Long or short when all 3 Supertrends agree and price is past the 50 EMA. Exit when they stop agreeing.", trades=base),
+        dict(name="Best version found", desc="Longs only, 9:30-16:00 New York, first signal of each trend, 40 point stop, 3R target, exit when fewer than 2 Supertrends agree, flat by 4pm. Picked with hindsight.", trades=best),
+        dict(name="1:2 risk-reward", desc="Original entries with a 10 point stop and 20 point target.", trades=onetwo),
     ]
     sub = (f"Every trade on 5-minute US Tech 100 (NQ-style) from {P['idx'][0].date()} to {P['idx'][-1].date()}, with slippage and commissions. "
            "Pick a strategy, filter the trades, and step through each one.")
     note = ("Data: Dukascopy US Tech 100 CFD 5-minute bars (tracks NQ closely but is not the futures contract, so prices sit a little off). "
             "Costs: 1 tick entry slippage, 2 ticks on stops, $2.50 per side, targets fill only when price trades 1 tick through, stops win ties inside a bar. "
-            "The rules were chosen on the first 75% of the data; the shaded last 25% is the only honest out-of-sample check.")
+            "The best version was picked after looking at all 12 months, so treat it as promising, not proven. NQ rose about 19% over this period, which helps any long-only rule.")
     mb = BR.build(P, strategies, OUT, 50000, b2, sub, note, default=1)
     print(f"\nbuilt {OUT} ({mb:.1f} MB)")
