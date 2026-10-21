@@ -31,7 +31,7 @@ for (const name of ['DATABASE_URL', 'ADMIN_EMAILS', 'AUTH_SECRET']) {
 }
 if (!process.env.DATABASE_URL) process.env.RT_DEV_NO_AUTH = '1';
 
-const FUNCTIONS = new Set(['shark', 'sharks', 'db', 'triage', 'assistant', 'verify']);
+const FUNCTIONS = new Set(['shark', 'sharks', 'db', 'triage', 'assistant', 'verify', 'status']);
 
 function sendJson(res, status, obj) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
