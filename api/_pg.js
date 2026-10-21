@@ -35,6 +35,12 @@ export function ensureSchema() {
         await client.query('create table if not exists auth.rt_schema (id int primary key, version int not null)');
         const cur = await client.query('select version from auth.rt_schema where id = 1');
         if (!cur.rows.length || cur.rows[0].version < SCHEMA_VERSION) {
+          // Views hold no data and several files redefine the same view with more columns, which a re-run can't do in place.
+          // So on every re-run, drop them all first; the files below put each one back.
+          await client.query(`do $$ declare r record; begin
+            for r in select viewname from pg_views where schemaname = 'public' loop
+              execute format('drop view if exists public.%I cascade', r.viewname);
+            end loop; end $$`);
           for (const f of SQL_FILES) {
             try { await client.query(f.sql); } catch (e) { e.message = f.name + ': ' + e.message; throw e; }
           }

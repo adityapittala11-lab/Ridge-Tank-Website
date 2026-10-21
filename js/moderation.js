@@ -80,11 +80,26 @@
   RT.adminTabs.accounts = function (pane) {
     const dupBox = h('section', { class: 'card' });
     const bannedBox = h('section', { class: 'card' });
+    const wipeBtn = h('button', { class: 'btn btn-danger btn-sm', type: 'button' }, icon('trash', 14), 'Remove everyone except me');
+    wipeBtn.addEventListener('click', async () => {
+      const ok = await confirmDialog({
+        title: 'Remove every other account?',
+        message: 'This deletes every account except yours, with their check-ins, pitches, badges, messages and Bites. Other officers are removed too (they can sign up again, and emails in ADMIN_EMAILS become officers automatically). Names an officer added by hand with no account stay on the roster.',
+        confirmText: 'Remove everyone else', danger: true, requireText: 'REMOVE ALL'
+      });
+      if (!ok) return;
+      const { data, error } = await sb.rpc('remove_all_accounts_except_me');
+      if (error) { toast(friendly(error), 'error'); return; }
+      toast((data || 0) + ' accounts removed', 'success');
+      try { await RT.refreshBoard(); } catch (e) { /* ignore */ }
+      load().catch(() => {});
+    });
     pane.append(
       h('section', { class: 'card' },
         h('h3', null, 'Accounts'),
         h('p', { class: 'muted' }, 'Everyone confirms their email before they can log in, so every account is a real inbox. Here is who might be using two accounts, and who is banned.')),
-      dupBox, bannedBox);
+      dupBox, bannedBox,
+      h('section', { class: 'card danger-zone reset-zone' }, h('div', null, h('div', { class: 'card-label' }, 'Start over'), h('p', { class: 'muted small' }, 'Deletes every account except yours.')), wipeBtn));
 
     async function load() {
       const [d, b] = await Promise.all([sb.rpc('duplicate_signals'), sb.from('banned_emails').select('*').order('banned_at', { ascending: false })]);
