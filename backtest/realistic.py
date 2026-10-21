@@ -10,7 +10,7 @@ def rt(x):  # round to tick
     return round(x / TICK) * TICK
 
 
-def run(df, target, stop, capital, slip_ticks=1, stop_slip_ticks=2, comm_side=2.5, limit_through=True):
+def run(df, target, stop, capital, slip_ticks=1, stop_slip_ticks=2, comm_side=2.5, limit_through=True, flip_exit=False):
     df = df.copy()
     # drop an unfinished last bar (timestamp not on a 5-min boundary)
     if df.index[-1].minute % 5 or df.index[-1].second:
@@ -19,6 +19,7 @@ def run(df, target, stop, capital, slip_ticks=1, stop_slip_ticks=2, comm_side=2.
     d = np.vstack([b.supertrend(df, p, m) for p, m in b.SUPERTRENDS])
     long_ok = (d == 1).all(0) & (df.close.values > df.ema.values)
     short_ok = (d == -1).all(0) & (df.close.values < df.ema.values)
+    long_ok_st, short_ok_st = (d == 1).all(0), (d == -1).all(0)
     o, h, l, c, idx = df.open.values, df.high.values, df.low.values, df.close.values, df.index
     es, ss = slip_ticks * TICK, stop_slip_ticks * TICK
     through = TICK if limit_through else 0.0
@@ -47,7 +48,8 @@ def run(df, target, stop, capital, slip_ticks=1, stop_slip_ticks=2, comm_side=2.
 
     for i in range(1, len(df)):
         if pos != 0:
-            check_exit(i)
+            if not check_exit(i) and flip_exit and not (long_ok_st[i - 1] if pos == 1 else short_ok_st[i - 1]):
+                finish(i, rt(o[i] - pos * es), "flip")
         if pos == 0 and i < len(df) - 1 and (long_ok[i] or short_ok[i]):
             pos = 1 if long_ok[i] else -1
             ent, e_t = rt(o[i + 1] + pos * es), idx[i + 1]
