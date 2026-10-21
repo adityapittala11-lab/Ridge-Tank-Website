@@ -3,6 +3,12 @@
 (function () {
   const RT = (window.RT = window.RT || {});
 
+  // A real-looking name: two or more words of letters, no keyboard mashing (same rule as the database).
+  function validName(n) {
+    const s = String(n || '').trim();
+    return s.length >= 4 && s.length <= 60 && /^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ'’.-]*( [A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ'’.-]*)+$/.test(s) && !/(.)\1\1/i.test(s) && !/(asdf|qwer|zxcv|fake|troll|xxx)/i.test(s);
+  }
+
   // ---------- element builder ----------
   // h('div', { class: 'x', onclick: fn }, 'text', child, [more])
   // Strings always become text nodes, so user content can never inject HTML.
@@ -47,6 +53,7 @@
     chat: '<path d="M20.5 11.5a8 8 0 0 1-11.7 7.1L3.5 20l1.5-4.8a8 8 0 1 1 15.5-3.7Z"/>',
     user: '<circle cx="12" cy="8" r="4"/><path d="M4 20.5a8 8 0 0 1 16 0"/>',
     reply: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v3"/>',
+    volumeOff: '<path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="m16 9 5 6M21 9l-5 6"/>',
     shield: '<path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.3 7.5 9.5 4.3-1.2 7.5-4.9 7.5-9.5V6L12 3Z"/><path d="m9 12 2 2 4-4"/>',
     logout: '<path d="M14.5 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="m9.5 16.5-4.5-4.5 4.5-4.5"/><path d="M5 12h10"/>',
     arrowUp: '<path d="M12 19V5"/><path d="m5.5 11.5 6.5-6.5 6.5 6.5"/>',
@@ -541,6 +548,6 @@
     h, clear, put, icon, toast, modal, confirmDialog, segmented, menuButton, memberPicker,
     avatar, initials, localDateISO, parseLocalDate, fmtDate, fmtTime, fmtClock, timeAgo, dayLabel, daysUntil,
     cleanPhone, fmtPhone, linkify, downloadICS, phoneFields,
-    debounce, copyText, skeleton, spinner, busy, countUp, ordinal
+    debounce, copyText, skeleton, spinner, busy, countUp, ordinal, validName
   });
 })();

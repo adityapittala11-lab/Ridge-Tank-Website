@@ -35,6 +35,7 @@
       if (MEMBER_ROUTES.has(b) || b === 'admin' || b === 'welcome') return { key: 'auth', mode: 'login' };
       return { key: 'landing' };
     }
+    if (S.pending) return { key: 'pending' };
     if (!S.me) return { key: 'welcome' };
     if (b === 'admin') return S.isAdmin ? { key: 'admin', tab: r.sub || 'checkin' } : { key: 'home' };
     if (b === 'updates') return { key: 'updates', tab: r.sub === 'calendar' ? 'calendar' : 'news' };
@@ -107,20 +108,30 @@
     }, 0);
   });
 
+  // A new sign-up waits for an officer to approve it. Until then the site treats them as signed in with no profile,
+  // and shows the "waiting" page.
+  function holdIfPending(me, admin) {
+    S.isAdmin = !!admin;
+    S.pending = null;
+    if (me && me.status === 'pending' && !admin) { S.pending = me; S.me = null; }
+    else S.me = me;
+  }
+
   async function applySession(session) {
     S.session = session || null;
     S.user = session ? session.user : null;
     S.me = null;
+    S.pending = null;
     S.isAdmin = false;
     if (!S.user) return;
     try {
       const [me, admin] = await Promise.all([api.myMember(S.user.id), api.isAdmin()]);
-      S.me = me;
-      S.isAdmin = admin;
+      holdIfPending(me, admin);
     } catch (e) {
       toast(friendly(e), 'error');
     }
-    if (!S.me) await autoOnboard();
+    if (!S.me && !S.pending) await autoOnboard();
+    if (S.me) holdIfPending(S.me, S.isAdmin); // sign-up just created the profile: new accounts wait for approval
     if (S.me) {
       await RT.loadShared();
       if (S.isAdmin) RT.refreshPending().then(updateAdminBadge);
@@ -144,7 +155,7 @@
         toast('You’re linked. Welcome back to the Tank.', 'success');
       } else if (meta.full_name) {
         S.me = await api.register(meta.full_name, meta.grade || '', meta.ref || '', meta.phone || '', !!meta.whatsapp);
-        toast('You’re in. Welcome to the Tank.', 'success');
+        toast(S.me.status === 'pending' ? 'Thanks! An officer will approve you soon.' : 'You’re in. Welcome to the Tank.', 'success');
       }
     } catch (e) {
       S.onboardError = friendly(e);
@@ -186,8 +197,7 @@
   RT.reloadMe = async function () {
     if (!S.user) return;
     const [me, admin] = await Promise.all([api.myMember(S.user.id), api.isAdmin()]);
-    S.me = me;
-    S.isAdmin = admin;
+    holdIfPending(me, admin);
     if (S.me) {
       await RT.loadShared();
       if (S.isAdmin) await RT.refreshPending();
@@ -626,7 +636,7 @@
       const form = h('form', { class: 'stack', novalidate: true },
         field('Name', name),
         h('div', { class: 'field' }, h('span', { class: 'label' }, 'Grade'), grade),
-        field('Email', email),
+        field('School email', email, cfg.schoolEmail ? 'Use your school email (it ends in @' + cfg.schoolEmail[0] + '). Your name must be your real first and last name. New sign-ups are checked by an officer.' : 'New sign-ups are checked by an officer.'),
         phoneF.el,
         field('Password', pw),
         h('div', { class: 'field' }, h('span', { class: 'label' }, 'Did an officer already add you to the roster?'), hasCard),
@@ -645,9 +655,10 @@
         const p = pw.input.value;
         const withCard = hasCard.getValue() === 'card';
         const c = code.value.trim();
-        if (n.length < 2) return fail('Enter your name.');
+        if (!RT.validName(n)) return fail('Use your real first and last name.');
         if (!g) return fail('Pick your grade.');
         if (!/^\S+@\S+\.\S+$/.test(em)) return fail('Enter a real email address.');
+        if (cfg.schoolEmail && !new RegExp('@(.+\\.)?(' + cfg.schoolEmail.map(d => d.replace(/\./g, '\\.')).join('|') + ')$', 'i').test(em)) return fail('Sign up with your school email (it ends in @' + cfg.schoolEmail[0] + ').');
         const pe = phoneF.error();
         if (pe) return fail(pe);
         if (p.length < 8) return fail('Use a password with at least 8 characters.');
@@ -699,6 +710,26 @@
   };
 
   // ---------------- onboarding (signed in, no member profile yet) ----------------
+  // Shown to a new sign-up until an officer approves them.
+  RT.views.pending = function (root) {
+    const me = S.pending;
+    const again = h('button', { class: 'btn btn-primary btn-block', type: 'button' }, icon('refresh', 16), 'Check again');
+    again.addEventListener('click', () => busy(again, async () => {
+      await RT.reloadMe();
+      if (S.pending) toast('Still waiting. An officer will approve you soon.', 'info');
+      else RT.rerender();
+    }));
+    root.appendChild(h('div', { class: 'auth-wrap' },
+      h('div', { class: 'card auth-card reveal' },
+        h('div', { class: 'auth-brand' }, h('span', { class: 'brand-mark lg' }, icon('clock', 22))),
+        h('h1', { class: 'auth-title' }, 'Almost in'),
+        h('p', { class: 'muted' }, me ? `Thanks, ${String(me.name).split(' ')[0]}. ` : '', 'An officer checks every new sign-up so only real members get in. You’ll be approved soon, usually before or at the next meeting.'),
+        h('p', { class: 'muted small' }, 'Signed up under the wrong name? Sign out and make a new account with your real first and last name.'),
+        again,
+        h('button', { class: 'link-btn center', type: 'button', onclick: signOut }, 'Sign out'))));
+    return {};
+  };
+
   RT.views.welcome = function (root) {
     const meta = (S.user && S.user.user_metadata) || {};
     const startMode = meta.card_code ? 'card' : 'new';
@@ -734,12 +765,12 @@
       err.hidden = true;
       try {
         if (mode === 'new') {
-          if (name.value.trim().length < 2) throw new Error('Enter your name.');
+          if (!RT.validName(name.value)) throw new Error('Use your real first and last name.');
           if (!grade.getValue()) throw new Error('Pick your grade.');
           if (!agree.checked) throw new Error('Check the box about the leaderboard to continue.');
           if (phoneF.error()) throw new Error(phoneF.error());
-          await api.register(name.value.trim(), grade.getValue(), ref.value.trim(), phoneF.value(), phoneF.whatsapp());
-          toast('You’re in. Welcome to the Tank.', 'success');
+          const reg = await api.register(name.value.trim(), grade.getValue(), ref.value.trim(), phoneF.value(), phoneF.whatsapp());
+          toast(reg && reg.status === 'pending' ? 'Thanks! An officer will approve you soon.' : 'You’re in. Welcome to the Tank.', 'success');
         } else {
           if (!code.value.trim()) throw new Error('Enter the member code an officer gave you.');
           if (phoneF.error()) throw new Error(phoneF.error());

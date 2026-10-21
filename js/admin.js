@@ -38,7 +38,8 @@
   // What officers still owe: cards to make, people to welcome (bounty claims are counted by their own tab).
   function syncPending() {
     S.adminCounts.welcome = A.members.filter(m => m.contact_status === 'new' && m.phone).length;
-    S.pendingCount = S.adminCounts.welcome + S.adminCounts.claims;
+    S.adminCounts.approvals = A.members.filter(m => m.status === 'pending').length;
+    S.pendingCount = S.adminCounts.welcome + S.adminCounts.claims + S.adminCounts.approvals;
     RT.updateAdminBadge();
   }
 
@@ -101,6 +102,7 @@
   RT.views.admin = function (root, t) {
     const tabs = [
       { value: 'checkin', label: 'Check-in', icon: 'check' },
+      { value: 'approvals', label: 'Approvals', icon: 'check', badge: S.adminCounts.approvals || 0 },
       { value: 'welcome', label: 'Welcome', icon: 'send', badge: S.adminCounts.welcome || 0 },
       { value: 'members', label: 'Members', icon: 'users' },
       { value: 'meetings', label: 'Calendar', icon: 'calendar' },
@@ -118,6 +120,7 @@
     root.appendChild(host);
 
     const onPending = () => {
+      seg.setBadge('approvals', S.adminCounts.approvals);
       seg.setBadge('welcome', S.adminCounts.welcome);
       seg.setBadge('bounties', S.adminCounts.claims);
     };
@@ -478,35 +481,31 @@
         h('span', { class: 'pts-gain mono' }, (a.amount > 0 ? '+' : '') + a.amount))));
     }
 
-    // ---- Ban: stops them logging in and cuts off any session they already have ----
+    // ---- Chat: mute for a while, or ban (removes the person from the site entirely) ----
     const banBox = h('div', { class: 'detail-box danger-zone' });
     function drawBan() {
       const isOfficer = !!m.user_id && A.officerIds && A.officerIds.has(m.user_id);
       if (!A.officerIds) { A.officerIds = new Set(); sb.from('admins').select('user_id').then(r => { (r.data || []).forEach(x => A.officerIds.add(x.user_id)); drawBan(); }); }
-      const btn = h('button', { class: m.banned ? 'btn btn-ghost btn-sm' : 'btn btn-danger btn-sm', type: 'button' }, icon(m.banned ? 'check' : 'x', 14), m.banned ? 'Unban member' : 'Ban member');
-      btn.addEventListener('click', async () => {
-        if (!m.banned) {
-          const reason = h('input', { class: 'input', type: 'text', maxlength: 200, placeholder: 'Reason (only officers see this)' });
-          const ok = await confirmDialog({ title: 'Ban ' + m.name + '?', message: 'They are logged out right away and can’t log in or sign up again with this email. You can unban them any time.', confirmText: 'Ban', danger: true, body: reason });
-          if (!ok) return;
-          await setBan(true, reason.value.trim());
-        } else {
-          if (!(await confirmDialog({ title: 'Unban ' + m.name + '?', message: 'They’ll be able to log in again.', confirmText: 'Unban' }))) return;
-          await setBan(false, null);
-        }
-      });
+      if (isOfficer) { clear(banBox).append(h('div', null, h('div', { class: 'card-label' }, 'Chat'), h('p', { class: 'muted small' }, 'Officers can’t be muted or banned.'))); return; }
+      const mod = RT.moderation;
+      const muteRow = h('div', { class: 'row gap-sm wrap' }, mod.MUTE_CHOICES.map(c => {
+        const b = h('button', { class: 'btn btn-ghost btn-sm', type: 'button' }, c.label);
+        b.addEventListener('click', () => busy(b, async () => {
+          try { const row = await mod.setMute(m.id, c.min); m.muted_until = row.muted_until; toast(m.name + ' is muted for ' + c.label, 'success'); drawBan(); onChange(); } catch (e) { toast(friendly(e), 'error'); }
+        }));
+        return b;
+      }));
+      const unmute = mod.isMuted(m) ? h('button', { class: 'btn btn-primary btn-sm', type: 'button' }, 'Unmute') : null;
+      if (unmute) unmute.addEventListener('click', () => busy(unmute, async () => {
+        try { const row = await mod.setMute(m.id, 0); m.muted_until = row.muted_until; toast(m.name + ' is unmuted', 'success'); drawBan(); onChange(); } catch (e) { toast(friendly(e), 'error'); }
+      }));
+      const ban = h('button', { class: 'btn btn-danger btn-sm', type: 'button' }, icon('x', 14), 'Ban and remove');
+      ban.addEventListener('click', async () => { if (await mod.banMember(m)) { md.close(); onChange(true); } });
       clear(banBox).append(
-        h('div', null, h('div', { class: 'card-label' }, m.banned ? 'Banned' : 'Ban'),
-          h('p', { class: 'muted small' }, m.banned ? 'Banned' + (m.banned_reason ? ': ' + m.banned_reason : '.') + ' They can’t log in.' : 'Cuts off their login. Their Bites and history stay.')),
-        isOfficer ? h('p', { class: 'muted small' }, 'Officers can’t be banned.') : btn);
-    }
-    async function setBan(on, reason) {
-      const { data, error } = await sb.from('members').update({ banned: on, banned_reason: on ? (reason || null) : null, banned_at: on ? new Date().toISOString() : null }).eq('id', m.id).select().single();
-      if (error) { toast(friendly(error), 'error'); return; }
-      Object.assign(m, data);
-      toast(on ? m.name + ' is banned' : m.name + ' is unbanned', 'success');
-      drawBan();
-      onChange();
+        h('div', null, h('div', { class: 'card-label' }, 'Chat'),
+          h('p', { class: 'muted small' }, mod.isMuted(m) ? 'Muted for ' + mod.mutedFor(m) + '. They can read the chat but not post.' : 'Mute stops them posting for a while. They can still read.')),
+        h('div', { class: 'row between wrap gap-sm' }, muteRow, unmute),
+        h('div', { class: 'row between wrap gap-sm mod-ban' }, h('p', { class: 'muted small' }, 'Ban deletes their account and everything they did, and blocks their email.'), ban));
     }
 
     const delBtn = h('button', { class: 'btn btn-danger btn-sm', type: 'button' }, icon('trash', 14), 'Delete member');

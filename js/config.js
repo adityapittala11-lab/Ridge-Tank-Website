@@ -17,6 +17,9 @@ window.RT_CONFIG = {
     { name: 'Navya', role: 'Communications' }
   ],
 
+  // Sign-up needs a school email ending in one of these (the server enforces it too). null = any email.
+  schoolEmail: ['learner.dvusd.org', 'dvusd.org'],
+
   // Where people sign up. Fill these in once they exist; the message templates pick them up.
   links: {
     form: '',   // the Google Form link

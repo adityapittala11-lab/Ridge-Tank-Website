@@ -26,13 +26,14 @@
     meetings: [],
     board: [],
     directory: new Map(),
+    officerMembers: new Set(),
     settings: { decay_grace_days: 30, decay_pct_per_day: 0.5, decay_max_pct: 50 },
     announcements: [],
     bounties: [],
     bountyTaken: new Map(),
     myClaims: [],
     unseenAnn: 0,
-    adminCounts: { welcome: 0, claims: 0 },
+    adminCounts: { welcome: 0, claims: 0, approvals: 0 },
     pendingCount: 0,
     recovery: false
   };
@@ -42,6 +43,7 @@
     if (!err) return 'Something went wrong.';
     const msg = String(err.message || err.error_description || err || '');
     const code = err.code || '';
+    if (code === 'PENDING') return 'Your account is waiting for an officer to approve it.';
     if (/Invalid login credentials/i.test(msg)) return 'That email and password don’t match.';
     if (/Email not confirmed/i.test(msg)) return 'Confirm your email first. Check your inbox for the link.';
     if (/User already registered/i.test(msg)) return 'That email already has an account. Try logging in.';
@@ -162,7 +164,7 @@
       return check(await sb.rpc('invest', { p_to: toId, p_amount: amount }));
     },
     async directory() {
-      return check(await sb.from('member_directory').select('id, name'));
+      return check(await sb.from('member_directory').select('*'));
     },
     async myAttendance(memberId) {
       return check(await sb.from('attendance').select('*').eq('member_id', memberId));
@@ -327,6 +329,7 @@
     S.meetings = meetings;
     S.board = rankBoard(board);
     S.directory = new Map(dir.map(d => [d.id, d.name]));
+    S.officerMembers = new Set(dir.filter(d => d.is_officer).map(d => d.id));
     S.settings = Object.assign({ decay_grace_days: 30, decay_pct_per_day: 0.5, decay_max_pct: 50, form_link: '', site_link: '' }, settings);
     S.announcements = anns;
     S.bounties = bounties;
@@ -381,12 +384,13 @@
     const S = RT.state;
     if (!S.isAdmin) return 0;
     const head = t => sb.from(t).select('id', { count: 'exact', head: true });
-    const [welcome, claims] = await Promise.all([
+    const [welcome, claims, approvals] = await Promise.all([
       head('members').eq('contact_status', 'new').not('phone', 'is', null),
-      head('bounty_claims').eq('status', 'pending')
+      head('bounty_claims').eq('status', 'pending'),
+      head('members').eq('status', 'pending')
     ]);
-    S.adminCounts = { welcome: welcome.count || 0, claims: claims.count || 0 };
-    S.pendingCount = S.adminCounts.welcome + S.adminCounts.claims;
+    S.adminCounts = { welcome: welcome.count || 0, claims: claims.count || 0, approvals: approvals.count || 0 };
+    S.pendingCount = S.adminCounts.welcome + S.adminCounts.claims + S.adminCounts.approvals;
     return S.pendingCount;
   }
   RT.refreshPending = refreshPending;

@@ -1918,3 +1918,19 @@ html[data-theme="light"] .tier-chip.tier-mega { color: #7e1434; }
 .bubble-row.flash .bubble { outline: 2px solid var(--g-400); outline-offset: 2px; }
 .reply-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 16px; border-top: 1px solid var(--line); border-left: 3px solid var(--g-400); background: rgb(var(--tint) / 0.04); font-size: 13px; }
 .reply-bar[hidden] { display: none; }
+
+/* ---------- moderation: mute/ban menu, officer tag, approvals ---------- */
+.msg-officer { margin-left: 6px; padding: 1px 6px; font: 600 10px/1.4 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--g-300); border: 1px solid rgba(63, 191, 127, 0.45); }
+.mod-menu { position: relative; display: inline-flex; margin-left: 6px; vertical-align: middle; }
+.mod-btn { display: inline-grid; place-items: center; width: 22px; height: 22px; color: var(--ink-4); border: 1px solid transparent; }
+.mod-btn:hover, .mod-btn.on { color: var(--ink); border-color: var(--line-2); }
+.mod-btn.on { color: var(--b-300); }
+.mod-panel { position: absolute; z-index: 30; top: 26px; left: 0; min-width: 190px; padding: 6px; background: var(--glass-strong); border: 1px solid var(--line-2); box-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; }
+.mod-panel[hidden] { display: none; }
+.mod-item { text-align: left; padding: 9px 12px; font-size: 14px; color: var(--ink-2); white-space: nowrap; }
+.mod-item:hover { background: rgb(var(--tint) / 0.08); color: var(--ink); }
+.mod-item.danger { color: var(--b-300); border-top: 1px solid var(--line); margin-top: 4px; }
+.chat-hint { padding: 14px 18px; border-top: 1px solid var(--line); }
+.mod-ban { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.approval { display: flex; align-items: center; gap: 16px; padding: 18px 22px; }
+.approval-name { font-weight: 600; font-size: 17px; }

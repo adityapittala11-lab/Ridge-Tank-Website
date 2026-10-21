@@ -1,4 +1,5 @@
-// Club chat: sender + time above incoming bubbles, delivery status under yours.
+// Program chat: officers post, members reply. Sender + time above incoming bubbles, delivery status under yours.
+// Officers also get a small menu next to each name to mute (10 min to a week) or ban.
 // New messages arrive by quick polling (see channel() in js/backend.js), with a slower backup poll here.
 (function () {
   const RT = window.RT;
@@ -18,12 +19,18 @@
     let live = false;
     let pollTimer = null;
     let alive = true;
+    let modMembers = new Map();   // officers only: id -> member row (for mute status)
+    async function loadMods() {
+      if (!S.isAdmin) return;
+      const r = await sb.from('members').select('id, name, user_id, muted_until');
+      if (r.data) modMembers = new Map(r.data.map(x => [x.id, x]));
+    }
 
     const liveDot = h('span', { class: 'live-pill' }, h('span', { class: 'live-dot' }), 'Connecting');
     const head = h('header', { class: 'chat-head' },
       h('div', { class: 'chat-title' },
         h('span', { class: 'chat-icon' }, icon('chat', 18)),
-        h('div', null, h('h2', null, 'Program chat'), h('p', { class: 'muted small' }, `Everyone in Ridge Tank · ${S.directory.size || S.board.length} members`))),
+        h('div', null, h('h2', null, 'Program chat'), h('p', { class: 'muted small' }, S.isAdmin ? 'You post, members reply.' : 'Officers post here. Reply to any message.'))),
       liveDot);
 
     const list = h('div', { class: 'chat-list' });
@@ -37,8 +44,17 @@
     let replyTo = null;       // the message being answered
     const replyBar = h('div', { class: 'reply-bar', hidden: true });
     const composer = h('form', { class: 'composer' }, input, counter, sendBtn);
+    const hint = h('div', { class: 'chat-hint muted small', hidden: true });
+    // Members can't start a message. The box appears when they tap Reply, and is replaced by a note while they're muted.
+    function syncComposer() {
+      const muted = !S.isAdmin && RT.moderation.isMuted(S.me);
+      composer.hidden = muted || (!S.isAdmin && !replyTo);
+      hint.hidden = !(muted || (!S.isAdmin && !replyTo));
+      hint.textContent = muted ? 'You are muted for ' + RT.moderation.mutedFor(S.me) + '. You can read the chat but not post.' : 'Only officers start messages. Tap the reply arrow on a message to answer it.';
+      if (S.isAdmin) input.placeholder = replyTo ? 'Write a reply…' : 'Post to everyone…';
+    }
 
-    const panel = h('section', { class: 'chat card reveal' }, head, h('div', { class: 'chat-body' }, scroller, newPill), replyBar, composer);
+    const panel = h('section', { class: 'chat card reveal' }, head, h('div', { class: 'chat-body' }, scroller, newPill), replyBar, composer, hint);
     root.appendChild(panel);
 
     // ---------- data ----------
@@ -63,12 +79,14 @@
         try {
           const dir = await RT.api.directory();
           S.directory = new Map(dir.map(d => [d.id, d.name]));
+          S.officerMembers = new Set(dir.filter(d => d.is_officer).map(d => d.id));
         } catch (e) { /* names fall back to "Member" */ }
       }
     }
 
     async function loadInitial() {
       list.appendChild(RT.skeleton(4, 'chat-skel'));
+      await loadMods();
       const { data, error } = await sb.from('messages').select('id, member_id, user_id, body, created_at, reply_to').order('id', { ascending: false }).limit(PAGE);
       if (!alive) return;
       clear(list);
@@ -163,7 +181,7 @@
         list.appendChild(h('div', { class: 'chat-empty' },
           h('span', { class: 'big-icon' }, icon('chat', 26)),
           h('h3', null, 'No messages yet'),
-          h('p', { class: 'muted' }, 'Say hi. Everyone in the program can see this chat.')));
+          h('p', { class: 'muted' }, S.isAdmin ? 'Post something. Members can reply to it.' : 'Officers will post here. You can reply to anything they send.')));
         return;
       }
       let lastDay = null;
@@ -197,11 +215,24 @@
       if (!mine) {
         stack.appendChild(h('div', { class: 'msg-meta' },
           h('span', { class: 'msg-name' }, nameOf(m.member_id)),
-          h('span', { class: 'msg-time' }, fmtTime(m.created_at))));
+          S.officerMembers.has(m.member_id) ? h('span', { class: 'msg-officer' }, 'Officer') : null,
+          h('span', { class: 'msg-time' }, fmtTime(m.created_at)),
+          modFor(m)));
       }
       stack.appendChild(foot);
       const el = h('div', { class: 'msg-group ' + (mine ? 'out' : 'in') }, mine ? null : avatar(nameOf(m.member_id), 32, 'msg-avatar'), stack);
       return { el, stack, foot, last: m };
+    }
+
+    // Officers: a small menu next to someone else's name.
+    function modFor(m) {
+      if (!S.isAdmin || m.user_id === S.user.id || S.officerMembers.has(m.member_id)) return null;
+      const row = modMembers.get(m.member_id) || { id: m.member_id, name: nameOf(m.member_id), muted_until: null };
+      return RT.moderation.muteMenu(row, async removed => {
+        if (removed) { await loadMods(); for (const x of [...msgs]) if (x.member_id === m.member_id) remove(x.id); }
+        else await loadMods();
+        render();
+      });
     }
 
     function updateFoot(group, isLatest) {
@@ -235,14 +266,16 @@
       setTimeout(() => el.classList.remove('flash'), 1400);
     }
     function startReply(m) {
+      if (!S.isAdmin && RT.moderation.isMuted(S.me)) { toast('You are muted for ' + RT.moderation.mutedFor(S.me) + '.', 'error'); return; }
       replyTo = m;
       RT.put(clear(replyBar),
         h('div', { class: 'min0' }, h('b', null, 'Replying to ' + (m.user_id === S.user.id ? 'yourself' : nameOf(m.member_id))), h('div', { class: 'muted small ellipsis' }, snippet(m.body))),
         h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Cancel reply', onclick: cancelReply }, icon('x', 16)));
       replyBar.hidden = false;
+      syncComposer();
       input.focus();
     }
-    function cancelReply() { replyTo = null; replyBar.hidden = true; clear(replyBar); }
+    function cancelReply() { replyTo = null; replyBar.hidden = true; clear(replyBar); syncComposer(); }
 
     function bubble(m, mine) {
       const canDelete = typeof m.id === 'number' && (mine || S.isAdmin);
@@ -319,8 +352,9 @@
       input.focus();
     });
 
+    syncComposer();
     loadInitial().then(() => { if (alive) subscribe(); });
-    if (window.innerWidth > 720) setTimeout(() => input.focus({ preventScroll: true }), 300);
+    if (window.innerWidth > 720 && S.isAdmin) setTimeout(() => input.focus({ preventScroll: true }), 300);
     const onVis = () => { if (!document.hidden && alive) pollNew(); };
     document.addEventListener('visibilitychange', onVis);
 

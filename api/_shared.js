@@ -16,7 +16,11 @@ export async function memberId(req) {
     let banned;
     if (hit && Date.now() - hit.at < 30000) banned = hit.banned;
     else {
-      const r = await getPool().query('select 1 from public.members m where m.banned and (m.user_id = $1 or lower(m.email) = lower($2)) and not exists (select 1 from public.admins a where a.user_id = $1) limit 1', [claims.sub, claims.email || '']);
+      // Banned, deleted, or still waiting for approval: treated as logged out for the AI tools.
+      const r = await getPool().query(`select 1 where not exists (select 1 from public.admins a where a.user_id = $1)
+          and (not exists (select 1 from auth.users u where u.id = $1)
+            or exists (select 1 from public.members m where (m.banned or m.status = 'pending') and (m.user_id = $1 or lower(m.email) = lower($2)))
+            or exists (select 1 from public.banned_emails b where b.email = lower($2)))`, [claims.sub, claims.email || '']);
       banned = r.rows.length > 0;
       banCache.set(claims.sub, { at: Date.now(), banned });
       if (banCache.size > 2000) banCache.clear();
