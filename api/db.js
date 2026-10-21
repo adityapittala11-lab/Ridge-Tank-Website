@@ -101,6 +101,12 @@ async function dataOp(req, b) {
     if (!/^[0-9a-f-]{36}$/i.test(String(claims.sub))) return { data: null, error: { message: 'Please log in again.', code: 'PGRST301' } };
     // One round trip: open the transaction, drop to the logged-in role, and say who is asking (the id was just checked).
     if (await isBanned(client, claims.sub, claims.email)) return { data: null, error: { message: BANNED_ERROR.message, code: 'PGRST301' } };
+    // Who is this, really? Deleted or banned accounts stop working at once, and accounts still waiting for approval can
+    // only finish their own sign-up (no chat, no leaderboard, nothing else).
+    const who = await client.query('select m.status, exists (select 1 from public.admins a where a.user_id = u.id) as is_admin, (m.banned is true or exists (select 1 from public.banned_emails b where b.email = lower(u.email))) as banned from auth.users u left join public.members m on m.user_id = u.id where u.id = $1', [claims.sub]);
+    if (!who.rows.length || (who.rows[0].banned && !who.rows[0].is_admin)) return { data: null, error: { message: 'Please log in again.', code: 'PGRST301' } };
+    const w = who.rows[0];
+    if (w.status === 'pending' && !w.is_admin && !pendingAllowed(b)) return { data: null, error: { message: 'Your account is waiting for an officer to approve it.', code: 'PENDING' } };
     await client.query("begin; set local statement_timeout = '8000'; set local role authenticated; select set_config('request.jwt.claim.sub', '" + claims.sub + "', true)");
     const m = await getMeta(client);
     const out = await runOp(client, m, b);
@@ -112,6 +118,13 @@ async function dataOp(req, b) {
   } finally {
     client.release();
   }
+}
+
+// What an account that is still waiting for approval may do: read its own member row and finish its sign-up.
+const PENDING_RPC = new Set(['register_member', 'claim_card', 'update_my_profile', 'is_admin']);
+function pendingAllowed(b) {
+  if (b.op === 'rpc') return PENDING_RPC.has(String(b.fn));
+  return b.op === 'select' && b.table === 'members';
 }
 
 function pick(rows, b) {
@@ -235,9 +248,22 @@ function sessionFor(u) {
 // signing up again with the same email doesn't get around it. Officers (admins) can't be banned this way.
 async function isBanned(client, userId, email) {
   const r = await client.query(
-    'select 1 from public.members m where m.banned and (m.user_id = $1 or lower(m.email) = lower($2)) and not exists (select 1 from public.admins a where a.user_id = $1) limit 1',
+    `select 1 where not exists (select 1 from public.admins a where a.user_id = $1)
+        and (exists (select 1 from public.members m where m.banned and (m.user_id = $1 or lower(m.email) = lower($2)))
+          or exists (select 1 from public.banned_emails b where b.email = lower($2)))`,
     [userId, email || '']);
   return r.rows.length > 0;
+}
+
+// Sign-up is limited to school email addresses (set ALLOWED_EMAIL_DOMAINS in Vercel to change it, or to empty to allow
+// any). Officers listed in ADMIN_EMAILS are always allowed.
+function emailAllowed(email) {
+  if (adminEmails().includes(email)) return true;
+  const raw = process.env.ALLOWED_EMAIL_DOMAINS;
+  const list = (raw == null ? 'learner.dvusd.org,dvusd.org' : raw).split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  if (!list.length) return true;
+  const dom = email.split('@')[1] || '';
+  return list.some(d => dom === d || dom.endsWith('.' + d));
 }
 const BANNED_ERROR = { message: 'This account has been removed from Ridge Tank. Ask an officer if you think this is a mistake.', code: 'banned' };
 
@@ -260,6 +286,7 @@ async function authOp(req, b) {
       if (action === 'signUp') {
         if (password.length < 8 || password.length > 200) return { data: { user: null, session: null }, error: { message: 'Password should be at least 8 characters.', code: 'weak_password' } };
         const meta = b.data && typeof b.data === 'object' ? b.data : {};
+        if (!emailAllowed(email)) return { data: { user: null, session: null }, error: { message: 'Sign up with your school email (it ends in @learner.dvusd.org).', code: 'email_not_allowed' } };
         if (await isBanned(client, '00000000-0000-0000-0000-000000000000', email)) return { data: { user: null, session: null }, error: BANNED_ERROR };
         const exists = await client.query('select 1 from auth.users where lower(email) = $1', [email]);
         if (exists.rows.length) return { data: { user: null, session: null }, error: { message: 'User already registered', code: 'user_already_exists' } };
