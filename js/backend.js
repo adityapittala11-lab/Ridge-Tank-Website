@@ -99,6 +99,11 @@
         const out = await call({ op: 'auth', action: 'adminSetPassword', email, password });
         return { data: out.data || null, error: out.error || null };
       },
+      // Send the confirmation email again.
+      async resend(email) {
+        const out = await call({ op: 'auth', action: 'resend', email });
+        return { data: out.data || null, error: out.error || null };
+      },
       async resetPasswordForEmail() {
         return { data: null, error: { message: 'Password reset by email isn’t available. Ask an officer to set a new password for you.' } };
       },

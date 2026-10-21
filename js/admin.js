@@ -38,8 +38,7 @@
   // What officers still owe: cards to make, people to welcome (bounty claims are counted by their own tab).
   function syncPending() {
     S.adminCounts.welcome = A.members.filter(m => m.contact_status === 'new' && m.phone).length;
-    S.adminCounts.approvals = A.members.filter(m => m.status === 'pending').length;
-    S.pendingCount = S.adminCounts.welcome + S.adminCounts.claims + S.adminCounts.approvals;
+    S.pendingCount = S.adminCounts.welcome + S.adminCounts.claims;
     RT.updateAdminBadge();
   }
 
@@ -102,7 +101,7 @@
   RT.views.admin = function (root, t) {
     const tabs = [
       { value: 'checkin', label: 'Check-in', icon: 'check' },
-      { value: 'approvals', label: 'Approvals', icon: 'check', badge: S.adminCounts.approvals || 0 },
+      { value: 'accounts', label: 'Accounts', icon: 'shield' },
       { value: 'welcome', label: 'Welcome', icon: 'send', badge: S.adminCounts.welcome || 0 },
       { value: 'members', label: 'Members', icon: 'users' },
       { value: 'meetings', label: 'Calendar', icon: 'calendar' },
@@ -120,7 +119,6 @@
     root.appendChild(host);
 
     const onPending = () => {
-      seg.setBadge('approvals', S.adminCounts.approvals);
       seg.setBadge('welcome', S.adminCounts.welcome);
       seg.setBadge('bounties', S.adminCounts.claims);
     };

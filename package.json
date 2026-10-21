@@ -7,6 +7,7 @@
     "build:schema": "node tools/build-schema.mjs"
   },
   "dependencies": {
-    "pg": "^8.13.0"
+    "pg": "^8.13.0",
+    "nodemailer": "^6.9.16"
   }
 }

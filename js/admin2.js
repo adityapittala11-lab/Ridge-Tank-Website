@@ -214,7 +214,7 @@
       state.claims = c.data;
       state.loaded = true;
       S.adminCounts.claims = c.data.filter(x => x.status === 'pending').length;
-      S.pendingCount = (S.adminCounts.welcome || 0) + (S.adminCounts.claims || 0) + (S.adminCounts.approvals || 0);
+      S.pendingCount = (S.adminCounts.welcome || 0) + (S.adminCounts.claims || 0);
       RT.updateAdminBadge();
       draw();
     }
@@ -225,7 +225,7 @@
         Object.assign(c, row);
         await RT.refreshBoard();
         S.adminCounts.claims = state.claims.filter(x => x.status === 'pending').length;
-        S.pendingCount = (S.adminCounts.welcome || 0) + (S.adminCounts.claims || 0) + (S.adminCounts.approvals || 0);
+        S.pendingCount = (S.adminCounts.welcome || 0) + (S.adminCounts.claims || 0);
         RT.updateAdminBadge();
         toast(approve ? `Approved. ${who(c.member_id)} got +${row.points_awarded}.` : 'Marked not approved.', 'success');
         draw();

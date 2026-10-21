@@ -31,7 +31,7 @@ for (const name of ['DATABASE_URL', 'ADMIN_EMAILS', 'AUTH_SECRET']) {
 }
 if (!process.env.DATABASE_URL) process.env.RT_DEV_NO_AUTH = '1';
 
-const FUNCTIONS = new Set(['shark', 'sharks', 'db', 'triage', 'assistant']);
+const FUNCTIONS = new Set(['shark', 'sharks', 'db', 'triage', 'assistant', 'verify']);
 
 function sendJson(res, status, obj) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
@@ -51,11 +51,15 @@ async function runFunction(name, req, res) {
   try { body = raw ? JSON.parse(raw) : {}; } catch { return sendJson(res, 400, { error: 'Bad request.' }); }
   const shim = {
     status(code) { this.code = code; return this; },
-    setHeader() {},
+    headers: {},
+    setHeader(k, v) { this.headers[k] = v; },
+    set statusCode(v) { this.code = v; },
+    get statusCode() { return this.code || 200; },
+    end() { res.writeHead(this.code || 200, this.headers); res.end(); },
     json(obj) { sendJson(res, this.code || 200, obj); }
   };
   const mod = await import(pathToFileURL(path.join(ROOT, 'api', name + '.js')).href + '?t=' + Date.now());
-  await mod.default({ method: req.method, headers: req.headers, body }, shim);
+  await mod.default({ method: req.method, headers: req.headers, body, url: req.url }, shim);
 }
 
 const server = http.createServer(async (req, res) => {
