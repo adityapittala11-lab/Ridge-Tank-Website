@@ -36,9 +36,11 @@ if __name__ == "__main__":
         print(f"{k}. {S.label(c)}")
         for t, x in zip(("train", "validation", "TEST"), s): print("     " + line(t, x))
     best = E.run(P, exit_k=2, stop_mode=1, stop_pts=40, tp_r=3, fresh=True, session=(570, 960), eod=960, side=1)
+    both = E.run(P, exit_k=2, stop_mode=1, stop_pts=40, tp_r=3, fresh=True, session=(570, 960), eod=960, side=0)
     onetwo = E.run(P, exit_k=-1, stop_mode=1, stop_pts=10, tp_pts=20)
     strategies = [
         dict(name="Original rules", desc="Long or short when all 3 Supertrends agree and price is past the 50 EMA. Exit when they stop agreeing.", trades=base),
+        dict(name="Best version + shorts", desc="Same rules as the best version, but it also takes shorts (mirror image). Shorts alone made about $0.", trades=both),
         dict(name="Best version found", desc="Longs only, 9:30-16:00 New York, first signal of each trend, 40 point stop, 3R target, exit when fewer than 2 Supertrends agree, flat by 4pm. Picked with hindsight.", trades=best),
         dict(name="1:2 risk-reward", desc="Original entries with a 10 point stop and 20 point target.", trades=onetwo),
     ]
