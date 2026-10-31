@@ -107,6 +107,7 @@
       { value: 'meetings', label: 'Calendar', icon: 'calendar' },
       { value: 'pitches', label: 'Pitches', icon: 'mic' },
       { value: 'bounties', label: 'Bounties', icon: 'target', badge: S.adminCounts.claims || 0 },
+      { value: 'submissions', label: 'Submissions', icon: 'target' },
       { value: 'badges', label: 'Badges', icon: 'award' },
       { value: 'fairplay', label: 'Fair play', icon: 'shield' },
       { value: 'assistant', label: 'Assistant', icon: 'sparkle' }

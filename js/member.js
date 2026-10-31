@@ -108,6 +108,17 @@
   }
 
   // Next meeting + the latest officer post, in one place.
+  function renderBountiesMini(el) {
+    const items = S.bounties.filter(b => RT.bountyInfo(b).open).slice(0, 3);
+    clear(el).append(h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Earn extra Bites'),
+      h('a', { class: 'link-sm', href: '#/bounties' }, 'All bounties', icon('chevronRight', 14))));
+    if (!items.length) { el.appendChild(h('p', { class: 'muted' }, 'No open bounties right now. New ones will show up here.')); return; }
+    el.appendChild(h('ul', { class: 'timeline' }, items.map(b => h('li', null,
+      h('span', { class: 'tl-icon burg' }, icon('target', 16)),
+      h('div', { class: 'grow min0' }, h('div', { class: 'ellipsis' }, b.title), h('div', { class: 'muted small ellipsis' }, RT.bountyMeta(b))),
+      h('span', { class: 'pts-gain mono' }, '+' + b.points)))));
+  }
+
   function renderWeek(el) {
     const today = RT.localDateISO();
     const m = S.meetings.filter(x => x.meeting_date >= today).sort((a, b) => (a.meeting_date < b.meeting_date ? -1 : 1))[0];
