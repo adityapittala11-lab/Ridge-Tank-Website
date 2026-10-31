@@ -44,7 +44,7 @@ async function runFunction(name, req, res) {
   if (req.method === 'POST') {
     for await (const chunk of req) {
       raw += chunk;
-      if (raw.length > 60000) return sendJson(res, 413, { error: 'Too long.' });
+      if (raw.length > (name === 'db' ? 4500000 : 60000)) return sendJson(res, 413, { error: 'Too long.' });
     }
   }
   let body = {};
