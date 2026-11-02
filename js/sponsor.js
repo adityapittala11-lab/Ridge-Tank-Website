@@ -234,7 +234,7 @@
         const c = h('div', { class: 'sp-plan' + (id === 'full' ? ' featured' : ''), role: 'radio', tabindex: 0, 'data-plan': id },
           l.badge ? h('span', { class: 'sp-badge mono' }, l.badge) : null,
           h('strong', { class: 'sp-plan-name' }, l.label),
-          h('span', { class: 'sp-plan-price' }, l.price),
+          h('span', { class: 'sp-plan-price' }, l.big || l.price, l.unit ? h('span', { class: 'sp-plan-unit' }, ' ' + l.unit) : null),
           h('span', { class: 'sp-plan-per small' }, l.per || ''),
           h('ul', { class: 'sp-gets small' }, l.gets.map(g => h('li', null, icon('check', 13, 'accent'), g))),
           h('span', { class: 'sp-pay small' }, l.pay),

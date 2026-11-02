@@ -82,10 +82,10 @@ window.RT_CONFIG = {
       { value: 'inkind', group: 'One time', label: 'In-kind partner', price: 'No cash', text: 'Snacks, drinks, or gift cards for our pitch winners.',
         pay: 'We’ll plan a drop-off time for your snacks or gift cards.',
         gets: ['Shoutout at the meeting', 'Thank-you photos'] },
-      { value: 'basic', group: 'Monthly', label: 'Basic', price: '$10 / month', per: 'about 33¢ a day', text: 'A small way to stay in front of students every month.',
+      { value: 'basic', group: 'Monthly', label: 'Basic', price: '$10 / month', big: '33¢', unit: '/ day', per: '$10 billed monthly', text: 'A small way to stay in front of students every month.',
         pay: '$10 each month. We’ll email the details.',
         gets: ['A shoutout every month', 'Small poster in the meeting photo'] },
-      { value: 'full', group: 'Monthly', label: 'Full package', price: '$79.99 / month', per: 'about $2.67 a day · less than one $100 meeting, all month long', badge: 'Recommended', text: 'Everything, all month long.',
+      { value: 'full', group: 'Monthly', label: 'Full package', price: '$79.99 / month', big: '$2.67', unit: '/ day', per: '$79.99 billed monthly · less than one $100 meeting, all month long', badge: 'Recommended', text: 'Everything, all month long.',
         pay: '$79.99 each month. We’ll email the details.',
         gets: ['Your logo across the school', 'Repost chain through the whole club', 'Review bomb: a surge of real reviews to your account', 'Big poster in the meeting photo', 'Everything in Basic'] }
     ],
