@@ -76,8 +76,18 @@ window.RT_CONFIG = {
       { value: 'any', label: 'Any meeting', note: 'We’ll pick one with you' }
     ],
     levels: [
-      { value: 'meeting', label: 'Meeting partner', price: '$100', text: 'Covers snacks and prizes for one meeting. About $2 per student.' },
-      { value: 'inkind', label: 'In-kind partner', price: 'No cash', text: 'Snacks, drinks, or gift cards for our pitch winners.' }
+      { value: 'meeting', group: 'One time', label: 'Meeting partner', price: '$100', text: 'Covers snacks and prizes for one meeting. About $2 per student.',
+        pay: 'Half ($50) before the meeting and half ($50) after.',
+        gets: ['Your logo on our posters', 'On-screen shoutout at the meeting', 'Instagram feature', 'The snack table is yours', 'Big poster in the meeting photo'] },
+      { value: 'inkind', group: 'One time', label: 'In-kind partner', price: 'No cash', text: 'Snacks, drinks, or gift cards for our pitch winners.',
+        pay: 'We’ll plan a drop-off time for your snacks or gift cards.',
+        gets: ['Shoutout at the meeting', 'Thank-you photos'] },
+      { value: 'basic', group: 'Monthly', label: 'Basic', price: '$10 / month', text: 'A small way to stay in front of students every month.',
+        pay: '$10 each month. We’ll email the details.',
+        gets: ['A shoutout every month', 'Small poster in the meeting photo'] },
+      { value: 'full', group: 'Monthly', label: 'Full package', price: '$79.99 / month', text: 'Everything, all month long.',
+        pay: '$79.99 each month. We’ll email the details.',
+        gets: ['Your logo across the school', 'Repost chain through the whole club', 'A push for members to leave an honest review of your business', 'Big poster in the meeting photo', 'Everything in Basic'] }
     ],
     perks: [
       { icon: 'award', title: 'Your logo on our posters', text: 'Up around campus before the meeting.' },
