@@ -567,6 +567,15 @@
           h('div', null, h('div', { class: 'officer-name' }, o.name), h('div', { class: 'muted small' }, o.role + (o.note ? ' · ' + o.note : '')))))));
 
     root.append(S.me ? pageHead('About', 'How Ridge Tank works, plus answers to common questions.') : hero, how, tiers, faq, ...(S.me ? [] : [closer]), officers);
+    // Each section fades in as it scrolls into view. If anything goes wrong they all show, so nothing stays hidden.
+    const secs = [how, tiers, faq, closer, officers];
+    const showAll = () => secs.forEach(x => x.classList.add('in'));
+    if (reduceMotion || !('IntersectionObserver' in window)) showAll();
+    else {
+      const io = new IntersectionObserver(entries => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
+      secs.forEach(x => io.observe(x));
+      setTimeout(showAll, 4000);
+    }
     return {};
   };
 
