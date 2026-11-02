@@ -218,46 +218,114 @@
       return form;
     }
 
+    // One question at a time. Each step slides in, and the bar at the top shows how far along they are.
+    function planPicker(v) {
+      let cur = v;
+      const by = id => cfg.levels.find(l => l.value === id);
+      const wrap = h('div', { class: 'sp-plans-wrap' });
+      const grid = h('div', { class: 'sp-plans', role: 'radiogroup', 'aria-label': 'Choose a plan' });
+      const alt = h('button', { class: 'sp-alt', type: 'button' });
+      const cards = {};
+      const pick = id => { cur = id; paint(); };
+      ['basic', 'full', 'meeting'].forEach(id => {
+        const l = by(id);
+        const up = id === 'basic' ? h('button', { class: 'sp-up', type: 'button' }, 'Want your logo across the school and the club repost chain? Full is $69.99 more →') : null;
+        if (up) up.addEventListener('click', e => { e.stopPropagation(); pick('full'); });
+        const c = h('div', { class: 'sp-plan' + (id === 'full' ? ' featured' : ''), role: 'radio', tabindex: 0, 'data-plan': id },
+          l.badge ? h('span', { class: 'sp-badge mono' }, l.badge) : null,
+          h('strong', { class: 'sp-plan-name' }, l.label),
+          h('span', { class: 'sp-plan-price' }, l.price),
+          h('span', { class: 'sp-plan-per small' }, l.per || ''),
+          h('ul', { class: 'sp-gets small' }, l.gets.map(g => h('li', null, icon('check', 13, 'accent'), g))),
+          h('span', { class: 'sp-pay small' }, l.pay),
+          up);
+        c.addEventListener('click', () => pick(id));
+        c.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(id); } });
+        cards[id] = c;
+        grid.appendChild(c);
+      });
+      alt.addEventListener('click', () => pick(cur === 'inkind' ? 'full' : 'inkind'));
+      function paint() {
+        Object.keys(cards).forEach(id => cards[id].setAttribute('aria-checked', String(id === cur)));
+        alt.textContent = cur === 'inkind' ? 'In-kind partner selected (snacks or gift cards). Switch to a paid plan' : 'No cash? Give snacks, drinks, or gift cards instead';
+        alt.classList.toggle('on', cur === 'inkind');
+      }
+      paint();
+      wrap.append(grid, alt);
+      wrap.getValue = () => cur;
+      return wrap;
+    }
+
     function signupForm() {
       const business = input({ type: 'text', placeholder: 'e.g. Zoyo Frozen Yogurt', autocomplete: 'organization', maxlength: 80 });
       const name = input({ type: 'text', placeholder: 'First and last name', autocomplete: 'name', maxlength: 60 });
       const email = input({ type: 'email', placeholder: 'you@yourbusiness.com', autocomplete: 'email' });
       const phone = input({ type: 'tel', placeholder: '(602) 555-0142', autocomplete: 'tel', maxlength: 25 });
       const site = input({ type: 'url', placeholder: 'yourbusiness.com', autocomplete: 'url', maxlength: 200 });
-      const level = levelCards('meeting');
+      const level = planPicker('full');
       const meeting = meetingCards(cfg.meetings[0].value);
       const logo = logoPicker(null);
       const note = h('textarea', { class: 'input', rows: 3, maxlength: 500, placeholder: 'Anything we should know? (optional)' });
       const pw = pwInput('At least 8 characters', 'new-password');
       const agree = h('input', { type: 'checkbox', class: 'check' });
       const err = errLine();
-      const submit = h('button', { class: 'btn btn-primary btn-block btn-lg', type: 'submit' }, 'Create my sponsor account');
-      const step = (n, title, ...kids) => h('fieldset', { class: 'sp-step' }, h('legend', null, h('span', { class: 'sp-step-n mono' }, n), title), ...kids);
 
-      const form = h('form', { class: 'stack', novalidate: true },
-        step('1', 'Your business',
-          h('div', { class: 'form-grid' }, RT.field('Business name', business), RT.field('Your name', name)),
-          h('div', { class: 'form-grid' }, RT.field('Email', email, 'Your dashboard login. Any email works.'), RT.field('Phone (optional)', phone)),
-          RT.field('Website (optional)', site)),
-        step('2', 'How you’d like to help', level),
-        step('3', 'Which meeting', meeting),
-        step('4', 'Your logo', logo.el, h('span', { class: 'hint' }, 'You can add it later from your dashboard.')),
-        step('5', 'Finish up', RT.field('Note', note), RT.field('Password', pw),
-          h('label', { class: 'check-row' }, agree, h('span', null, 'I understand officers review every sponsor first, and that no money changes hands until Mountain Ridge High School sends payment details.'))),
-        err, submit);
+      const first = () => (name.value.trim().split(/\s+/)[0] || '');
+      const steps = [
+        { title: 'What’s your business called?', sub: 'This is how we’ll say it on posters and on screen.', body: () => [RT.field('Business name', business)], focus: business,
+          check: () => business.value.trim().length < 2 ? 'Enter your business name.' : '' },
+        { title: 'Nice to meet you. Who are we talking to?', sub: 'So we know who to thank.', body: () => [RT.field('Your name', name)], focus: name,
+          check: () => name.value.trim().length < 2 ? 'Enter your name.' : '' },
+        { title: () => (first() ? first() + ', where should we send your updates?' : 'Where should we send your updates?'), sub: 'This is also your dashboard login.',
+          body: () => [RT.field('Email', email, 'Any email works.'), RT.field('Phone (optional)', phone)], focus: email,
+          check: () => {
+            if (!/^\S+@\S+\.\S+$/.test(email.value.trim())) return 'Enter a real email address.';
+            const d = phone.value.replace(/\D/g, '');
+            return d && (d.length < 10 || d.length > 15) ? 'Enter a 10-digit phone number, or leave it empty.' : '';
+          } },
+        { title: 'How would you like to back us?', sub: 'Officers review every sponsor first. Nothing is charged when you sign up.', body: () => [level], wide: true, check: () => '' },
+        { title: 'Which meeting should we feature you at?', sub: 'You can change this later.', body: () => [meeting], check: () => '' },
+        { title: 'Add your logo', sub: 'Optional. It goes on the posters, so the sooner the better.', body: () => [logo.el, RT.field('Website (optional)', site)], optional: true, check: () => '' },
+        { title: 'Last step. Make your password.', sub: 'Then you’re in.', body: () => [RT.field('Password', pw), RT.field('Note', note),
+          h('label', { class: 'check-row' }, agree, h('span', null, 'I understand officers review every sponsor first, and that no money changes hands until Mountain Ridge High School sends payment details.'))],
+          focus: pw.input, last: true, check: () => pw.input.value.length < 8 ? 'Use a password with at least 8 characters.' : !agree.checked ? 'Check the box to continue.' : '' }
+      ];
+      let i = 0;
+      const bar = h('div', { class: 'sp-bar', role: 'progressbar', 'aria-valuemin': 1, 'aria-valuemax': steps.length }, h('span', { class: 'sp-bar-fill' }));
+      const count = h('span', { class: 'sp-count mono' });
+      const stage = h('div', { class: 'sp-stage' });
+      const back = h('button', { class: 'btn btn-ghost', type: 'button' }, 'Back');
+      const next = h('button', { class: 'btn btn-primary btn-lg sp-next', type: 'submit' }, 'Continue');
+      const skip = h('button', { class: 'link-btn', type: 'button' }, 'Skip for now');
+      const form = h('form', { class: 'sp-wiz', novalidate: true }, h('div', { class: 'sp-wiz-top' }, count, bar), stage, err, h('div', { class: 'sp-nav' }, back, skip, next));
 
+      function draw(dir) {
+        const st = steps[i];
+        err.hidden = true;
+        count.textContent = 'Step ' + (i + 1) + ' of ' + steps.length;
+        bar.setAttribute('aria-valuenow', i + 1);
+        bar.firstChild.style.width = Math.round(((i + 1) / steps.length) * 100) + '%';
+        back.hidden = i === 0;
+        skip.hidden = !st.optional;
+        next.textContent = st.last ? 'Create my sponsor account' : 'Continue';
+        const title = typeof st.title === 'function' ? st.title() : st.title;
+        const panel = h('div', { class: 'sp-panel' + (st.wide ? ' wide' : '') + (dir ? ' from-' + dir : '') },
+          h('h2', { class: 'sp-q' }, title), h('p', { class: 'muted sp-sub' }, st.sub), ...st.body());
+        stage.replaceChildren(panel);
+        if (st.focus && window.innerWidth > 720) setTimeout(() => st.focus.focus({ preventScroll: true }), 220);
+        if (dir) form.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+      back.addEventListener('click', () => { if (i > 0) { i--; draw('back'); } });
+      skip.addEventListener('click', () => { i++; draw('fwd'); });
       form.addEventListener('submit', e => {
         e.preventDefault();
-        err.hidden = true;
+        const st = steps[i];
+        const msg = st.check();
+        if (msg) return showErr(err, msg);
+        if (!st.last) { i++; draw('fwd'); return; }
+        for (let k = 0; k < steps.length; k++) { const m = steps[k].check(); if (m) { i = k; draw('back'); return showErr(err, m); } }
         const em = email.value.trim();
-        if (business.value.trim().length < 2) return showErr(err, 'Enter your business name.');
-        if (name.value.trim().length < 2) return showErr(err, 'Enter your name.');
-        if (!/^\S+@\S+\.\S+$/.test(em)) return showErr(err, 'Enter a real email address.');
-        const digits = phone.value.replace(/\D/g, '');
-        if (digits && (digits.length < 10 || digits.length > 15)) return showErr(err, 'Enter a 10-digit phone number, or leave it empty.');
-        if (pw.input.value.length < 8) return showErr(err, 'Use a password with at least 8 characters.');
-        if (!agree.checked) return showErr(err, 'Check the box to continue.');
-        busy(submit, async () => {
+        busy(next, async () => {
           try {
             const out = await call('signUp', {
               email: em, password: pw.input.value, business: business.value, contact_name: name.value, phone: phone.value,
@@ -270,6 +338,7 @@
           } catch (ex) { showErr(err, ex.message); }
         });
       });
+      draw(null);
       return form;
     }
 

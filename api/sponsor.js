@@ -15,7 +15,7 @@ import { jsonBody } from './_shared.js';
 const TOKEN_HOURS = 24 * 30;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LOGO = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
-const LEVELS = new Set(['meeting', 'inkind']);
+const LEVELS = new Set(['meeting', 'inkind', 'basic', 'full']);
 const MEETING = /^[a-z0-9-]{1,40}$/;
 const MAX_LOGO = 700000; // characters of the data: address, about 500 KB of picture
 
