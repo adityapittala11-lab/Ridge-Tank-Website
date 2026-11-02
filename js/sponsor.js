@@ -122,7 +122,24 @@
     wrap.getValue = () => cur;
     return wrap;
   }
-  const levelCards = v => choiceCards(cfg.levels, v, l => [h('span', { class: 'sp-choice-top' }, h('strong', null, l.label), h('span', { class: 'sp-price mono' }, l.price)), h('span', { class: 'muted small' }, l.text)]);
+  // Plans are grouped (One time / Monthly) and each one lists what it includes.
+  function levelCards(v) {
+    const wrap = h('div', { class: 'sp-levels' });
+    const cards = choiceCards(cfg.levels, v, l => [
+      h('span', { class: 'sp-choice-top' }, h('strong', null, l.label), h('span', { class: 'sp-price mono' }, l.price)),
+      h('span', { class: 'muted small' }, l.text),
+      l.gets ? h('ul', { class: 'sp-gets small' }, l.gets.map(g => h('li', null, icon('check', 13, 'accent'), g))) : null,
+      l.pay ? h('span', { class: 'sp-pay small' }, l.pay) : null]);
+    const btns = [...cards.children];
+    [...new Set(cfg.levels.map(l => l.group || 'Plans'))].forEach(g => {
+      wrap.appendChild(h('div', { class: 'sp-group-label' }, g));
+      const row = h('div', { class: 'sp-choices' });
+      cfg.levels.forEach((l, i) => { if ((l.group || 'Plans') === g) row.appendChild(btns[i]); });
+      wrap.appendChild(row);
+    });
+    wrap.getValue = cards.getValue;
+    return wrap;
+  }
   const meetingCards = v => choiceCards(cfg.meetings, v, m => [h('strong', null, m.label), h('span', { class: 'muted small' }, m.note || '')]);
 
   const input = (props) => h('input', Object.assign({ class: 'input' }, props));
@@ -311,7 +328,7 @@
       const steps = [
         { title: 'Signed up', text: 'Thanks for backing Ridge Tank.', state: 'done' },
         { title: 'Approved by our officers', text: approved ? 'You’re an official partner.' : acct.status === 'declined' ? 'Not this time. See the note below.' : 'We usually reply within 2 school days.', state: approved ? 'done' : acct.status === 'declined' ? 'stop' : 'now' },
-        { title: 'Payment', text: acct.level === 'inkind' ? 'We’ll plan a drop-off time for your snacks or gift cards.' : 'Through Mountain Ridge High School. We’ll email the details.', state: approved ? 'now' : 'later' },
+        { title: 'Payment', text: (lvl.pay || 'We’ll email the payment details.') + (acct.level === 'inkind' ? '' : ' Paid through Mountain Ridge High School.'), state: approved ? 'now' : 'later' },
         { title: 'Meeting day', text: meetingLabel(acct.meeting), state: 'later' },
         { title: 'Thank-you photos', text: 'We send you photos from the meeting as proof.', state: 'later' }
       ];

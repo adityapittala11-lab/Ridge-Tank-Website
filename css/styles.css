@@ -2069,3 +2069,11 @@ body.lb-open { overflow: hidden; }
   .sp-hero-stats { gap: 18px; }
   .sp-dash-head .btn { margin-left: auto; }
 }
+
+.sp-levels { display: grid; gap: 10px; }
+.sp-group-label { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); margin-top: 6px; }
+.sp-choices { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.sp-gets { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; color: var(--ink-2); }
+.sp-gets li { display: flex; gap: 6px; align-items: flex-start; }
+.sp-gets .ico { margin-top: 3px; flex: none; }
+.sp-pay { color: var(--g-300); margin-top: 6px; }
