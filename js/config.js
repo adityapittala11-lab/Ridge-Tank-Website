@@ -87,7 +87,7 @@ window.RT_CONFIG = {
         gets: ['A shoutout every month', 'Small poster in the meeting photo'] },
       { value: 'full', group: 'Monthly', label: 'Full package', price: '$79.99 / month', text: 'Everything, all month long.',
         pay: '$79.99 each month. We’ll email the details.',
-        gets: ['Your logo across the school', 'Repost chain through the whole club', 'A push for members to leave an honest review of your business', 'Big poster in the meeting photo', 'Everything in Basic'] }
+        gets: ['Your logo across the school', 'Repost chain through the whole club', 'Review bomb: a surge of real reviews to your account', 'Big poster in the meeting photo', 'Everything in Basic'] }
     ],
     perks: [
       { icon: 'award', title: 'Your logo on our posters', text: 'Up around campus before the meeting.' },
