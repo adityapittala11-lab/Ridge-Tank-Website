@@ -539,7 +539,7 @@
       ['Who can join?', 'Any ' + cfg.school + ' student, grades 9 to 12. No experience needed. Just walk in to a meeting.'],
       ['How do I sign up?', 'Just show up to a meeting. To track your Bites and rank online, hit “Join Ridge Tank” and make an account. It takes under a minute.'],
       ['Why do you want my phone number?', 'Only to add you to the program group chat (iMessage or WhatsApp) for meeting updates. Only officers can see it.'],
-      ['When is the first meeting?', cfg.nextMeeting + '. Just walk in, and we’ll show you how everything works.'],
+      ['When is the next meeting?', cfg.nextMeeting + '. Just walk in, and we’ll show you how everything works.'],
       ['Is there a reward for bringing a friend?', 'Yes. Bring a friend and you both get candy.'],
       ['What are Bites?', 'Bites are the program’s money. You earn 100 every time you check in at a meeting, and more for pitching and for bounties. You can invest them, and your Bites plus your winnings make up your net worth.'],
       ['How do I check in?', 'An officer checks you in at the door when you walk into a meeting. You earn 100 Bites each time.'],
@@ -551,7 +551,7 @@
       ['Who can see my information?', 'Members see names, Bites and tiers on the leaderboard. Officers see a bit more so they can run check-in. Read the full details on the privacy page.']
     ];
     // Visitors see the questions that matter before joining; members get the full list on the About page.
-    const SHORT = ['What is Ridge Tank?', 'Who can join?', 'When is the first meeting?', 'Is there a reward for bringing a friend?', 'What are Bites?', 'Why do you want my phone number?', 'Who can see my information?'];
+    const SHORT = ['What is Ridge Tank?', 'Who can join?', 'When is the next meeting?', 'Is there a reward for bringing a friend?', 'What are Bites?', 'Why do you want my phone number?', 'Who can see my information?'];
     const shown = S.me ? faqs : faqs.filter(([q]) => SHORT.includes(q));
     const faq = h('section', { class: 'section', id: 'faq' },
       h('div', { class: 'section-head' }, h('p', { class: 'eyebrow' }, 'FAQ'), h('h2', { class: 'section-title' }, 'Questions, answered.')),
