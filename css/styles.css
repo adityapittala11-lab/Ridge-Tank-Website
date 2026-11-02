@@ -2116,3 +2116,6 @@ body.lb-open { overflow: hidden; }
   .sp-nav .sp-next { min-width: 0; flex: 1; }
 }
 @media (prefers-reduced-motion: reduce) { .sp-panel { animation: none; } .sp-bar-fill { transition: none; } }
+
+.sp-plan-unit { font: 500 16px/1 var(--font-ui); letter-spacing: 0; color: var(--ink-2); }
+.sp-plan-per { font-size: 14px; }
