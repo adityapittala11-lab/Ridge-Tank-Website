@@ -90,12 +90,12 @@ window.RT_CONFIG = {
   // Opening animation timing in milliseconds.
   // Sign-up incentive shown on the landing page for people who aren't members yet. Set to null to hide it.
   promo: {
-    title: 'First meeting · Wed, Oct 21 · 2:20 PM · Media Center',
+    title: 'Next meeting · Date and time coming soon',
     text: 'Any MRHS student can join. Just walk in. Bring a friend and you both get candy.'
   },
 
   // Shown in the FAQ. Update after each meeting is scheduled.
-  nextMeeting: 'Wednesday, October 21',
+  nextMeeting: 'The next meeting date is coming soon',
 
   intro: { form: 1700, hold: 1900, disperse: 2000 },
 
