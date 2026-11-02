@@ -66,6 +66,27 @@ window.RT_CONFIG = {
   // (other icon names: 'mail', 'link'). Leave empty to hide the row.
   social: [],
 
+  // Sponsor sign-up (#/sponsor). Change the meetings as dates get approved. "value" must stay short, lowercase, no spaces.
+  sponsor: {
+    contact: 'ridgetank.club@gmail.com',
+    meetings: [
+      { value: '2026-11-13', label: 'Fri, Nov 13 · 2:25 PM', note: 'Phase 01: Spark kickoff' },
+      { value: 'december', label: 'December meeting', note: 'Date coming soon' },
+      { value: '2027-02-10', label: 'Wed, Feb 10, 2027', note: 'Demo Day' },
+      { value: 'any', label: 'Any meeting', note: 'We’ll pick one with you' }
+    ],
+    levels: [
+      { value: 'meeting', label: 'Meeting partner', price: '$100', text: 'Covers snacks and prizes for one meeting. About $2 per student.' },
+      { value: 'inkind', label: 'In-kind partner', price: 'No cash', text: 'Snacks, drinks, or gift cards for our pitch winners.' }
+    ],
+    perks: [
+      { icon: 'award', title: 'Your logo on our posters', text: 'Up around campus before the meeting.' },
+      { icon: 'megaphone', title: 'On-screen shoutout', text: '“This meeting is powered by [your business].”' },
+      { icon: 'instagram', title: 'Instagram feature', text: 'A post about you on our account.' },
+      { icon: 'flame', title: 'The snack table is yours', text: '“Shark Bait, presented by [your business].”' }
+    ]
+  },
+
   // Opening animation timing in milliseconds.
   // Sign-up incentive shown on the landing page for people who aren't members yet. Set to null to hide it.
   promo: {

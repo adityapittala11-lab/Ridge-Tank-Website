@@ -31,6 +31,8 @@ Nothing secret is in this repo. Keep it that way.
 
 ## Day to day
 
+- **Sponsors** have their own sign-up and dashboard at `#/sponsor` (code: `js/sponsor.js`, `api/sponsor.js`, `db/150_sponsors.sql`). Any business email works. Officers approve, decline, and leave notes in **Officer tools, Sponsors**, and can download each logo there. Sponsor accounts are kept apart from member accounts. The **Payments** tab is a placeholder for now: nothing is collected online yet. Change the meeting list and perks in `js/config.js` (`sponsor`). Optional: `SPONSOR_NOTIFY` (comma separated emails) gets an email for every new sponsor.
+
 - **Sign-up needs a confirmed email.** People sign up with a Gmail, Outlook, Yahoo, iCloud or school email, get a link by email, and can only log in after tapping it. Throwaway email sites aren't on the list. Gmail dots and +tags don't create extra accounts. Officers in `ADMIN_EMAILS` skip the email step.
 - **Chat:** officers post, members reply. Next to a member's name (officers only) is a small menu: mute for 10 minutes to a week, or **Ban and remove**. Ban deletes the person and everything they did, and blocks their email; lift the block under Admin, Accounts, Blocked emails. Admin, Accounts also lists accounts that share a browser or network.
 - **Forgot password?** There is no reset email. An officer opens Admin, Members, the person, **Set a new password**.

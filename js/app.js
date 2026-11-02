@@ -13,7 +13,7 @@
   const footerEl = document.getElementById('site-footer');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const MEMBER_ROUTES = new Set(['home', 'academy', 'about', 'leaderboard', 'bounties', 'updates', 'chat', 'profile']);
-  const MESH_DIM = { landing: 1, about: 1, auth: 0.9, welcome: 0.85, reset: 0.85, home: 0.78, academy: 0.72, leaderboard: 0.75, bounties: 0.72, updates: 0.72, profile: 0.75, chat: 0.65, admin: 0.65 };
+  const MESH_DIM = { landing: 1, about: 1, auth: 0.9, welcome: 0.85, reset: 0.85, home: 0.78, academy: 0.72, leaderboard: 0.75, bounties: 0.72, updates: 0.72, profile: 0.75, chat: 0.65, admin: 0.65, sponsor: 0.8 };
 
   RT.views = RT.views || {};
   let current = null; // { key, target, handle }
@@ -30,6 +30,13 @@
   function resolve(r) {
     if (S.recovery && S.user) return { key: 'reset' };
     const b = r.base;
+    // Sponsor pages work the same whether or not a member is signed in (sponsors have their own login).
+    if (b === 'sponsor') {
+      const parts = r.sub.split('?')[0].split('/');
+      const conf = (location.hash.match(/[?&]confirmed=(\w+)/) || [])[1] || '';
+      if (parts[0] === 'dashboard') return { key: 'sponsor', sub: 'dashboard', tab: ['profile', 'payments'].includes(parts[1]) ? parts[1] : 'overview' };
+      return { key: 'sponsor', sub: '', mode: parts[0] === 'login' ? 'login' : '', confirmed: conf };
+    }
     if (!S.user) {
       if (b === 'login' || b === 'signup') return { key: 'auth', mode: b };
       if (MEMBER_ROUTES.has(b) || b === 'admin' || b === 'welcome') return { key: 'auth', mode: 'login' };
@@ -47,6 +54,7 @@
 
   function canonical(t) {
     if (t.key === 'landing') return '#/';
+    if (t.key === 'sponsor') return t.sub === 'dashboard' ? '#/sponsor/dashboard' + (t.tab !== 'overview' ? '/' + t.tab : '') : '#/sponsor' + (t.mode === 'login' ? '/login' : '');
     if (t.key === 'auth') return '#/' + t.mode;
     if (t.key === 'admin') return '#/admin/' + t.tab;
     if (t.key === 'updates') return t.tab === 'calendar' ? '#/updates/calendar' : '#/updates';
@@ -394,8 +402,9 @@
       { label: 'How it works', jump: 'how' },
       { label: 'FAQ', jump: 'faq' },
       { label: 'Log in', href: '#/login' },
+      { label: 'Sponsors', href: '#/sponsor' },
       { label: 'Privacy', href: 'privacy.html' }];
-    return [{ label: 'Privacy', href: 'privacy.html' }];
+    return [{ label: 'Sponsors', href: '#/sponsor' }, { label: 'Privacy', href: 'privacy.html' }];
   }
 
   function footerLink(l) {
