@@ -22,6 +22,34 @@ const MAX_LOGO = 700000; // characters of the data: address, about 500 KB of pic
 const clientIp = req => String((req.headers && (req.headers['x-forwarded-for'] || req.headers['x-real-ip'])) || '').split(',')[0].trim() || 'ip';
 const fail = (message, code = 'bad_request') => ({ data: null, error: { message, code } });
 const ok = data => ({ data, error: null });
+const STRIPE = () => String(process.env.STRIPE_API_BASE || 'https://api.stripe.com');
+const stripeKey = () => process.env.STRIPE_SECRET_KEY || '';
+const PRICES = { meeting: { deposit: 5000, balance: 5000 }, basic: { monthly: 1000 }, full: { monthly: 7999 } };
+const NAMES = { deposit: 'Meeting partner: first half', balance: 'Meeting partner: final half', monthly: { basic: 'Ridge Tank Basic sponsor (monthly)', full: 'Ridge Tank Full package sponsor (monthly)' } };
+
+// Talks to Stripe with plain form requests, so there is nothing extra to install.
+async function stripe(path, fields) {
+  const body = new URLSearchParams();
+  for (const [k, v] of Object.entries(fields)) if (v != null && v !== '') body.append(k, String(v));
+  const r = await fetch(STRIPE() + '/v1/' + path, { method: 'POST', headers: { Authorization: 'Bearer ' + stripeKey(), 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+  const out = await r.json().catch(() => null);
+  if (!r.ok || !out) throw new Error((out && out.error && out.error.message) || 'Stripe did not answer.');
+  return out;
+}
+
+async function paymentInfo(client, a) {
+  const r = await client.query('select kind, amount_cents, created_at from sponsor_portal.payments where account_id = $1 order by created_at desc limit 50', [a.id]);
+  const kinds = new Set(r.rows.map(x => x.kind));
+  const options = [];
+  if (stripeKey() && a.status === 'approved') {
+    if (a.level === 'meeting') {
+      if (!kinds.has('deposit')) options.push({ kind: 'deposit', cents: 5000 });
+      else if (a.balance_due && !kinds.has('balance')) options.push({ kind: 'balance', cents: 5000 });
+    } else if ((a.level === 'basic' || a.level === 'full') && !a.stripe_subscription) options.push({ kind: 'monthly', cents: PRICES[a.level].monthly });
+  }
+  return { configured: !!stripeKey(), payments: r.rows, options, canManage: !!a.stripe_customer };
+}
+
 const clean = (v, max) => { const s = String(v == null ? '' : v).replace(/\s+/g, ' ').trim(); return s ? s.slice(0, max) : null; };
 
 const siteOrigin = req => {
@@ -36,7 +64,7 @@ function publicAccount(a) {
   return {
     id: a.id, email: a.email, business: a.business, contact_name: a.contact_name, phone: a.phone, website: a.website,
     level: a.level, meeting: a.meeting, pitch_note: a.pitch_note, logo: a.logo, status: a.status, message: a.message,
-    created_at: a.created_at, updated_at: a.updated_at
+    created_at: a.created_at, updated_at: a.updated_at, balance_due: !!a.balance_due, subscribed: !!a.stripe_subscription
   };
 }
 
@@ -166,11 +194,45 @@ async function run(req, b) {
       return ok({ sent: true });
     }
 
-    if (action === 'me' || action === 'update' || action === 'password') {
+    if (action === 'me' || action === 'update' || action === 'password' || action === 'pay' || action === 'portal') {
       const a = await signedIn(req, client);
       if (!a) return fail('Please log in again.', 'signed_out');
 
-      if (action === 'me') return ok(publicAccount(a));
+      if (action === 'me') return ok(Object.assign(publicAccount(a), { pay: await paymentInfo(client, a) }));
+
+      if (action === 'pay') {
+        if (!stripeKey()) return fail('Payments aren’t switched on yet. Email us and we’ll sort it out.', 'pay_off');
+        if (a.status !== 'approved') return fail('Payments open once an officer approves you.', 'not_approved');
+        const info = await paymentInfo(client, a);
+        const opt = info.options.find(o => o.kind === String(b.kind || ''));
+        if (!opt) return fail('Nothing is due right now.', 'nothing_due');
+        const origin = siteOrigin(req);
+        const back = origin + '/#/sponsor/dashboard/payments';
+        const monthly = opt.kind === 'monthly';
+        const session = await stripe('checkout/sessions', {
+          mode: monthly ? 'subscription' : 'payment',
+          'line_items[0][quantity]': 1,
+          'line_items[0][price_data][currency]': 'usd',
+          'line_items[0][price_data][unit_amount]': opt.cents,
+          'line_items[0][price_data][product_data][name]': monthly ? NAMES.monthly[a.level] : NAMES[opt.kind],
+          'line_items[0][price_data][recurring][interval]': monthly ? 'month' : '',
+          customer: a.stripe_customer || '',
+          customer_email: a.stripe_customer ? '' : a.email,
+          client_reference_id: a.id,
+          'metadata[account_id]': a.id,
+          'metadata[kind]': opt.kind,
+          'subscription_data[metadata][account_id]': monthly ? a.id : '',
+          success_url: back + '?paid=1',
+          cancel_url: back + '?paid=0'
+        });
+        return ok({ url: session.url });
+      }
+
+      if (action === 'portal') {
+        if (!stripeKey() || !a.stripe_customer) return fail('There is no billing to manage yet.', 'nothing_due');
+        const portal = await stripe('billing_portal/sessions', { customer: a.stripe_customer, return_url: siteOrigin(req) + '/#/sponsor/dashboard/payments' });
+        return ok({ url: portal.url });
+      }
 
       if (action === 'password') {
         if (!checkPassword(String(b.current || ''), a.password)) return fail('Your current password isn’t right.');
@@ -225,6 +287,6 @@ export default async function handler(req, res) {
   try {
     res.status(200).json(await run(req, jsonBody(req)));
   } catch (e) {
-    res.status(200).json(fail('Something went wrong. Try again in a moment.', 'server_error'));
+    res.status(200).json(fail(e && e.message && /stripe|payment/i.test(e.message) ? e.message : 'Something went wrong. Try again in a moment.', 'server_error'));
   }
 }

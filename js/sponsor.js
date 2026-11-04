@@ -2,7 +2,7 @@
 // Sponsors tab. Sponsor logins are separate from member logins: they use /api/sponsor and their own saved token.
 (function () {
   const RT = window.RT;
-  const { h, clear, icon, toast, modal, segmented, busy, friendly, confirmDialog } = RT;
+  const { h, clear, icon, toast, modal, segmented, busy, friendly, confirmDialog, fmtDate } = RT;
   const cfg = window.RT_CONFIG.sponsor;
   const S = RT.state;
   const KEY = 'rt_sponsor_v1';
@@ -176,7 +176,7 @@
     });
     const card = h('section', { class: 'card sp-form-card reveal', style: { '--i': 2 }, id: 'sponsor-form' }, seg, formHost);
     root.append(hero, perks, card,
-      h('p', { class: 'muted small center sp-foot' }, 'Questions? Email ', h('a', { href: 'mailto:' + cfg.contact }, cfg.contact), '. Payments always go through Mountain Ridge High School. Our students never take cash.'));
+      h('p', { class: 'muted small center sp-foot' }, 'Questions? Email ', h('a', { href: 'mailto:' + cfg.contact }, cfg.contact), '. Payments are handled securely by Stripe, and our students never handle cash.'));
 
     if (t.confirmed === '1') toast('Email confirmed. Log in to open your dashboard.', 'success', 5000);
     if (t.confirmed === 'expired') toast('That link expired. Log in and we’ll help you send a new one.', 'error', 5000);
@@ -287,7 +287,7 @@
         { title: 'Which meeting should we feature you at?', sub: 'You can change this later.', body: () => [meeting], check: () => '' },
         { title: 'Add your logo', sub: 'Optional. It goes on the posters, so the sooner the better.', body: () => [logo.el, RT.field('Website (optional)', site)], optional: true, check: () => '' },
         { title: 'Last step. Make your password.', sub: 'Then you’re in.', body: () => [RT.field('Password', pw), RT.field('Note', note),
-          h('label', { class: 'check-row' }, agree, h('span', null, 'I understand officers review every sponsor first, and that no money changes hands until Mountain Ridge High School sends payment details.'))],
+          h('label', { class: 'check-row' }, agree, h('span', null, 'I understand officers review every sponsor first, and that nothing is charged until I approve a payment on my dashboard.'))],
           focus: pw.input, last: true, check: () => pw.input.value.length < 8 ? 'Use a password with at least 8 characters.' : !agree.checked ? 'Check the box to continue.' : '' }
       ];
       let i = 0;
@@ -397,7 +397,7 @@
       const steps = [
         { title: 'Signed up', text: 'Thanks for backing Ridge Tank.', state: 'done' },
         { title: 'Approved by our officers', text: approved ? 'You’re an official partner.' : acct.status === 'declined' ? 'Not this time. See the note below.' : 'We usually reply within 2 school days.', state: approved ? 'done' : acct.status === 'declined' ? 'stop' : 'now' },
-        { title: 'Payment', text: (lvl.pay || 'We’ll email the payment details.') + (acct.level === 'inkind' ? '' : ' Paid through Mountain Ridge High School.'), state: approved ? 'now' : 'later' },
+        { title: 'Payment', text: (acct.level === 'inkind' ? lvl.pay : 'Pay securely by card from the Payments tab once you’re approved.') + '', state: approved ? 'now' : 'later' },
         { title: 'Meeting day', text: meetingLabel(acct.meeting), state: 'later' },
         { title: 'Thank-you photos', text: 'We send you photos from the meeting as proof.', state: 'later' }
       ];
@@ -468,13 +468,50 @@
       pane.append(form, pform);
     }
 
-    // Left empty on purpose: payments open once the school approves how sponsor money is handled.
+    const money = c => '$' + (c / 100).toFixed(c % 100 ? 2 : 0);
+    const KIND = { deposit: 'First half', balance: 'Final half', monthly: 'Monthly payment' };
     function paymentsPane(pane) {
-      pane.appendChild(h('section', { class: 'card empty sp-pay-empty' },
-        h('span', { class: 'sp-perk-ico lg' }, icon('card', 26)),
-        h('h3', null, 'Payments aren’t open yet'),
-        h('p', { class: 'muted' }, 'Please don’t send money yet. All sponsor payments go through Mountain Ridge High School, and we’ll email you when it’s ready.'),
-        h('a', { class: 'btn btn-ghost btn-sm', href: 'mailto:' + cfg.contact }, icon('mail', 15), 'Email us')));
+      const pay = acct.pay || { configured: false, payments: [], options: [] };
+      const lvl = levelOf(acct.level);
+      const go = async (action, kind, btn) => busy(btn, async () => {
+        try { const out = await call(action, { kind }); location.href = out.url; }
+        catch (ex) { toast(ex.message, 'error'); }
+      });
+      const status = (() => {
+        if (acct.level === 'inkind') return 'You’re giving snacks, drinks, or gift cards, so there’s nothing to pay here. We’ll set up a drop-off with you.';
+        if (acct.status !== 'approved') return 'Payments open as soon as an officer approves you. We usually reply within 2 school days.';
+        if (!pay.configured) return 'Payments aren’t switched on yet. Email us and we’ll sort it out.';
+        if (acct.level === 'meeting') {
+          const kinds = new Set(pay.payments.map(x => x.kind));
+          if (kinds.has('deposit') && kinds.has('balance')) return 'All paid. Thank you for backing Ridge Tank!';
+          if (kinds.has('deposit') && !acct.balance_due) return 'First half received. The final $50 opens after your meeting, and we’ll email you.';
+          return 'Meeting partner is $100: half now, half after the meeting.';
+        }
+        return acct.subscribed ? 'Your ' + lvl.label + ' plan is active. Thank you!' : lvl.label + ' is ' + lvl.price + '. Cancel any time from the billing page.';
+      })();
+      const buttons = pay.options.map(o => {
+        const btn = h('button', { class: 'btn btn-primary btn-lg', type: 'button' }, icon('card', 16), o.kind === 'monthly' ? 'Start ' + lvl.label + ' · ' + money(o.cents) + ' / month' : (o.kind === 'deposit' ? 'Pay first half' : 'Pay final half') + ' · ' + money(o.cents));
+        btn.addEventListener('click', () => go('pay', o.kind, btn));
+        return btn;
+      });
+      if (pay.canManage) {
+        const m = h('button', { class: 'btn btn-ghost', type: 'button' }, 'Manage billing and receipts');
+        m.addEventListener('click', () => go('portal', '', m));
+        buttons.push(m);
+      }
+      pane.appendChild(h('section', { class: 'card sp-pay-card stack' },
+        h('div', { class: 'row' }, h('span', { class: 'sp-perk-ico lg' }, icon('card', 26)), h('div', null, h('h3', null, 'Payments'), h('p', { class: 'muted' }, status))),
+        buttons.length ? h('div', { class: 'row wrap' }, buttons) : null,
+        h('p', { class: 'muted small' }, 'Payments are handled securely by Stripe. We never see or store your card.')));
+      if (pay.payments.length) {
+        pane.appendChild(h('section', { class: 'card stack-sm' }, h('span', { class: 'card-label' }, 'Payment history'),
+          h('ul', { class: 'sp-history' }, pay.payments.map(x => h('li', null, h('span', null, KIND[x.kind] || 'Payment'), h('span', { class: 'muted small' }, fmtDate(x.created_at, { month: 'short', day: 'numeric', year: 'numeric' })), h('strong', { class: 'mono' }, money(x.amount_cents)))))));
+      }
+      if (/[?&]paid=1/.test(location.hash) && !pane.dataset.thanked) {
+        pane.dataset.thanked = '1';
+        toast('Thank you! Your payment can take a few seconds to show up.', 'success', 5000);
+        setTimeout(() => { if (pane.isConnected) load(); }, 4000);
+      }
     }
 
     async function load() {
@@ -516,6 +553,7 @@
     const sb = RT.sb;
     let rows = [];
     let filter = 'all';
+    let pays = {};
     const list = h('div', { class: 'stack-sm' });
     const sum = h('p', { class: 'muted small' });
     const filt = segmented({
@@ -533,6 +571,8 @@
     async function load() {
       list.replaceChildren(h('div', { class: 'card' }, RT.skeleton(3)));
       const r = await sb.rpc('sponsor_admin_list');
+      const pr = await sb.rpc('sponsor_admin_payments');
+      pays = pr.error || !pr.data ? {} : pr.data;
       if (r.error) { list.replaceChildren(h('div', { class: 'card' }, h('p', { class: 'form-error' }, friendly(r.error)))); return; }
       rows = Array.isArray(r.data) ? r.data : [];
       draw();
@@ -587,10 +627,30 @@
           h('div', { class: 'row wrap' }, h('strong', { class: 'sp-admin-name' }, x.business), statusPill(x.status), x.email_confirmed ? null : h('span', { class: 'tag sm muted' }, 'email not confirmed')),
           h('div', { class: 'muted small' }, x.contact_name, ' · ', h('a', { href: 'mailto:' + x.email }, x.email), x.phone ? ' · ' + x.phone : '', x.website ? [' · ', h('a', { href: x.website, target: '_blank', rel: 'noopener noreferrer' }, x.website.replace(/^https?:\/\//, ''))] : ''),
           h('div', { class: 'small' }, h('span', { class: 'accent' }, lvl.label + ' · ' + lvl.price), ' · ', meetingLabel(x.meeting), ' · signed up ', RT.timeAgo(x.created_at)),
+          payLine(x),
           x.pitch_note ? h('p', { class: 'small sp-quote' }, '“' + x.pitch_note + '”') : null,
           x.message ? h('p', { class: 'small muted' }, 'They see: ' + x.message) : null,
           x.officer_note ? h('p', { class: 'small muted' }, 'Officer note: ' + x.officer_note) : null),
         h('div', { class: 'sp-admin-actions' }, approve, decline, notes, del));
+    }
+
+    function payLine(x) {
+      if (x.level === 'inkind') return null;
+      const p = pays[x.id] || { paid_cents: 0, kinds: [] };
+      const paid = '$' + (p.paid_cents / 100).toFixed(p.paid_cents % 100 ? 2 : 0);
+      const bits = [h('span', { class: p.paid_cents ? 'accent' : 'muted' }, p.paid_cents ? 'Paid ' + paid : 'Nothing paid yet')];
+      if (x.level === 'meeting' && p.kinds.includes('deposit') && !p.kinds.includes('balance')) {
+        const b = h('button', { class: 'btn btn-ghost btn-sm', type: 'button' }, p.balance_due ? 'Final $50 is open (tap to close)' : 'Meeting done: open the final $50');
+        b.addEventListener('click', async () => {
+          const r = await sb.rpc('sponsor_admin_balance', { p_id: x.id, p_due: !p.balance_due });
+          if (r.error) { toast(friendly(r.error), 'error'); return; }
+          toast(p.balance_due ? 'Final payment closed.' : 'Final $50 is now open for them.', 'success');
+          load();
+        });
+        bits.push(b);
+      }
+      if (p.subscribed) bits.push(h('span', { class: 'tag sm' }, 'subscription active'));
+      return h('div', { class: 'row wrap small' }, bits);
     }
 
     load();
