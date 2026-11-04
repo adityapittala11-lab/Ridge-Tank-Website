@@ -162,10 +162,10 @@ async function run(req, b) {
         const v = f.values;
         const exists = await client.query('select 1 from sponsor_portal.accounts where lower(email) = $1', [email]);
         if (exists.rows.length) return fail('That email already has a sponsor account. Try logging in.', 'exists');
-        const confirmNow = !mailConfigured(); // no email service yet: skip the link (officers still approve every sponsor)
+        const confirmNow = !mailConfigured(); // no email service yet: skip the link (sponsors are approved automatically)
         const r = await client.query(
-          `insert into sponsor_portal.accounts (email, password, business, contact_name, phone, website, level, meeting, pitch_note, logo, email_confirmed_at, last_sign_in_at)
-           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, ${confirmNow ? 'now(), now()' : 'null, null'}) returning *`,
+          `insert into sponsor_portal.accounts (email, password, business, contact_name, phone, website, level, meeting, pitch_note, logo, status, email_confirmed_at, last_sign_in_at)
+           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'approved', ${confirmNow ? 'now(), now()' : 'null, null'}) returning *`,
           [email, hashPassword(password), v.business, v.contact_name, v.phone, v.website, v.level, v.meeting, v.pitch_note, v.logo]);
         const a = r.rows[0];
         await notifyOfficers(a);
@@ -202,7 +202,7 @@ async function run(req, b) {
 
       if (action === 'pay') {
         if (!stripeKey()) return fail('Payments aren’t switched on yet. Email us and we’ll sort it out.', 'pay_off');
-        if (a.status !== 'approved') return fail('Payments open once an officer approves you.', 'not_approved');
+        if (a.status !== 'approved') return fail('Payments aren’t open for this account. Email us and we’ll sort it out.', 'not_approved');
         const info = await paymentInfo(client, a);
         const opt = info.options.find(o => o.kind === String(b.kind || ''));
         if (!opt) return fail('Nothing is due right now.', 'nothing_due');

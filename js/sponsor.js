@@ -283,11 +283,11 @@
             const d = phone.value.replace(/\D/g, '');
             return d && (d.length < 10 || d.length > 15) ? 'Enter a 10-digit phone number, or leave it empty.' : '';
           } },
-        { title: 'How would you like to back us?', sub: 'Officers review every sponsor first. Nothing is charged when you sign up.', body: () => [level], wide: true, check: () => '' },
+        { title: 'How would you like to back us?', sub: 'Nothing is charged when you sign up. You pay from your dashboard.', body: () => [level], wide: true, check: () => '' },
         { title: 'Which meeting should we feature you at?', sub: 'You can change this later.', body: () => [meeting], check: () => '' },
         { title: 'Add your logo', sub: 'Optional. It goes on the posters, so the sooner the better.', body: () => [logo.el, RT.field('Website (optional)', site)], optional: true, check: () => '' },
         { title: 'Last step. Make your password.', sub: 'Then you’re in.', body: () => [RT.field('Password', pw), RT.field('Note', note),
-          h('label', { class: 'check-row' }, agree, h('span', null, 'I understand officers review every sponsor first, and that nothing is charged until I approve a payment on my dashboard.'))],
+          h('label', { class: 'check-row' }, agree, h('span', null, 'I understand nothing is charged until I choose to pay from my dashboard.'))],
           focus: pw.input, last: true, check: () => pw.input.value.length < 8 ? 'Use a password with at least 8 characters.' : !agree.checked ? 'Check the box to continue.' : '' }
       ];
       let i = 0;
@@ -396,8 +396,8 @@
       const approved = acct.status === 'approved';
       const steps = [
         { title: 'Signed up', text: 'Thanks for backing Ridge Tank.', state: 'done' },
-        { title: 'Approved by our officers', text: approved ? 'You’re an official partner.' : acct.status === 'declined' ? 'Not this time. See the note below.' : 'We usually reply within 2 school days.', state: approved ? 'done' : acct.status === 'declined' ? 'stop' : 'now' },
-        { title: 'Payment', text: (acct.level === 'inkind' ? lvl.pay : 'Pay securely by card from the Payments tab once you’re approved.') + '', state: approved ? 'now' : 'later' },
+        { title: 'You’re a partner', text: approved ? 'You’re an official partner.' : acct.status === 'declined' ? 'We can’t take this one. See the note below.' : 'We’ll be in touch shortly.', state: approved ? 'done' : acct.status === 'declined' ? 'stop' : 'now' },
+        { title: 'Payment', text: (acct.level === 'inkind' ? lvl.pay : 'Pay securely by card from the Payments tab from your dashboard.') + '', state: approved ? 'now' : 'later' },
         { title: 'Meeting day', text: meetingLabel(acct.meeting), state: 'later' },
         { title: 'Thank-you photos', text: 'We send you photos from the meeting as proof.', state: 'later' }
       ];
@@ -479,7 +479,7 @@
       });
       const status = (() => {
         if (acct.level === 'inkind') return 'You’re giving snacks, drinks, or gift cards, so there’s nothing to pay here. We’ll set up a drop-off with you.';
-        if (acct.status !== 'approved') return 'Payments open as soon as an officer approves you. We usually reply within 2 school days.';
+        if (acct.status !== 'approved') return 'Payments aren’t open for this account. Email us and we’ll sort it out.';
         if (!pay.configured) return 'Payments aren’t switched on yet. Email us and we’ll sort it out.';
         if (acct.level === 'meeting') {
           const kinds = new Set(pay.payments.map(x => x.kind));
