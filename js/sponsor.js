@@ -43,7 +43,7 @@
   }
   RT.sponsorSignedIn = () => !!store.get();
 
-  const meetingLabel = v => { const m = cfg.meetings.find(x => x.value === v); return m ? m.label + (m.note ? ' · ' + m.note : '') : 'Any meeting'; };
+  const meetingLabel = v => { if (v === '2026-11-13') v = '2026-11-19'; /* sign-ups made before the date moved */ const m = cfg.meetings.find(x => x.value === v); return m ? m.label + (m.note ? ' · ' + m.note : '') : 'Any meeting'; };
   const levelOf = v => cfg.levels.find(x => x.value === v) || cfg.levels[0];
   const STATUS = {
     pending: { label: 'Under review', cls: 'wait' },

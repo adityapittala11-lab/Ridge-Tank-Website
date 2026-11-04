@@ -70,7 +70,7 @@ window.RT_CONFIG = {
   sponsor: {
     contact: 'ridgetank.club@gmail.com',
     meetings: [
-      { value: '2026-11-13', label: 'Fri, Nov 13 · 2:25 PM', note: 'Phase 01: Spark kickoff' },
+      { value: '2026-11-19', label: 'Thu, Nov 19', note: 'Phase 01: Spark kickoff' },
       { value: 'december', label: 'December meeting', note: 'Date coming soon' },
       { value: '2027-02-10', label: 'Wed, Feb 10, 2027', note: 'Demo Day' },
       { value: 'any', label: 'Any meeting', note: 'We’ll pick one with you' }
@@ -100,12 +100,12 @@ window.RT_CONFIG = {
   // Opening animation timing in milliseconds.
   // Sign-up incentive shown on the landing page for people who aren't members yet. Set to null to hide it.
   promo: {
-    title: 'Next meeting · Date and time coming soon',
+    title: 'Next meeting · Thu, Nov 19',
     text: 'Any MRHS student can join. Just walk in. Bring a friend and you both get candy.'
   },
 
   // Shown in the FAQ. Update after each meeting is scheduled.
-  nextMeeting: 'The next meeting date is coming soon',
+  nextMeeting: 'Thursday, November 19',
 
   intro: { form: 1700, hold: 1900, disperse: 2000 },
 
