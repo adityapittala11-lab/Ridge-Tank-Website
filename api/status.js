@@ -11,6 +11,8 @@ export default function handler(req, res) {
     SMTP_USER: has('SMTP_USER'),
     SMTP_PASS: has('SMTP_PASS'),
     ADMIN_EMAILS: has('ADMIN_EMAILS'),
-    GROQ_API_KEY: has('GROQ_API_KEY')
+    GROQ_API_KEY: has('GROQ_API_KEY'),
+    STRIPE_SECRET_KEY: has('STRIPE_SECRET_KEY'),
+    STRIPE_WEBHOOK_SECRET: has('STRIPE_WEBHOOK_SECRET')
   });
 }

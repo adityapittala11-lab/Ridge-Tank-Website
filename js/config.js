@@ -83,10 +83,10 @@ window.RT_CONFIG = {
         pay: 'We’ll plan a drop-off time for your snacks or gift cards.',
         gets: ['Shoutout at the meeting', 'Thank-you photos'] },
       { value: 'basic', group: 'Monthly', label: 'Basic', price: '$10 / month', big: '33¢', unit: '/ day', per: '$10 billed monthly', text: 'A small way to stay in front of students every month.',
-        pay: '$10 each month. We’ll email the details.',
+        pay: 'Billed $10 each month by card.',
         gets: ['A shoutout every month', 'Small poster in the meeting photo'] },
       { value: 'full', group: 'Monthly', label: 'Full package', price: '$79.99 / month', big: '$2.67', unit: '/ day', per: '$79.99 billed monthly · less than one $100 meeting, all month long', badge: 'Recommended', text: 'Everything, all month long.',
-        pay: '$79.99 each month. We’ll email the details.',
+        pay: 'Billed $79.99 each month by card.',
         gets: ['Your logo across the school', 'Repost chain through the whole club', 'Review bomb: a surge of real reviews to your account', 'Big poster in the meeting photo', 'Everything in Basic'] }
     ],
     perks: [

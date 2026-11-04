@@ -31,7 +31,7 @@ for (const name of ['DATABASE_URL', 'ADMIN_EMAILS', 'AUTH_SECRET']) {
 }
 if (!process.env.DATABASE_URL) process.env.RT_DEV_NO_AUTH = '1';
 
-const FUNCTIONS = new Set(['shark', 'sharks', 'db', 'triage', 'assistant', 'verify', 'status', 'sponsor']);
+const FUNCTIONS = new Set(['shark', 'sharks', 'db', 'triage', 'assistant', 'verify', 'status', 'sponsor', 'stripe-webhook']);
 
 function sendJson(res, status, obj) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
@@ -59,12 +59,12 @@ async function runFunction(name, req, res) {
     json(obj) { sendJson(res, this.code || 200, obj); }
   };
   const mod = await import(pathToFileURL(path.join(ROOT, 'api', name + '.js')).href + '?t=' + Date.now());
-  await mod.default({ method: req.method, headers: req.headers, body, url: req.url }, shim);
+  await mod.default({ method: req.method, headers: req.headers, body, rawBody: raw, url: req.url }, shim);
 }
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
-  const fn = url.pathname.match(/^\/api\/([a-z]+)$/);
+  const fn = url.pathname.match(/^\/api\/([a-z-]+)$/);
 
   if (fn && FUNCTIONS.has(fn[1])) {
     try { await runFunction(fn[1], req, res); } catch (e) { if (!res.headersSent) sendJson(res, 500, { error: e.message || 'Something went wrong.' }); }

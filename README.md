@@ -38,3 +38,10 @@ Nothing secret is in this repo. Keep it that way.
 - **Forgot password?** There is no reset email. An officer opens Admin, Members, the person, **Set a new password**.
 - **Changing the database:** edit or add a file in `db/`, run `node tools/build-schema.mjs <next number>` (it rewrites `api/_schema.js`), and commit. Existing databases update themselves on the next visit. Write changes so they are safe to run twice.
 - **Test on your computer:** put `DATABASE_URL=...` (and `ADMIN_EMAILS=...`, `GROQ_API_KEY=...`) in `.env.local`, run `npm install`, then `node tools/dev-server.mjs` and open http://localhost:8934.
+
+## Sponsor payments (Stripe)
+Sponsors pay from their dashboard (Payments tab) through Stripe Checkout. In Vercel, add these environment variables, then redeploy:
+- `STRIPE_SECRET_KEY`: a restricted key (Checkout Sessions: write, Customers: write, Billing portal: write) or the secret key.
+- `STRIPE_WEBHOOK_SECRET`: in Stripe go to Developers > Webhooks > Add endpoint, URL `https://<your site>/api/stripe-webhook`, events `checkout.session.completed`, `invoice.paid`, `customer.subscription.deleted`. Copy the signing secret (`whsec_...`).
+- For "Manage billing": turn on the customer portal in Stripe (Settings > Billing > Customer portal).
+Open `/api/status` to check both are set. Meeting partners pay $50 now; officers open the final $50 from Officer tools > Sponsors after the meeting.
