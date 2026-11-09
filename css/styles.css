@@ -2124,3 +2124,44 @@ body.lb-open { overflow: hidden; }
 .sp-history { list-style: none; margin: 0; padding: 0; display: grid; }
 .sp-history li { display: grid; grid-template-columns: 1fr auto auto; gap: 16px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
 .sp-history li:first-child { border-top: 0; }
+
+/* ---------------- Home: red meeting countdown ---------------- */
+.countdown-banner { display: flex; align-items: stretch; gap: 0; margin: 0 0 18px; text-decoration: none; color: #fff;
+  background: linear-gradient(120deg, #b3122e 0%, #8a0d24 55%, #5c0818 100%); border: 1px solid rgba(255, 120, 140, 0.55);
+  box-shadow: 0 10px 40px rgba(179, 18, 46, 0.35); position: relative; overflow: hidden; }
+.countdown-banner::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0 12px, transparent 12px 24px); pointer-events: none; }
+.countdown-banner:hover { filter: brightness(1.08); }
+.cd-num { display: flex; flex-direction: column; justify-content: center; align-items: center; min-width: 170px; padding: 18px 22px; background: rgba(0, 0, 0, 0.22); text-align: center; }
+.cd-big { font: 800 44px/1 var(--font-display); letter-spacing: 0.02em; animation: cd-pulse 2.4s ease-in-out infinite; }
+.cd-sub { margin-top: 6px; font: 600 11px/1.2 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.85; }
+.cd-info { display: flex; flex-direction: column; gap: 4px; padding: 16px 20px; min-width: 0; position: relative; z-index: 1; }
+.cd-eyebrow { display: inline-flex; align-items: center; gap: 6px; font: 600 11px/1 var(--font-mono); letter-spacing: 0.14em; text-transform: uppercase; color: #ffd0d9; }
+.cd-what { font: 700 20px/1.25 var(--font-display); }
+.cd-when { font-size: 14.5px; color: rgba(255, 255, 255, 0.9); }
+.cd-cta { color: #ffd0d9; }
+@keyframes cd-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+@media (max-width: 640px) { .countdown-banner { flex-direction: column; } .cd-num { min-width: 0; flex-direction: row; gap: 10px; padding: 14px; } .cd-sub { margin-top: 0; } .cd-big { font-size: 34px; } }
+@media (prefers-reduced-motion: reduce) { .cd-big { animation: none; } }
+
+/* ---------------- Bounties > Forms: crew applications ---------------- */
+.forms-hero .h2 { margin: 6px 0 4px; }
+.forms-deal { display: flex; gap: 8px; align-items: flex-start; margin-top: 12px; padding: 10px 12px; font-size: 14px; color: var(--b-200); background: rgba(210, 71, 110, 0.12); border: 1px solid rgba(210, 71, 110, 0.3); }
+.team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.team-card { display: flex; flex-direction: column; gap: 8px; text-align: left; cursor: pointer; color: inherit; font: inherit; border: 1px solid var(--line-2); transition: border-color .2s var(--ease), transform .2s var(--ease); }
+.team-card:hover { transform: translateY(-2px); border-color: rgba(63, 191, 127, 0.5); }
+.team-card.is-picked { border-color: var(--g-400); box-shadow: 0 0 0 3px rgba(63, 191, 127, 0.22); }
+.team-card h3 { margin: 4px 0 0; }
+.team-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.team-icon { display: grid; place-items: center; width: 36px; height: 36px; color: var(--g-300); background: rgba(63, 191, 127, 0.12); }
+.team-rules { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; color: var(--ink-2); }
+.team-rules li { display: flex; gap: 8px; align-items: flex-start; }
+.team-rules svg { flex: none; margin-top: 2px; color: var(--g-300); }
+.team-pick { margin-top: auto; padding-top: 6px; color: var(--g-300); font-weight: 600; }
+.forms-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 8px; }
+.forms-status h3 { margin: 8px 0 2px; }
+.app-card .card-head { gap: 10px; }
+.app-teams { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.app-qa { display: grid; grid-template-columns: 130px 1fr; gap: 6px 14px; margin: 6px 0 4px; font-size: 14px; }
+.app-qa dt { color: var(--ink-3); font: 600 12px/1.5 var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; }
+.app-qa dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 640px) { .app-qa { grid-template-columns: 1fr; } .app-qa dd { margin-bottom: 6px; } }

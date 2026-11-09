@@ -45,7 +45,7 @@
     if (!S.me) return { key: 'welcome' };
     if (b === 'admin') return S.isAdmin ? { key: 'admin', tab: r.sub || 'checkin' } : { key: 'home' };
     if (b === 'updates') return { key: 'updates', tab: r.sub === 'calendar' ? 'calendar' : 'news' };
-    if (b === 'bounties') return { key: 'bounties', tab: r.sub === 'mine' ? 'mine' : r.sub === 'submission' ? 'submission' : 'open' };
+    if (b === 'bounties') return { key: 'bounties', tab: ['mine', 'submission', 'forms'].includes(r.sub) ? r.sub : 'open' };
     if (b === 'academy') return { key: 'academy', sub: /^(edges|panel|level\/\d{1,2})$/.test(r.sub) ? r.sub : '' };
     if (b === 'sharks') return { key: 'academy', sub: 'panel' }; // old link: The Sharks now lives inside the Academy
     if (MEMBER_ROUTES.has(b)) return { key: b };
@@ -58,7 +58,7 @@
     if (t.key === 'auth') return '#/' + t.mode;
     if (t.key === 'admin') return '#/admin/' + t.tab;
     if (t.key === 'updates') return t.tab === 'calendar' ? '#/updates/calendar' : '#/updates';
-    if (t.key === 'bounties') return t.tab === 'mine' ? '#/bounties/mine' : t.tab === 'submission' ? '#/bounties/submission' : '#/bounties';
+    if (t.key === 'bounties') return t.tab && t.tab !== 'open' ? '#/bounties/' + t.tab : '#/bounties';
     if (t.key === 'academy') return '#/academy' + (t.sub ? '/' + t.sub : '');
     return '#/' + t.key;
   }

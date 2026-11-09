@@ -58,6 +58,8 @@
   RT.views.home = function (root) {
     const subLine = h('span');
     root.appendChild(RT.pageHead('Home', subLine));
+    const banner = RT.meetingBanner ? RT.meetingBanner() : null;
+    if (banner) root.appendChild(banner);
     const top = h('div', { class: 'home-top' });
     if (RT.academyHomeCard) top.appendChild(RT.academyHomeCard());
     root.appendChild(top);

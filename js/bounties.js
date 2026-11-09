@@ -44,7 +44,7 @@
   RT.views.bounties = function (root, t) {
     let tab = t.tab;
     const seg = segmented({
-      items: [{ value: 'open', label: 'Open' }, { value: 'mine', label: 'My claims' }, { value: 'submission', label: 'Submission' }],
+      items: [{ value: 'open', label: 'Open' }, { value: 'forms', label: 'Forms' }, { value: 'mine', label: 'My claims' }, { value: 'submission', label: 'Submission' }],
       value: tab, ariaLabel: 'Bounties', onChange: v => RT.go('bounties' + (v === 'open' ? '' : '/' + v))
     });
     root.appendChild(RT.pageHead('Bounties', 'Finish a challenge, earn bonus Bites. Officers check each one before the Bites land.', seg));
@@ -53,7 +53,7 @@
 
     function draw() {
       clear(body);
-      (tab === 'mine' ? drawMine : tab === 'submission' ? () => RT.submissionView(body) : drawOpen)();
+      (tab === 'mine' ? drawMine : tab === 'submission' ? () => RT.submissionView(body) : tab === 'forms' ? () => RT.formsView(body) : drawOpen)();
     }
 
     function drawOpen() {

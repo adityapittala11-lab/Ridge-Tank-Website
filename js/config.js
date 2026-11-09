@@ -107,6 +107,27 @@ window.RT_CONFIG = {
   // Shown in the FAQ. Update after each meeting is scheduled.
   nextMeeting: 'Thursday, November 19',
 
+  // Red countdown banner on Home. The calendar's next meeting wins if there is one; this is the fallback.
+  // Set date to '' to hide the banner.
+  countdown: { date: '2026-11-19', time: '2:25 PM', place: 'Media Center', text: 'Phase 01: Spark kickoff with Sabin Lomac from Shark Tank' },
+
+  // Crew teams (Bounties > Forms). "value" must be short lowercase letters only. 3 spots per team (the database enforces 3).
+  teams: {
+    open: true,          // false = form closed
+    closes: 'Wed, Nov 11',
+    seats: 3,
+    list: [
+      { value: 'presidential', label: 'Presidential Team', icon: 'shield',
+        text: 'Runs the club with Aditya. Gets sponsors, walks into local businesses, and makes meetings happen.',
+        rules: ['4 business walk-ins per person, every week, with a photo', 'Bring in sponsors (that is the #1 job)', 'Help run meeting day'] },
+      { value: 'social', label: 'Social Media Team', icon: 'instagram',
+        text: 'Works with the secretary to make Ridge Tank the club everyone sees. Reels, posts, hype.',
+        rules: ['Post 1 reel every 3 days (small is fine)', 'Film every meeting', 'Help sell sponsors with real content'] }
+    ],
+    // Shown on the form. Keep it honest: these are the deal.
+    deal: 'Do your part on time and you earn big XP for the iFLY leaderboard. Miss it and you’re off the team. All or nothing.'
+  },
+
   intro: { form: 1700, hold: 1900, disperse: 2000 },
 
   // Background swirl edges: 'soft' (smooth blur), 'medium', 'sharp', or 'crisp' (no blur).
