@@ -49,7 +49,7 @@ export default async function handler(req, res) {
         if (o.mode === 'subscription') {
           if (o.subscription) await client.query('update sponsor_portal.accounts set stripe_subscription = $2 where id = $1', [id, o.subscription]);
           // The first month is recorded by invoice.paid, so it is not counted twice here.
-        } else if (kind === 'deposit' || kind === 'balance') await record(client, id, kind, o.amount_total || 0, o.id);
+        } else if (['deposit', 'balance', 'meeting', 'hoodie', 'event'].includes(kind)) await record(client, id, kind, o.amount_total || 0, o.id);
       } else if (ev.type === 'invoice.paid') {
         const id = (o.subscription_details && o.subscription_details.metadata && o.subscription_details.metadata.account_id)
           || (o.parent && o.parent.subscription_details && o.parent.subscription_details.metadata && o.parent.subscription_details.metadata.account_id)

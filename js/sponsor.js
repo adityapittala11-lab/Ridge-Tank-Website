@@ -45,6 +45,42 @@
 
   const meetingLabel = v => { if (v === '2026-11-13') v = '2026-11-19'; /* sign-ups made before the date moved */ const m = cfg.meetings.find(x => x.value === v); return m ? m.label + (m.note ? ' · ' + m.note : '') : 'Any meeting'; };
   const levelOf = v => cfg.levels.find(x => x.value === v) || cfg.levels[0];
+  const catOf = level => cfg.categories.find(c => c.value === levelOf(level).cat) || cfg.categories[0];
+  const catByValue = v => cfg.categories.find(c => c.value === v) || cfg.categories[0];
+  const spotTag = (c, spots) => {
+    const sp = c.spots && spots && spots[c.value];
+    if (!sp) return null;
+    return h('span', { class: 'sp-spots mono' + (sp.left ? '' : ' out') }, sp.left ? sp.left + ' of ' + sp.total + ' spot' + (sp.total === 1 ? '' : 's') + ' left' : 'Sold out');
+  };
+  // The 4 category cards. A sold-out category can't be picked (unless it's already theirs).
+  function categoryCards(value, spots, onPick) {
+    let cur = value;
+    const grid = h('div', { class: 'sp-cats', role: 'radiogroup', 'aria-label': 'Choose a sponsorship' });
+    const cards = cfg.categories.map(c => {
+      const sp = c.spots && spots && spots[c.value];
+      const out = !!(sp && !sp.left && c.value !== value);
+      const el = h('button', { class: 'sp-cat' + (out ? ' out' : ''), type: 'button', role: 'radio', disabled: out, 'data-cat': c.value },
+        c.badge ? h('span', { class: 'sp-badge mono' }, c.badge) : null,
+        h('span', { class: 'sp-cat-ico' }, icon(c.icon, 22)),
+        h('strong', { class: 'sp-cat-name' }, c.label),
+        h('span', { class: 'sp-cat-price' }, c.price),
+        h('span', { class: 'muted small' }, c.text),
+        spotTag(c, spots));
+      el.addEventListener('click', () => { cur = c.value; paint(); if (onPick) onPick(cur); });
+      return el;
+    });
+    function paint() { cards.forEach((el, i) => el.setAttribute('aria-checked', String(cfg.categories[i].value === cur))); }
+    grid.append(...cards);
+    paint();
+    const wrap = h('div', { class: 'stack-sm' }, grid, h('p', { class: 'sp-inkind muted small' }, icon('info', 14), cfg.inkindNote));
+    wrap.getValue = () => cur;
+    return wrap;
+  }
+  let spotsCache = null;
+  async function loadSpots() {
+    try { spotsCache = await call('spots'); } catch (e) { spotsCache = spotsCache || null; }
+    return spotsCache;
+  }
   const STATUS = {
     pending: { label: 'Under review', cls: 'wait' },
     approved: { label: 'Approved partner', cls: 'ok' },
@@ -122,24 +158,6 @@
     wrap.getValue = () => cur;
     return wrap;
   }
-  // Plans are grouped (One time / Monthly) and each one lists what it includes.
-  function levelCards(v) {
-    const wrap = h('div', { class: 'sp-levels' });
-    const cards = choiceCards(cfg.levels, v, l => [
-      h('span', { class: 'sp-choice-top' }, h('strong', null, l.label), h('span', { class: 'sp-price mono' }, l.price)),
-      h('span', { class: 'muted small' }, l.text),
-      l.gets ? h('ul', { class: 'sp-gets small' }, l.gets.map(g => h('li', null, icon('check', 13, 'accent'), g))) : null,
-      l.pay ? h('span', { class: 'sp-pay small' }, l.pay) : null]);
-    const btns = [...cards.children];
-    [...new Set(cfg.levels.map(l => l.group || 'Plans'))].forEach(g => {
-      wrap.appendChild(h('div', { class: 'sp-group-label' }, g));
-      const row = h('div', { class: 'sp-choices' });
-      cfg.levels.forEach((l, i) => { if ((l.group || 'Plans') === g) row.appendChild(btns[i]); });
-      wrap.appendChild(row);
-    });
-    wrap.getValue = cards.getValue;
-    return wrap;
-  }
   const meetingCards = v => choiceCards(cfg.meetings, v, m => [h('strong', null, m.label), h('span', { class: 'muted small' }, m.note || '')]);
 
   const input = (props) => h('input', Object.assign({ class: 'input' }, props));
@@ -159,9 +177,9 @@
     const hero = h('section', { class: 'sp-hero reveal' },
       h('span', { class: 'sp-kicker mono' }, icon('fin', 14), 'Sponsor Ridge Tank'),
       h('h1', { class: 'sp-title' }, 'Back the next generation of founders.'),
-      h('p', { class: 'sp-lead' }, 'Ridge Tank is Mountain Ridge High School’s Shark Tank-style startup program. Students build real businesses and pitch them to judges. Over 40 students came to our first meeting.'),
+      h('p', { class: 'sp-lead' }, 'Ridge Tank is Mountain Ridge High School’s Shark Tank-style startup program. Students build real businesses and pitch them to judges. 49 students came to our first meeting.'),
       h('div', { class: 'sp-hero-stats' },
-        stat('40+', 'students at meeting one'),
+        stat('49', 'students at meeting one'),
         stat('$100', 'covers a whole meeting'),
         stat('~$2', 'per student')));
 
@@ -181,6 +199,7 @@
     if (t.confirmed === '1') toast('Email confirmed. Log in to open your dashboard.', 'success', 5000);
     if (t.confirmed === 'expired') toast('That link expired. Log in and we’ll help you send a new one.', 'error', 5000);
     show(seg.getValue());
+    loadSpots();
 
     function show(m) {
       seg.setValue(m);
@@ -219,51 +238,17 @@
     }
 
     // One question at a time. Each step slides in, and the bar at the top shows how far along they are.
-    function planPicker(v) {
-      let cur = v;
-      const by = id => cfg.levels.find(l => l.value === id);
-      const wrap = h('div', { class: 'sp-plans-wrap' });
-      const grid = h('div', { class: 'sp-plans', role: 'radiogroup', 'aria-label': 'Choose a plan' });
-      const alt = h('button', { class: 'sp-alt', type: 'button' });
-      const cards = {};
-      const pick = id => { cur = id; paint(); };
-      ['basic', 'full', 'meeting'].forEach(id => {
-        const l = by(id);
-        const up = id === 'basic' ? h('button', { class: 'sp-up', type: 'button' }, 'Want your logo across the school and the club repost chain? Full is $69.99 more →') : null;
-        if (up) up.addEventListener('click', e => { e.stopPropagation(); pick('full'); });
-        const c = h('div', { class: 'sp-plan' + (id === 'full' ? ' featured' : ''), role: 'radio', tabindex: 0, 'data-plan': id },
-          l.badge ? h('span', { class: 'sp-badge mono' }, l.badge) : null,
-          h('strong', { class: 'sp-plan-name' }, l.label),
-          h('span', { class: 'sp-plan-price' }, l.big || l.price, l.unit ? h('span', { class: 'sp-plan-unit' }, ' ' + l.unit) : null),
-          h('span', { class: 'sp-plan-per small' }, l.per || ''),
-          h('ul', { class: 'sp-gets small' }, l.gets.map(g => h('li', null, icon('check', 13, 'accent'), g))),
-          h('span', { class: 'sp-pay small' }, l.pay),
-          up);
-        c.addEventListener('click', () => pick(id));
-        c.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(id); } });
-        cards[id] = c;
-        grid.appendChild(c);
-      });
-      alt.addEventListener('click', () => pick(cur === 'inkind' ? 'full' : 'inkind'));
-      function paint() {
-        Object.keys(cards).forEach(id => cards[id].setAttribute('aria-checked', String(id === cur)));
-        alt.textContent = cur === 'inkind' ? 'In-kind partner selected (snacks or gift cards). Switch to a paid plan' : 'No cash? Give snacks, drinks, or gift cards instead';
-        alt.classList.toggle('on', cur === 'inkind');
-      }
-      paint();
-      wrap.append(grid, alt);
-      wrap.getValue = () => cur;
-      return wrap;
-    }
-
     function signupForm() {
       const business = input({ type: 'text', placeholder: 'e.g. Zoyo Frozen Yogurt', autocomplete: 'organization', maxlength: 80 });
       const name = input({ type: 'text', placeholder: 'First and last name', autocomplete: 'name', maxlength: 60 });
       const email = input({ type: 'email', placeholder: 'you@yourbusiness.com', autocomplete: 'email' });
       const phone = input({ type: 'tel', placeholder: '(602) 555-0142', autocomplete: 'tel', maxlength: 25 });
       const site = input({ type: 'url', placeholder: 'yourbusiness.com', autocomplete: 'url', maxlength: 200 });
-      const level = planPicker('full');
+      // Built when the step is first shown, so the spots count has had time to load.
+      let picker = null;
+      const level = { getValue: () => picker ? picker.getValue() : 'meeting', el: () => picker || (picker = categoryCards('meeting', spotsCache)) };
       const meeting = meetingCards(cfg.meetings[0].value);
+      const isMeeting = () => level.getValue() === 'meeting';
       const logo = logoPicker(null);
       const note = h('textarea', { class: 'input', rows: 3, maxlength: 500, placeholder: 'Anything we should know? (optional)' });
       const pw = pwInput('At least 8 characters', 'new-password');
@@ -283,8 +268,9 @@
             const d = phone.value.replace(/\D/g, '');
             return d && (d.length < 10 || d.length > 15) ? 'Enter a 10-digit phone number, or leave it empty.' : '';
           } },
-        { title: 'How would you like to back us?', sub: 'Nothing is charged when you sign up. You pay from your dashboard.', body: () => [level], wide: true, check: () => '' },
-        { title: 'Which meeting should we feature you at?', sub: 'You can change this later.', body: () => [meeting], check: () => '' },
+        { title: 'How would you like to back us?', sub: 'Pick one. Nothing is charged when you sign up. You pick your plan and pay from your dashboard.', body: () => [level.el()], wide: true,
+          check: () => { const c = catByValue(level.getValue()); const sp = c.spots && spotsCache && spotsCache[c.value]; return sp && !sp.left ? 'That one is sold out. Pick another.' : ''; } },
+        { title: 'Which meeting should we feature you at?', sub: 'You can change this later.', body: () => [meeting], skip: () => !isMeeting(), check: () => '' },
         { title: 'Add your logo', sub: 'Optional. It goes on the posters, so the sooner the better.', body: () => [logo.el, RT.field('Website (optional)', site)], optional: true, check: () => '' },
         { title: 'Last step. Make your password.', sub: 'Then you’re in.', body: () => [RT.field('Password', pw), RT.field('Note', note),
           h('label', { class: 'check-row' }, agree, h('span', null, 'I understand nothing is charged until I choose to pay from my dashboard.'))],
@@ -302,9 +288,12 @@
       function draw(dir) {
         const st = steps[i];
         err.hidden = true;
-        count.textContent = 'Step ' + (i + 1) + ' of ' + steps.length;
-        bar.setAttribute('aria-valuenow', i + 1);
-        bar.firstChild.style.width = Math.round(((i + 1) / steps.length) * 100) + '%';
+        const live = steps.filter(x => !(x.skip && x.skip()));
+        const at = live.indexOf(st) + 1;
+        count.textContent = 'Step ' + at + ' of ' + live.length;
+        bar.setAttribute('aria-valuenow', at);
+        bar.setAttribute('aria-valuemax', live.length);
+        bar.firstChild.style.width = Math.round((at / live.length) * 100) + '%';
         back.hidden = i === 0;
         skip.hidden = !st.optional;
         next.textContent = st.last ? 'Create my sponsor account' : 'Continue';
@@ -315,21 +304,22 @@
         if (st.focus && window.innerWidth > 720) setTimeout(() => st.focus.focus({ preventScroll: true }), 220);
         if (dir) form.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       }
-      back.addEventListener('click', () => { if (i > 0) { i--; draw('back'); } });
-      skip.addEventListener('click', () => { i++; draw('fwd'); });
+      const step = d => { do { i += d; } while (steps[i] && steps[i].skip && steps[i].skip()); };
+      back.addEventListener('click', () => { if (i > 0) { step(-1); draw('back'); } });
+      skip.addEventListener('click', () => { step(1); draw('fwd'); });
       form.addEventListener('submit', e => {
         e.preventDefault();
         const st = steps[i];
         const msg = st.check();
         if (msg) return showErr(err, msg);
-        if (!st.last) { i++; draw('fwd'); return; }
-        for (let k = 0; k < steps.length; k++) { const m = steps[k].check(); if (m) { i = k; draw('back'); return showErr(err, m); } }
+        if (!st.last) { step(1); draw('fwd'); return; }
+        for (let k = 0; k < steps.length; k++) { if (steps[k].skip && steps[k].skip()) continue; const m = steps[k].check(); if (m) { i = k; draw('back'); return showErr(err, m); } }
         const em = email.value.trim();
         busy(next, async () => {
           try {
             const out = await call('signUp', {
               email: em, password: pw.input.value, business: business.value, contact_name: name.value, phone: phone.value,
-              website: site.value, level: level.getValue(), meeting: meeting.getValue(), pitch_note: note.value, logo: logo.getValue() || null
+              website: site.value, level: catByValue(level.getValue()).plans[0], meeting: isMeeting() ? meeting.getValue() : 'any', pitch_note: note.value, logo: logo.getValue() || null
             });
             if (out.confirm) { clear(formHost).appendChild(checkEmail(out.email)); return; }
             store.set(out);
@@ -397,10 +387,19 @@
       const steps = [
         { title: 'Signed up', text: 'Thanks for backing Ridge Tank.', state: 'done' },
         { title: 'You’re a partner', text: approved ? 'You’re an official partner.' : acct.status === 'declined' ? 'We can’t take this one. See the note below.' : 'We’ll be in touch shortly.', state: approved ? 'done' : acct.status === 'declined' ? 'stop' : 'now' },
-        { title: 'Payment', text: (acct.level === 'inkind' ? lvl.pay : 'Pay securely by card from the Payments tab from your dashboard.') + '', state: approved ? 'now' : 'later' },
+        { title: 'Payment', text: acct.level === 'inkind' ? lvl.pay : 'Pick your plan and pay by card in the Payments tab.', state: approved ? 'now' : 'later' },
         { title: 'Meeting day', text: meetingLabel(acct.meeting), state: 'later' },
         { title: 'Thank-you photos', text: 'We send you photos from the meeting as proof.', state: 'later' }
       ];
+      const pay = acct.pay || {};
+      const paidSomething = (pay.payments || []).length > 0 || acct.subscribed;
+      if (acct.level !== 'inkind' && !paidSomething) {
+        const c = catOf(acct.level);
+        pane.appendChild(h('div', { class: 'card sp-paynow' },
+          h('span', { class: 'sp-cat-ico' }, icon(c.icon, 22)),
+          h('div', { class: 'grow min0' }, h('strong', null, c.label), h('p', { class: 'muted small' }, c.plans.length > 1 ? 'Pick your plan and pay securely by card.' : lvl.pay)),
+          h('button', { class: 'btn btn-primary', type: 'button', onclick: () => RT.go('sponsor/dashboard/payments') }, icon('card', 16), 'Pay here')));
+      }
       if (acct.message) pane.appendChild(h('div', { class: 'card sp-message' }, h('span', { class: 'card-label' }, 'Message from Ridge Tank'), h('p', null, acct.message)));
       pane.appendChild(h('div', { class: 'sp-overview' },
         h('section', { class: 'card' },
@@ -412,8 +411,9 @@
           h('section', { class: 'card' },
             h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Your sponsorship'), h('button', { class: 'link-btn', type: 'button', onclick: () => RT.go('sponsor/dashboard/profile') }, 'Change')),
             h('dl', { class: 'sp-kv' },
-              h('dt', null, 'Level'), h('dd', null, lvl.label + ' · ' + lvl.price),
-              h('dt', null, 'Meeting'), h('dd', null, meetingLabel(acct.meeting)),
+              h('dt', null, 'Category'), h('dd', null, catOf(acct.level).label),
+              h('dt', null, 'Plan'), h('dd', null, lvl.label + ' · ' + lvl.price),
+              catOf(acct.level).value === 'meeting' ? h('dt', null, 'Meeting') : null, catOf(acct.level).value === 'meeting' ? h('dd', null, meetingLabel(acct.meeting)) : null,
               h('dt', null, 'Logo'), h('dd', null, acct.logo ? 'Uploaded' : h('button', { class: 'link-btn', type: 'button', onclick: () => RT.go('sponsor/dashboard/profile') }, 'Add your logo')))),
           h('section', { class: 'card' },
             h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'What you get')),
@@ -425,8 +425,12 @@
       const name = input({ type: 'text', value: acct.contact_name, maxlength: 60 });
       const phone = input({ type: 'tel', value: acct.phone || '', maxlength: 25 });
       const site = input({ type: 'url', value: acct.website || '', maxlength: 200, placeholder: 'yourbusiness.com' });
-      const level = levelCards(acct.level);
+      const startCat = catOf(acct.level).value;
+      const meetingField = h('div', { class: 'field' }, h('span', { class: 'label' }, 'Which meeting'));
+      const level = categoryCards(startCat, (acct.pay || {}).spots, v => { meetingField.hidden = v !== 'meeting'; });
       const meeting = meetingCards(acct.meeting);
+      meetingField.appendChild(meeting);
+      meetingField.hidden = startCat !== 'meeting';
       const logo = logoPicker(acct.logo);
       const err = errLine();
       const save = h('button', { class: 'btn btn-primary', type: 'submit' }, 'Save changes');
@@ -435,17 +439,18 @@
         h('div', { class: 'form-grid' }, RT.field('Business name', business), RT.field('Your name', name)),
         h('div', { class: 'form-grid' }, RT.field('Phone', phone), RT.field('Website', site)),
         h('div', { class: 'field' }, h('span', { class: 'label' }, 'Logo'), logo.el),
-        h('div', { class: 'field' }, h('span', { class: 'label' }, 'How you’d like to help'), level),
-        h('div', { class: 'field' }, h('span', { class: 'label' }, 'Which meeting'), meeting),
+        h('div', { class: 'field' }, h('span', { class: 'label' }, 'Sponsorship category'), level),
+        meetingField,
         err, h('div', { class: 'row' }, save));
       form.addEventListener('submit', e => {
         e.preventDefault();
         err.hidden = true;
-        const changes = { business: business.value, contact_name: name.value, phone: phone.value, website: site.value, level: level.getValue(), meeting: meeting.getValue() };
+        const changes = { business: business.value, contact_name: name.value, phone: phone.value, website: site.value, meeting: meeting.getValue() };
+        if (level.getValue() !== startCat) changes.level = catByValue(level.getValue()).plans[0];
         const lg = logo.getValue();
         if (lg !== undefined) changes.logo = lg;
         busy(save, async () => {
-          try { acct = await call('update', changes); drawHead(); toast('Saved', 'success'); } catch (ex) { showErr(err, ex.message); }
+          try { await call('update', changes); acct = await call('me'); drawHead(); toast('Saved', 'success'); } catch (ex) { showErr(err, ex.message); }
         });
       });
 
@@ -469,43 +474,77 @@
     }
 
     const money = c => '$' + (c / 100).toFixed(c % 100 ? 2 : 0);
-    const KIND = { deposit: 'First half', balance: 'Final half', monthly: 'Monthly payment' };
+    const KIND = { deposit: 'First half', balance: 'Final half', monthly: 'Monthly payment', meeting: 'Meeting sponsor', hoodie: 'Hoodie sponsor', event: 'Event sponsor' };
     function paymentsPane(pane) {
       const pay = acct.pay || { configured: false, payments: [], options: [] };
-      const lvl = levelOf(acct.level);
-      const go = async (action, kind, btn) => busy(btn, async () => {
-        try { const out = await call(action, { kind }); location.href = out.url; }
+      const cat = catOf(acct.level);
+      const paidKinds = new Set(pay.paidKinds || pay.payments.map(x => x.kind));
+      const toStripe = async (kind, btn) => busy(btn, async () => {
+        try { const out = await call('pay', { kind }); location.href = out.url; }
         catch (ex) { toast(ex.message, 'error'); }
       });
-      const status = (() => {
-        if (acct.level === 'inkind') return 'You’re giving snacks, drinks, or gift cards, so there’s nothing to pay here. We’ll set up a drop-off with you.';
-        if (acct.status !== 'approved') return 'Payments aren’t open for this account. Email us and we’ll sort it out.';
-        if (!pay.configured) return 'Payments aren’t switched on yet. Email us and we’ll sort it out.';
-        if (acct.level === 'meeting') {
-          const kinds = new Set(pay.payments.map(x => x.kind));
-          if (kinds.has('deposit') && kinds.has('balance')) return 'All paid. Thank you for backing Ridge Tank!';
-          if (kinds.has('deposit') && !acct.balance_due) return 'First half received. The final $50 opens after your meeting, and we’ll email you.';
-          return 'Meeting partner is $100: half now, half after the meeting.';
-        }
-        return acct.subscribed ? 'Your ' + lvl.label + ' plan is active. Thank you!' : lvl.label + ' is ' + lvl.price + '. Cancel any time from the billing page.';
-      })();
-      const buttons = pay.options.map(o => {
-        const btn = h('button', { class: 'btn btn-primary btn-lg', type: 'button' }, icon('card', 16), o.kind === 'monthly' ? 'Start ' + lvl.label + ' · ' + money(o.cents) + ' / month' : (o.kind === 'deposit' ? 'Pay first half' : 'Pay final half') + ' · ' + money(o.cents));
-        btn.addEventListener('click', () => go('pay', o.kind, btn));
-        return btn;
+      // Switch to another plan in the same category, then go straight to Stripe.
+      const choose = (plan, btn) => busy(btn, async () => {
+        try {
+          if (plan !== acct.level) { await call('update', { level: plan }); acct = await call('me'); }
+          const o = (acct.pay.options || [])[0];
+          if (!o) { show('payments'); return toast(acct.pay.soldOut ? 'Sorry, that just sold out.' : 'Nothing is due on that plan.', 'error'); }
+          const out = await call('pay', { kind: o.kind });
+          location.href = out.url;
+        } catch (ex) { toast(ex.message, 'error'); }
       });
+
+      pane.appendChild(h('section', { class: 'card sp-pay-card stack' },
+        h('div', { class: 'row' }, h('span', { class: 'sp-cat-ico' }, icon(cat.icon, 22)),
+          h('div', { class: 'grow min0' }, h('span', { class: 'card-label' }, 'Your category'), h('h3', null, cat.label)),
+          h('button', { class: 'link-btn', type: 'button', onclick: () => RT.go('sponsor/dashboard/profile') }, 'Change')),
+        spotTag(cat, pay.spots)));
+
+      let note = '';
+      if (acct.level === 'inkind') note = 'You’re giving snacks, drinks, or gift cards, so there’s nothing to pay here. We’ll set up a drop-off with you.';
+      else if (acct.status !== 'approved') note = 'Payments aren’t open for this account. Email us and we’ll sort it out.';
+      else if (!pay.configured) note = 'Card payments aren’t switched on yet. Email us at ' + cfg.contact + ' and we’ll sort it out.';
+      if (note) pane.appendChild(h('div', { class: 'card' }, h('p', { class: 'muted' }, note)));
+      else {
+        const plans = h('div', { class: 'sp-plans' });
+        cat.plans.forEach(id => {
+          const l = levelOf(id);
+          const current = id === acct.level;
+          const isPaid = l.monthly ? current && acct.subscribed : paidKinds.has(id);
+          const opt = current ? (pay.options || []).find(o => o.kind === id || o.kind === 'monthly' || o.kind === 'balance') : null;
+          let action;
+          if (isPaid) action = h('span', { class: 'sp-paid' }, icon('check', 15), l.monthly ? 'Active. Thank you!' : 'Paid. Thank you!');
+          else if (current && pay.soldOut) action = h('span', { class: 'sp-spots out mono' }, 'Sold out');
+          else if (current && !opt && paidKinds.has('deposit')) action = h('span', { class: 'muted small' }, acct.balance_due ? '' : 'First half received. We’ll open the final $50 after your meeting.');
+          else if (acct.subscribed && !current) action = h('span', { class: 'muted small' }, 'Use “Manage billing” to change your monthly plan first.');
+          else {
+            const btn = h('button', { class: 'btn btn-primary btn-block', type: 'button' }, icon('card', 16),
+              opt && opt.kind === 'balance' ? 'Pay final $50' : l.monthly ? 'Start · ' + l.price : 'Pay ' + l.price.replace(' once', ''));
+            btn.addEventListener('click', () => opt ? toStripe(opt.kind, btn) : choose(id, btn));
+            action = btn;
+          }
+          plans.appendChild(h('div', { class: 'sp-plan' + (current ? ' featured' : '') },
+            l.badge ? h('span', { class: 'sp-badge mono' }, l.badge) : null,
+            h('strong', { class: 'sp-plan-name' }, l.label),
+            h('span', { class: 'sp-plan-price' }, l.big || l.price, l.unit ? h('span', { class: 'sp-plan-unit' }, ' ' + l.unit) : null),
+            h('span', { class: 'sp-plan-per small' }, l.per || ''),
+            h('ul', { class: 'sp-gets small' }, (l.gets || []).map(g => h('li', null, icon('check', 13, 'accent'), g))),
+            h('span', { class: 'sp-pay small' }, l.pay),
+            action));
+        });
+        pane.appendChild(h('section', { class: 'card stack' },
+          h('span', { class: 'card-label' }, cat.plans.length > 1 ? 'Pick your plan' : 'Your plan'), plans,
+          h('p', { class: 'sp-inkind muted small' }, icon('info', 14), cfg.inkindNote)));
+      }
       if (pay.canManage) {
         const m = h('button', { class: 'btn btn-ghost', type: 'button' }, 'Manage billing and receipts');
-        m.addEventListener('click', () => go('portal', '', m));
-        buttons.push(m);
+        m.addEventListener('click', () => busy(m, async () => { try { const out = await call('portal'); location.href = out.url; } catch (ex) { toast(ex.message, 'error'); } }));
+        pane.appendChild(h('div', { class: 'row' }, m));
       }
-      pane.appendChild(h('section', { class: 'card sp-pay-card stack' },
-        h('div', { class: 'row' }, h('span', { class: 'sp-perk-ico lg' }, icon('card', 26)), h('div', null, h('h3', null, 'Payments'), h('p', { class: 'muted' }, status))),
-        buttons.length ? h('div', { class: 'row wrap' }, buttons) : null,
-        h('p', { class: 'muted small' }, 'Payments are handled securely by Stripe. We never see or store your card.')));
+      pane.appendChild(h('p', { class: 'muted small' }, 'Payments are handled securely by Stripe. We never see or store your card.'));
       if (pay.payments.length) {
         pane.appendChild(h('section', { class: 'card stack-sm' }, h('span', { class: 'card-label' }, 'Payment history'),
-          h('ul', { class: 'sp-history' }, pay.payments.map(x => h('li', null, h('span', null, KIND[x.kind] || 'Payment'), h('span', { class: 'muted small' }, fmtDate(x.created_at, { month: 'short', day: 'numeric', year: 'numeric' })), h('strong', { class: 'mono' }, money(x.amount_cents)))))));
+          h('ul', { class: 'sp-history' }, pay.payments.map(x => h('li', null, h('span', null, KIND[x.kind] || 'Payment'), h('span', { class: 'muted small' }, fmtDate(x.created_at, { month: 'short', day: 'numeric', year: 'numeric' })), h('strong', null, money(x.amount_cents)))))));
       }
       if (/[?&]paid=1/.test(location.hash) && !pane.dataset.thanked) {
         pane.dataset.thanked = '1';
@@ -626,7 +665,7 @@
         h('div', { class: 'min0 grow stack-sm' },
           h('div', { class: 'row wrap' }, h('strong', { class: 'sp-admin-name' }, x.business), statusPill(x.status), x.email_confirmed ? null : h('span', { class: 'tag sm muted' }, 'email not confirmed')),
           h('div', { class: 'muted small' }, x.contact_name, ' · ', h('a', { href: 'mailto:' + x.email }, x.email), x.phone ? ' · ' + x.phone : '', x.website ? [' · ', h('a', { href: x.website, target: '_blank', rel: 'noopener noreferrer' }, x.website.replace(/^https?:\/\//, ''))] : ''),
-          h('div', { class: 'small' }, h('span', { class: 'accent' }, lvl.label + ' · ' + lvl.price), ' · ', meetingLabel(x.meeting), ' · signed up ', RT.timeAgo(x.created_at)),
+          h('div', { class: 'small' }, h('span', { class: 'accent' }, catOf(x.level).label + ': ' + lvl.label + ' · ' + lvl.price), catOf(x.level).value === 'meeting' ? ' · ' + meetingLabel(x.meeting) : '', ' · signed up ', RT.timeAgo(x.created_at)),
           payLine(x),
           x.pitch_note ? h('p', { class: 'small sp-quote' }, '“' + x.pitch_note + '”') : null,
           x.message ? h('p', { class: 'small muted' }, 'They see: ' + x.message) : null,

@@ -75,19 +75,33 @@ window.RT_CONFIG = {
       { value: '2027-02-10', label: 'Wed, Feb 10, 2027', note: 'Demo Day' },
       { value: 'any', label: 'Any meeting', note: 'We’ll pick one with you' }
     ],
+    // The 4 sponsor categories. A sponsor picks one when they sign up, then picks a plan inside it on their dashboard.
+    // Spots for hoodie and event are counted on the server (api/sponsor.js, SPOTS).
+    categories: [
+      { value: 'normal', label: 'Normal sponsor', price: '$10 / month', text: 'A small way to stay in front of students every month.', plans: ['basic'], icon: 'coins' },
+      { value: 'meeting', label: 'Meeting sponsor', price: 'From $100', text: 'Power a meeting, or go all in with the Full package.', plans: ['meeting', 'full'], icon: 'megaphone', badge: 'Most popular' },
+      { value: 'hoodie', label: 'Hoodie sponsor', price: '$333 once', text: 'Your name on the back of 60 Ridge Tank hoodies, worn all year.', plans: ['hoodie'], icon: 'award', spots: true },
+      { value: 'event', label: 'Event sponsor', price: '$799 once', text: 'Title sponsor of our Finale: “presented by [your business].”', plans: ['event'], icon: 'flame', spots: true }
+    ],
+    inkindNote: 'Want to sponsor with food or gift cards instead? Email us at ridgetank.club@gmail.com.',
     levels: [
-      { value: 'meeting', group: 'One time', label: 'Meeting partner', price: '$100', per: 'one time · about $2 per student', text: 'Covers snacks and prizes for one meeting. About $2 per student.',
-        pay: 'Half ($50) before the meeting and half ($50) after.',
-        gets: ['Your logo on our posters', 'On-screen shoutout at the meeting', 'Instagram feature', 'The snack table is yours', 'Big poster in the meeting photo'] },
-      { value: 'inkind', group: 'One time', label: 'In-kind partner', price: 'No cash', text: 'Snacks, drinks, or gift cards for our pitch winners.',
-        pay: 'We’ll plan a drop-off time for your snacks or gift cards.',
-        gets: ['Shoutout at the meeting', 'Thank-you photos'] },
-      { value: 'basic', group: 'Monthly', label: 'Basic', price: '$10 / month', big: '33¢', unit: '/ day', per: '$10 billed monthly', text: 'A small way to stay in front of students every month.',
-        pay: 'Billed $10 each month by card.',
+      { value: 'basic', cat: 'normal', label: 'Normal', price: '$10 / month', big: '33¢', unit: '/ day', per: '$10 billed monthly', text: 'A small way to stay in front of students every month.',
+        pay: 'Billed $10 each month by card. Cancel any time.', cents: 1000, monthly: true,
         gets: ['A shoutout every month', 'Small poster in the meeting photo'] },
-      { value: 'full', group: 'Monthly', label: 'Full package', price: '$79.99 / month', big: '$2.67', unit: '/ day', per: '$79.99 billed monthly · less than one $100 meeting, all month long', badge: 'Recommended', text: 'Everything, all month long.',
-        pay: 'Billed $79.99 each month by card.',
-        gets: ['Your logo across the school', 'Repost chain through the whole club', 'Review bomb: a surge of real reviews to your account', 'Big poster in the meeting photo', 'Everything in Basic'] }
+      { value: 'meeting', cat: 'meeting', label: 'One meeting', price: '$100 once', per: 'one time · about $2 per student', text: 'Covers snacks and prizes for one meeting.',
+        pay: 'Pay $100 once by card.', cents: 10000,
+        gets: ['Your logo on our posters', 'On-screen shoutout at the meeting', 'Instagram feature', 'The snack table is yours', 'Big poster in the meeting photo'] },
+      { value: 'full', cat: 'meeting', label: 'Full package', price: '$79.99 / month', big: '$2.67', unit: '/ day', per: '$79.99 billed monthly', badge: 'Best value', text: 'Every meeting, all month long.',
+        pay: 'Billed $79.99 each month by card. Cancel any time.', cents: 7999, monthly: true,
+        gets: ['Your logo across the school', 'Repost chain through the whole club', 'Big poster in the meeting photo', 'Everything in Normal'] },
+      { value: 'hoodie', cat: 'hoodie', label: 'Hoodie sponsor', price: '$333 once', per: 'about $5.55 per hoodie', text: 'Your name on the back of 60 Ridge Tank hoodies.',
+        pay: 'Pay $333 once by card.', cents: 33300,
+        gets: ['Your name on the back of 60 hoodies', 'Worn at school, meetings and events all year'] },
+      { value: 'event', cat: 'event', label: 'Event sponsor', price: '$799 once', per: 'one spot only', text: 'Title sponsor of the Ridge Tank Finale.',
+        pay: 'Pay $799 once by card.', cents: 79900,
+        gets: ['“Ridge Tank Finale, presented by [your business]”', 'Your logo on the Finale posters and screen', 'Only one spot'] },
+      { value: 'inkind', cat: 'meeting', label: 'In-kind partner', price: 'No cash', text: 'Snacks, drinks, or gift cards for our pitch winners.',
+        pay: 'We’ll plan a drop-off time for your snacks or gift cards.', gets: ['Shoutout at the meeting', 'Thank-you photos'] }
     ],
     perks: [
       { icon: 'award', title: 'Your logo on our posters', text: 'Up around campus before the meeting.' },

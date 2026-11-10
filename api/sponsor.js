@@ -15,7 +15,10 @@ import { jsonBody } from './_shared.js';
 const TOKEN_HOURS = 24 * 30;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LOGO = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
-const LEVELS = new Set(['meeting', 'inkind', 'basic', 'full']);
+const LEVELS = new Set(['meeting', 'inkind', 'basic', 'full', 'hoodie', 'event']);
+const PICKABLE = new Set(['meeting', 'basic', 'full', 'hoodie', 'event']); // in-kind is set up by email, not picked on the site
+// Limited spots. "offline" = spots already sold outside the site (Ramsey Auto Center took a hoodie spot by email).
+export const SPOTS = { hoodie: { total: 3, offline: 1 }, event: { total: 1, offline: 0 } };
 const MEETING = /^[a-z0-9-]{1,40}$/;
 const MAX_LOGO = 700000; // characters of the data: address, about 500 KB of picture
 
@@ -24,8 +27,22 @@ const fail = (message, code = 'bad_request') => ({ data: null, error: { message,
 const ok = data => ({ data, error: null });
 const STRIPE = () => String(process.env.STRIPE_API_BASE || 'https://api.stripe.com');
 const stripeKey = () => process.env.STRIPE_SECRET_KEY || '';
-const PRICES = { meeting: { deposit: 5000, balance: 5000 }, basic: { monthly: 1000 }, full: { monthly: 7999 } };
-const NAMES = { deposit: 'Meeting partner: first half', balance: 'Meeting partner: final half', monthly: { basic: 'Ridge Tank Basic sponsor (monthly)', full: 'Ridge Tank Full package sponsor (monthly)' } };
+const MONTHLY = { basic: 1000, full: 7999 };
+const ONCE = { meeting: 10000, hoodie: 33300, event: 79900 };
+const NAMES = {
+  deposit: 'Meeting partner: first half', balance: 'Meeting partner: final half',
+  meeting: 'Ridge Tank meeting sponsor', hoodie: 'Ridge Tank hoodie sponsor (name on 60 hoodies)', event: 'Ridge Tank Finale event sponsor',
+  monthly: { basic: 'Ridge Tank Normal sponsor (monthly)', full: 'Ridge Tank Full package sponsor (monthly)' }
+};
+
+// How many hoodie and event spots are left. A spot is taken once it is paid for on the site, or sold offline.
+async function spotsLeft(client) {
+  const r = await client.query(`select kind, count(distinct account_id)::int as n from sponsor_portal.payments where kind in ('hoodie', 'event') group by kind`);
+  const paid = Object.fromEntries(r.rows.map(x => [x.kind, x.n]));
+  const out = {};
+  for (const [k, v] of Object.entries(SPOTS)) out[k] = { total: v.total, left: Math.max(0, v.total - v.offline - (paid[k] || 0)) };
+  return out;
+}
 
 // Talks to Stripe with plain form requests, so there is nothing extra to install.
 async function stripe(path, fields) {
@@ -40,14 +57,21 @@ async function stripe(path, fields) {
 async function paymentInfo(client, a) {
   const r = await client.query('select kind, amount_cents, created_at from sponsor_portal.payments where account_id = $1 order by created_at desc limit 50', [a.id]);
   const kinds = new Set(r.rows.map(x => x.kind));
+  const spots = await spotsLeft(client);
   const options = [];
+  let soldOut = false;
   if (stripeKey() && a.status === 'approved') {
-    if (a.level === 'meeting') {
-      if (!kinds.has('deposit')) options.push({ kind: 'deposit', cents: 5000 });
-      else if (a.balance_due && !kinds.has('balance')) options.push({ kind: 'balance', cents: 5000 });
-    } else if ((a.level === 'basic' || a.level === 'full') && !a.stripe_subscription) options.push({ kind: 'monthly', cents: PRICES[a.level].monthly });
+    if (a.level === 'meeting' && kinds.has('deposit')) {
+      // Sponsors from before the $100-once change pay their second half the old way.
+      if (a.balance_due && !kinds.has('balance')) options.push({ kind: 'balance', cents: 5000 });
+    } else if (ONCE[a.level]) {
+      if (!kinds.has(a.level)) {
+        if (spots[a.level] && spots[a.level].left <= 0) soldOut = true;
+        else options.push({ kind: a.level, cents: ONCE[a.level] });
+      }
+    } else if (MONTHLY[a.level] && !a.stripe_subscription) options.push({ kind: 'monthly', cents: MONTHLY[a.level] });
   }
-  return { configured: !!stripeKey(), payments: r.rows, options, canManage: !!a.stripe_customer };
+  return { configured: !!stripeKey(), payments: r.rows, options, canManage: !!a.stripe_customer, spots, soldOut, paidKinds: [...kinds] };
 }
 
 const clean = (v, max) => { const s = String(v == null ? '' : v).replace(/\s+/g, ' ').trim(); return s ? s.slice(0, max) : null; };
@@ -97,7 +121,7 @@ function readFields(b, partial) {
     v.website = w;
   }
   if (has('level')) {
-    if (!LEVELS.has(String(b.level))) return { error: 'Pick how you’d like to help.' };
+    if (!PICKABLE.has(String(b.level))) return { error: 'Pick how you’d like to help.' };
     v.level = String(b.level);
   }
   if (has('meeting')) {
@@ -160,6 +184,8 @@ async function run(req, b) {
         const f = readFields(b, false);
         if (f.error) return fail(f.error);
         const v = f.values;
+        const sp = (await spotsLeft(client))[v.level];
+        if (sp && sp.left <= 0) return fail('Sorry, every ' + v.level + ' spot is taken. Pick another way to help.', 'sold_out');
         const exists = await client.query('select 1 from sponsor_portal.accounts where lower(email) = $1', [email]);
         if (exists.rows.length) return fail('That email already has a sponsor account. Try logging in.', 'exists');
         const confirmNow = !mailConfigured(); // no email service yet: skip the link (sponsors are approved automatically)
@@ -184,6 +210,8 @@ async function run(req, b) {
       await client.query('update sponsor_portal.accounts set last_sign_in_at = now() where id = $1', [a.id]);
       return ok(session(a));
     }
+
+    if (action === 'spots') return ok(await spotsLeft(client));
 
     // Always answers "ok", so it can't be used to find out who has an account.
     if (action === 'resend') {
@@ -242,8 +270,14 @@ async function run(req, b) {
         return ok({ changed: true });
       }
 
+      if (b.level === a.level) delete b.level; // unchanged (lets older in-kind partners keep saving their details)
       const f = readFields(b, true);
       if (f.error) return fail(f.error);
+      if (f.values.level && f.values.level !== a.level) {
+        const sp = (await spotsLeft(client))[f.values.level];
+        const paidIt = await client.query('select 1 from sponsor_portal.payments where account_id = $1 and kind = $2', [a.id, f.values.level]);
+        if (sp && sp.left <= 0 && !paidIt.rows.length) return fail('Sorry, every ' + f.values.level + ' spot is taken.', 'sold_out');
+      }
       const cols = Object.keys(f.values);
       if (!cols.length) return ok(publicAccount(a));
       const params = [a.id];
