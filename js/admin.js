@@ -298,7 +298,7 @@
       if (!rows.length) { table.appendChild(h('div', { class: 'empty small' }, h('p', { class: 'muted' }, A.members.length ? 'No matches.' : 'No members yet. Add the roster to get started.'))); return; }
       rows.forEach(m => table.appendChild(h('button', { class: 'trow', type: 'button', onclick: () => memberModal(m, draw) },
         h('span', { class: 'cell-name' }, avatar(m.name, 30), h('span', { class: 'ellipsis' }, m.name), m.banned ? h('span', { class: 'status-pill sm wait' }, 'Banned') : null),
-        h('span', { class: 'muted' }, m.grade ? m.grade + 'th' : '—'),
+        h('span', { class: 'muted' }, m.grade ? (m.grade === 'Teacher' ? 'Teacher' : m.grade + 'th') : '—'),
         h('span', { class: 'mono' }, String(pointsOf(m.id))),
         h('span', { class: m.user_id ? 'accent' : 'muted' }, m.user_id ? icon('check', 16) : '—'),
         h('span', { class: 'muted' }, icon('chevronRight', 16)))));

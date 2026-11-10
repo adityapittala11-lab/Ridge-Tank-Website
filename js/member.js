@@ -302,7 +302,7 @@
       h('div', { class: 'grow min0' },
         h('h1', { class: 'profile-name' }, me.name),
         h('div', { class: 'profile-meta' },
-          h('span', null, me.grade ? `${me.grade}th grade` : 'Grade not set'),
+          h('span', null, me.grade ? (me.grade === 'Teacher' ? 'Teacher' : `${me.grade}th grade`) : 'Grade not set'),
           h('span', { class: 'sep' }, '·'),
           h('span', null, 'Joined ' + fmtDate(me.join_date || me.created_at, { month: 'short', day: 'numeric', year: 'numeric' })),
           tierSlot)),

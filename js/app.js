@@ -486,8 +486,8 @@
 
   function gradeSwitch(value) {
     return segmented({
-      items: ['9', '10', '11', '12'].map(g => ({ value: g, label: g + 'th' })),
-      value: value || '', className: 'seg-fill', ariaLabel: 'Grade'
+      items: ['9', '10', '11', '12'].map(g => ({ value: g, label: g + 'th' })).concat([{ value: 'Teacher', label: 'I’m a teacher' }]),
+      value: value || '', className: 'seg-fill', ariaLabel: 'Grade or teacher'
     });
   }
   RT.gradeSwitch = gradeSwitch;
@@ -661,7 +661,7 @@
       const submit = h('button', { class: 'btn btn-primary btn-block btn-lg', type: 'submit' }, 'Create account');
       const form = h('form', { class: 'stack', novalidate: true },
         field('Name', name),
-        h('div', { class: 'field' }, h('span', { class: 'label' }, 'Grade'), grade),
+        h('div', { class: 'field' }, h('span', { class: 'label' }, 'Grade (or teacher)'), grade),
         field('Email', email, 'Use a Gmail, Outlook, Yahoo, iCloud or school (learner.dvusd.org) email. We’ll send you a link to confirm it.'),
         phoneF.el,
         field('Password', pw),
@@ -682,7 +682,7 @@
         const withCard = hasCard.getValue() === 'card';
         const c = code.value.trim();
         if (!RT.validName(n)) return fail('Use your real first and last name.');
-        if (!g) return fail('Pick your grade.');
+        if (!g) return fail('Pick your grade, or “I’m a teacher”.');
         if (!/^\S+@\S+\.\S+$/.test(em)) return fail('Enter a real email address.');
         if (cfg.allowedEmailDomains && !cfg.allowedEmailDomains.includes(em.split('@')[1].toLowerCase()) && !/@([^@]+\.)?dvusd\.org$/i.test(em)) return fail('Use a Gmail, Outlook, Yahoo, iCloud or school (learner.dvusd.org) email. Temporary email addresses aren’t allowed.');
         const pe = phoneF.error();
