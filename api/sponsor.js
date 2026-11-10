@@ -308,9 +308,18 @@ export default async function handler(req, res) {
     let dest = '/#/sponsor?confirmed=1';
     if (!claims) dest = '/#/sponsor?confirmed=expired';
     else {
-      try { await getPool().query('update sponsor_portal.accounts set email_confirmed_at = now() where id = $1 and email_confirmed_at is null', [claims.sub]); }
+      try {
+        // The first click confirms the email AND logs them in (the session rides in the URL fragment, which the page
+        // stores and wipes right away). A second click just goes to the log in page.
+        const r = await getPool().query('update sponsor_portal.accounts set email_confirmed_at = now(), last_sign_in_at = now() where id = $1 and email_confirmed_at is null returning *', [claims.sub]);
+        if (r.rows.length) {
+          const s = session(r.rows[0]);
+          dest = '/#/sponsor/dashboard?confirmed=auto&s=' + Buffer.from(JSON.stringify({ token: s.token, expires_at: s.expires_at })).toString('base64url');
+        }
+      }
       catch (e) { dest = '/#/sponsor?confirmed=error'; }
     }
+    res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('Location', dest);
     res.statusCode = 302;
     res.end();

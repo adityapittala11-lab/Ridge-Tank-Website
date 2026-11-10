@@ -43,6 +43,16 @@
   }
   RT.sponsorSignedIn = () => !!store.get();
 
+  // The confirmation email's link logs the sponsor in the first time: take the session from the URL and wipe it.
+  try {
+    const m = /[?&]confirmed=auto&s=([A-Za-z0-9_-]+)/.exec(location.hash);
+    if (m) {
+      const s = JSON.parse(atob(m[1].replace(/-/g, '+').replace(/_/g, '/')));
+      if (s && s.token && s.expires_at * 1000 > Date.now()) { store.set(s); RT.sponsorAutoLogin = true; }
+      history.replaceState(null, '', location.pathname + (RT.sponsorAutoLogin ? '#/sponsor/dashboard' : '#/sponsor/login'));
+    }
+  } catch (e) { /* bad link: the normal log in page still works */ }
+
   const meetingLabel = v => { if (v === '2026-11-13') v = '2026-11-19'; /* sign-ups made before the date moved */ const m = cfg.meetings.find(x => x.value === v); return m ? m.label + (m.note ? ' · ' + m.note : '') : 'Any meeting'; };
   const levelOf = v => cfg.levels.find(x => x.value === v) || cfg.levels[0];
   const catOf = level => cfg.categories.find(c => c.value === levelOf(level).cat) || cfg.categories[0];
@@ -556,6 +566,7 @@
     async function load() {
       try {
         acct = await call('me');
+        if (RT.sponsorAutoLogin) { RT.sponsorAutoLogin = false; toast('Email confirmed. Welcome, ' + (acct.contact_name || '').split(' ')[0] + '!', 'success', 5000); }
         drawHead();
         show(tab);
       } catch (e) {

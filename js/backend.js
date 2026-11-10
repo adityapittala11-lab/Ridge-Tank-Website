@@ -8,7 +8,7 @@
   // The confirmation link logs a new member in the first time it is used: the server puts the session in the URL
   // fragment. Take it, store it, and wipe it from the address bar before anything else runs.
   try {
-    const m = /[?&]confirmed=auto&s=([A-Za-z0-9_-]+)/.exec(location.hash);
+    const m = /^#\/sponsor/.test(location.hash) ? null : /[?&]confirmed=auto&s=([A-Za-z0-9_-]+)/.exec(location.hash); // sponsor links are handled in sponsor.js
     if (m) {
       const s = JSON.parse(atob(m[1].replace(/-/g, '+').replace(/_/g, '/')));
       if (s && s.access_token && s.expires_at * 1000 > Date.now()) {
