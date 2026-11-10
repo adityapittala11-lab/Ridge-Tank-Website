@@ -17,8 +17,9 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LOGO = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
 const LEVELS = new Set(['meeting', 'inkind', 'basic', 'full', 'hoodie', 'event']);
 const PICKABLE = new Set(['meeting', 'basic', 'full', 'hoodie', 'event']); // in-kind is set up by email, not picked on the site
-// Limited spots. "offline" = spots already sold outside the site (Ramsey Auto Center took a hoodie spot by email).
-export const SPOTS = { hoodie: { total: 3, offline: 1 }, event: { total: 1, offline: 0 } };
+// Limited spots. "reserved" = businesses that said yes by email, matched by their email's domain. Their spot is
+// counted as taken right away, and not counted a second time when they pay on the site.
+export const SPOTS = { hoodie: { total: 3, reserved: ['ramseyautocenter.com'] }, event: { total: 1, reserved: [] } };
 const MEETING = /^[a-z0-9-]{1,40}$/;
 const MAX_LOGO = 700000; // characters of the data: address, about 500 KB of picture
 
@@ -37,20 +38,13 @@ const NAMES = {
 
 // How many hoodie and event spots are left. A spot is taken once it is paid for on the site, or sold offline.
 async function spotsLeft(client) {
-  const r = await client.query(`select kind, count(distinct account_id)::int as n from sponsor_portal.payments where kind in ('hoodie', 'event') group by kind`);
-  const paid = Object.fromEntries(r.rows.map(x => [x.kind, x.n]));
+  const r = await client.query(`select p.kind, lower(split_part(a.email, '@', 2)) as domain from sponsor_portal.payments p
+    join sponsor_portal.accounts a on a.id = p.account_id where p.kind in ('hoodie', 'event') group by p.kind, p.account_id, a.email`);
   const out = {};
-  for (const [k, v] of Object.entries(SPOTS)) out[k] = { total: v.total, left: Math.max(0, v.total - v.offline - (paid[k] || 0)) };
-  return out;
-}
-
-// Talks to Stripe with plain form requests, so there is nothing extra to install.
-async function stripe(path, fields) {
-  const body = new URLSearchParams();
-  for (const [k, v] of Object.entries(fields)) if (v != null && v !== '') body.append(k, String(v));
-  const r = await fetch(STRIPE() + '/v1/' + path, { method: 'POST', headers: { Authorization: 'Bearer ' + stripeKey(), 'Content-Type': 'application/x-www-form-urlencoded' }, body });
-  const out = await r.json().catch(() => null);
-  if (!r.ok || !out) throw new Error((out && out.error && out.error.message) || 'Stripe did not answer.');
+  for (const [k, v] of Object.entries(SPOTS)) {
+    const online = r.rows.filter(x => x.kind === k && !v.reserved.includes(x.domain)).length;
+    out[k] = { total: v.total, left: Math.max(0, v.total - v.reserved.length - online) };
+  }
   return out;
 }
 
