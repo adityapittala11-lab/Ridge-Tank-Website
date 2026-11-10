@@ -80,8 +80,8 @@ window.RT_CONFIG = {
     categories: [
       { value: 'normal', label: 'Normal sponsor', price: '$10 / month', text: 'A small way to stay in front of students every month.', plans: ['basic'], icon: 'coins' },
       { value: 'meeting', label: 'Meeting sponsor', price: 'From $100', text: 'Power a meeting, or go all in with the Full package.', plans: ['meeting', 'full'], icon: 'megaphone', badge: 'Most popular' },
-      { value: 'hoodie', label: 'Hoodie sponsor', price: '$333 once', text: 'Your name on the back of 60 Ridge Tank hoodies, worn all year.', plans: ['hoodie'], icon: 'award', spots: true },
-      { value: 'event', label: 'Event sponsor', price: '$799 once', text: 'Title sponsor of our Finale: “presented by [your business].”', plans: ['event'], icon: 'flame', spots: true }
+      { value: 'hoodie', label: 'Hoodie sponsor', price: '$333 once', text: 'Your name on the back of 60 Ridge Tank hoodies, plus a shoutout on the school announcements.', plans: ['hoodie'], icon: 'award', spots: true },
+      { value: 'event', label: 'Event sponsor', price: '$799 once', text: 'Title sponsor of our Finale, plus a shoutout on the school announcements.', plans: ['event'], icon: 'flame', spots: true }
     ],
     inkindNote: 'Want to sponsor with food or gift cards instead? Email us at ridgetank.club@gmail.com.',
     levels: [
@@ -96,10 +96,10 @@ window.RT_CONFIG = {
         gets: ['Your logo across the school', 'Repost chain through the whole club', 'Big poster in the meeting photo', 'Everything in Normal'] },
       { value: 'hoodie', cat: 'hoodie', label: 'Hoodie sponsor', price: '$333 once', per: 'about $5.55 per hoodie', text: 'Your name on the back of 60 Ridge Tank hoodies.',
         pay: 'Pay $333 once by card.', cents: 33300,
-        gets: ['Your name on the back of 60 hoodies', 'Worn at school, meetings and events all year'] },
+        gets: ['Your name on the back of 60 hoodies', 'Worn at school, meetings and events all year', 'Shoutout to the whole school on the morning announcements'] },
       { value: 'event', cat: 'event', label: 'Event sponsor', price: '$799 once', per: 'one spot only', text: 'Title sponsor of the Ridge Tank Finale.',
         pay: 'Pay $799 once by card.', cents: 79900,
-        gets: ['“Ridge Tank Finale, presented by [your business]”', 'Your logo on the Finale posters and screen', 'Only one spot'] },
+        gets: ['“Ridge Tank Finale, presented by [your business]”', 'Your logo on the Finale posters and screen', 'Shoutout to the whole school on the morning announcements', 'Only one spot'] },
       { value: 'inkind', cat: 'meeting', label: 'In-kind partner', price: 'No cash', text: 'Snacks, drinks, or gift cards for our pitch winners.',
         pay: 'We’ll plan a drop-off time for your snacks or gift cards.', gets: ['Shoutout at the meeting', 'Thank-you photos'] }
     ],
