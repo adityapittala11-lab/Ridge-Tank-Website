@@ -853,7 +853,8 @@
     if (/[?&](code|error|error_description)=/.test(location.search)) history.replaceState(null, '', location.pathname + (location.hash || '#/'));
     route();
     if (RT.authErrorFromUrl) toast(RT.authErrorFromUrl, 'error', 6000);
-    if (/confirmed=1/.test(RT.initialHash || '')) toast('Email confirmed. You can log in now.', 'success', 6000);
+    if (RT.autoLoggedIn && session) toast('Email confirmed. Welcome to Ridge Tank!', 'success', 6000);
+    else if (/confirmed=1/.test(RT.initialHash || '')) toast('Email confirmed. You can log in now.', 'success', 6000);
     else if (/confirmed=(expired|error)/.test(RT.initialHash || '')) toast('That confirmation link didn’t work. Log in and tap “Send the confirmation email again”.', 'error', 8000);
     queued.splice(0).forEach(([ev, se]) => onAuthEvent(ev, se));
     document.documentElement.classList.add('app-ready');

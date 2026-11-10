@@ -5,6 +5,20 @@
   const SESSION_KEY = 'rt_session_v1';
   const ENDPOINT = '/api/db';
 
+  // The confirmation link logs a new member in the first time it is used: the server puts the session in the URL
+  // fragment. Take it, store it, and wipe it from the address bar before anything else runs.
+  try {
+    const m = /[?&]confirmed=auto&s=([A-Za-z0-9_-]+)/.exec(location.hash);
+    if (m) {
+      const s = JSON.parse(atob(m[1].replace(/-/g, '+').replace(/_/g, '/')));
+      if (s && s.access_token && s.expires_at * 1000 > Date.now()) {
+        localStorage.setItem(SESSION_KEY, JSON.stringify(s));
+        (window.RT = window.RT || {}).autoLoggedIn = true;
+      }
+      history.replaceState(null, '', location.pathname + '#/');
+    }
+  } catch (e) { /* bad link: fall back to the normal log in page */ }
+
   // A random id for this browser, made once. Officers use it to spot one person with two accounts.
   function deviceId() {
     try {
