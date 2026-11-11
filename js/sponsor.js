@@ -306,7 +306,7 @@
         bar.firstChild.style.width = Math.round((at / live.length) * 100) + '%';
         back.hidden = i === 0;
         skip.hidden = !st.optional;
-        next.textContent = st.last ? 'Create my sponsor account' : 'Continue';
+        next.textContent = st.last ? 'Continue to payment' : 'Continue';
         const title = typeof st.title === 'function' ? st.title() : st.title;
         const panel = h('div', { class: 'sp-panel' + (st.wide ? ' wide' : '') + (dir ? ' from-' + dir : '') },
           h('h2', { class: 'sp-q' }, title), h('p', { class: 'muted sp-sub' }, st.sub), ...st.body());
@@ -331,6 +331,8 @@
               email: em, password: pw.input.value, business: business.value, contact_name: name.value, phone: phone.value,
               website: site.value, level: catByValue(level.getValue()).plans[0], meeting: isMeeting() ? meeting.getValue() : 'any', pitch_note: note.value, logo: logo.getValue() || null
             });
+            // Payment comes before login: go straight to the Stripe page. The confirmation email is already on its way.
+            if (out.payUrl) { if (!out.confirm) store.set(out); location.href = out.payUrl; return; }
             if (out.confirm) { clear(formHost).appendChild(checkEmail(out.email)); return; }
             store.set(out);
             toast('You’re in! Welcome to Ridge Tank.', 'success');

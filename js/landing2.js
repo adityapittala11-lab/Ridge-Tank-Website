@@ -13,7 +13,7 @@
   const look = document.documentElement.dataset.look;
   if (look !== 'v2' && look !== 'v3') return;
   const V3 = look === 'v3';
-  const { h, icon } = RT;
+  const { h, icon, toast, modal, busy } = RT;
   const S = RT.state;
   const cfg = window.RT_CONFIG || {};
   const original = RT.views.landing;
@@ -224,9 +224,81 @@
         off && c.priceNote ? h('p', { class: 'hoodie-note' }, c.priceNote + '. Goes back to ' + money(c.was) + ' after.') : null,
         (c.perks && c.perks.length) ? h('ul', { class: 'hoodie-perks' }, c.perks.map(p => h('li', null, icon('check', 18), h('span', null, p)))) : null,
         h('p', { class: 'hoodie-fair' }, 'Every meeting and event stays open to everyone. The hoodie just gets you the good seats.'),
-        c.orderUrl
-          ? h('a', { class: 'btn btn-primary btn-lg', href: c.orderUrl }, 'Get the hoodie')
+        c.orders
+          ? h('button', { class: 'btn btn-primary btn-lg', type: 'button', onclick: () => orderHoodie(price) }, 'Get the hoodie')
           : h('p', { class: 'hoodie-soon' }, 'Orders open soon')));
+  }
+
+  // The order form: name, email, size, how many. Paying happens on Stripe's page (api/hoodie.js sets the real price).
+  function orderHoodie(price) {
+    const c = cfg.hoodie || {};
+    const name = h('input', { class: 'input', type: 'text', placeholder: 'First and last name', autocomplete: 'name', maxlength: 80 });
+    const email = h('input', { class: 'input', type: 'email', placeholder: 'you@example.com', autocomplete: 'email' });
+    let size = '', qty = 1;
+    const total = h('strong', { class: 'order-total' }, money(price));
+    const sizes = h('div', { class: 'order-sizes', role: 'radiogroup', 'aria-label': 'Size' }, (c.sizes || ['S', 'M', 'L', 'XL']).map(sz => {
+      const b = h('button', { class: 'order-size', type: 'button', role: 'radio', 'aria-checked': 'false' }, sz);
+      b.addEventListener('click', () => { size = sz; sizes.querySelectorAll('.order-size').forEach(x => x.setAttribute('aria-checked', String(x === b))); });
+      return b;
+    }));
+    const count = h('span', { class: 'order-count', 'aria-live': 'polite' }, '1');
+    const step = d => { qty = Math.min(4, Math.max(1, qty + d)); count.textContent = String(qty); total.textContent = money(price * qty); };
+    const err = h('p', { class: 'form-error', role: 'alert', hidden: true });
+    const pay = h('button', { class: 'btn btn-primary btn-lg btn-block', type: 'submit' }, 'Pay with card');
+    const lab = (t, el) => h('label', { class: 'field' }, h('span', { class: 'label' }, t), el);
+    const form = h('form', { class: 'stack order-form', novalidate: true },
+      lab('Name', name), lab('Email (your receipt goes here)', email),
+      h('div', { class: 'field' }, h('span', { class: 'label' }, 'Size'), sizes),
+      h('div', { class: 'order-row' },
+        h('div', { class: 'order-qty' },
+          h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'One less', onclick: () => step(-1) }, '−'), count,
+          h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'One more', onclick: () => step(1) }, '+')),
+        h('p', { class: 'order-sum' }, 'Total ', total)),
+      err, pay,
+      h('p', { class: 'muted small' }, 'You pay on Stripe’s secure page. We never see your card. Pick up your hoodie at a meeting.'));
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      err.hidden = true;
+      busy(pay, async () => {
+        let out = null;
+        try {
+          const r = await fetch('/api/hoodie', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'order', name: name.value, email: email.value, size, qty }) });
+          out = await r.json();
+        } catch (ex) { out = null; }
+        if (out && out.data && out.data.url) { location.href = out.data.url; return; }
+        err.textContent = (out && out.error && out.error.message) || 'That didn’t go through. Check your connection and try again.';
+        err.hidden = false;
+      });
+    });
+    modal({ title: 'The Ridge Tank hoodie', subtitle: money(price) + ' each. Up to 4 per order.', body: form, actions: [] });
+    setTimeout(() => name.focus(), 120);
+  }
+
+  // ---------- pitches and photos from the first meeting ----------
+  function pitches() {
+    const c = cfg.pitches;
+    if (!c || !c.show || !(c.clips || []).length) return null;
+    const clip = (x, i) => {
+      const v = h('video', { src: x.src, poster: x.poster, preload: 'none', playsinline: true, 'aria-label': x.label });
+      const play = h('button', { class: 'clip-play', type: 'button', 'aria-label': 'Play ' + x.label }, fin('clip-fin'), h('span', null, 'Play'));
+      const box = h('div', { class: 'clip' }, v, play);
+      play.addEventListener('click', () => {
+        document.querySelectorAll('.clip video').forEach(o => { if (o !== v) o.pause(); });
+        box.classList.add('on'); v.controls = true; v.play().catch(() => {});
+      });
+      if (V3) box.dataset.swing = String(0.5 + i * 0.12);
+      return box;
+    };
+    const photos = (c.photos || []).map((p, i) => {
+      const f = h('figure', { class: 'print pitch-print' }, h('img', { src: p.src, alt: p.alt || '', loading: 'lazy', decoding: 'async' }), p.caption ? h('figcaption', null, p.caption) : null);
+      if (V3) { f.dataset.swing = i ? '-0.5' : '0.6'; f.dataset.px = i ? '-0.03' : '0.04'; }
+      return f;
+    });
+    return h('section', { class: 'section in pitches', id: 'pitches' },
+      h('div', { class: 'section-head' }, h('h2', { class: 'section-title' }, c.title), h('p', { class: 'section-sub' }, c.text)),
+      h('div', { class: 'pitch-wall' },
+        h('div', { class: 'clip-row' }, c.clips.map(clip)),
+        photos.length ? h('div', { class: 'pitch-prints' }, photos) : null));
   }
 
   // ---------- v3: a shark for each tier, bigger as you climb ----------
@@ -266,7 +338,7 @@
 
   // ---------- v3: the depth gauge down the right side. Each mark is a section; tap one to dive to it. ----------
   function depthGauge(root) {
-    const stops = [['.hero2', 'Surface'], ['#crowd', 'Meeting one'], ['#year', 'The year'], ['#mystery', 'Mystery'], ['#how', 'How it works'],
+    const stops = [['.hero2', 'Surface'], ['#crowd', 'Meeting one'], ['#pitches', 'Pitches'], ['#year', 'The year'], ['#mystery', 'Mystery'], ['#how', 'How it works'],
       ['#hoodie', 'Hoodie'], ['#tiers', 'Tiers'], ['#faq', 'Questions']]
       .map(([sel, label]) => ({ el: root.querySelector(sel), label })).filter(s => s.el);
     const nav = h('nav', { class: 'depth', 'aria-label': 'Jump to a section' },
@@ -294,6 +366,7 @@
     if (oldHero) oldHero.replaceWith(hero());
     else if (how) put(ticket('ticket-inline'), how); // members reach this page as "About": they still see the next meeting
     put(crowd(), how);
+    put(pitches(), how);
     put(phases(), how);
     put(mystery(), how);
     put(hoodie(), tiers);
@@ -360,7 +433,55 @@
     };
   }
 
+  // ---------- v3: the member dashboard gets labels for its groups, a shark that swims, and numbers that count up ----------
+  if (V3 && RT.views.home) {
+    const homeOriginal = RT.views.home;
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const label = t => h('h2', { class: 'dash-label' }, fin('dash-label-fin'), h('span', null, t));
+    function dress(root) {
+      const banner = root.querySelector('.countdown-banner'), top = root.querySelector('.home-top'), grid = root.querySelector('.home-grid');
+      const first = banner || top;
+      if (first && !root.querySelector('.dash-label')) {
+        first.parentNode.insertBefore(label('Up next'), first);
+        if (grid) grid.parentNode.insertBefore(label('Your numbers'), grid);
+        const head = root.querySelector('.page-head');
+        if (head) head.after(h('div', { class: 'dash-water', 'aria-hidden': 'true' }, h('div', { class: 'wl-wave wl-wave-back' }), h('div', { class: 'wl-wave' }), h('div', { class: 'dash-swimmer' }, fin('wl-fin'))));
+      }
+      const main = root.querySelector('.points-card .stand-main');
+      if (main && !main.querySelector('.my-shark')) {
+        const chip = root.querySelector('.points-card .tier-chip');
+        const tier = ['tier-reef', 'tier-tiger', 'tier-white', 'tier-mega'].findIndex(c => chip && chip.classList.contains(c));
+        const s = shark('my-shark t' + Math.max(0, tier));
+        s.style.setProperty('--beat', ['0.9s', '1.2s', '1.6s', '2.2s'][Math.max(0, tier)]);
+        main.appendChild(s);
+        main.classList.add('has-shark');
+        const num = main.querySelector('.big-num'), fill = main.querySelector('.bar-fill');
+        const to = num ? parseInt(num.textContent.replace(/[^0-9]/g, ''), 10) : 0;
+        if (!still && num && to > 0) {
+          const t0 = performance.now();
+          (function tick(now) { const k = Math.min(1, (now - t0) / 1300), e = 1 - Math.pow(1 - k, 4); num.textContent = Math.round(to * e).toLocaleString(); if (k < 1) requestAnimationFrame(tick); })(t0);
+        }
+        if (!still && fill) { const w = fill.style.width; fill.style.transition = 'none'; fill.style.width = '0%'; requestAnimationFrame(() => requestAnimationFrame(() => { fill.style.transition = 'width 1.5s cubic-bezier(0.3, 0, 0.2, 1) 0.3s'; fill.style.width = w; })); }
+      }
+    }
+    RT.views.home = function (root, t) {
+      const handle = homeOriginal(root, t);
+      dress(root);
+      const mo = new MutationObserver(() => dress(root));
+      mo.observe(root, { childList: true, subtree: true });
+      setTimeout(() => mo.disconnect(), 15000);
+      return handle;
+    };
+  }
+
+  // Coming back from Stripe: say thanks once.
+  (function thanks() {
+    const from = String(window.RT_ARRIVED || '');
+    if (/[?&]hoodie=paid/.test(from)) setTimeout(() => toast('Paid. Your hoodie is ordered! The receipt is in your email.', 'success', 7000), 900);
+    else if (/#\/sponsor\?paid=1/.test(from)) setTimeout(() => toast('Paid. Thank you! Check your email for the link to your sponsor dashboard.', 'success', 8000), 900);
+  })();
+
   // If the page was already drawn before this file loaded, draw it again with the new sections.
   const view = document.body.dataset.view;
-  if ((view === 'landing' || view === 'about' || (V3 && (view === 'auth' || view === 'sponsor'))) && RT.rerender) RT.rerender();
+  if ((view === 'landing' || view === 'about' || (V3 && (view === 'auth' || view === 'sponsor' || view === 'home'))) && RT.rerender) RT.rerender();
 })();
