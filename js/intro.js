@@ -10,7 +10,7 @@
   };
   if (!el) { done(); return; }
   // The poster look opens straight on the page, with no opening animation.
-  if (root.dataset.look === 'v2' && !/[?&]intro\b/.test(location.search)) { el.remove(); done(); return; }
+  if (root.dataset.skin === 'poster' && !/[?&]intro\b/.test(location.search)) { el.remove(); done(); return; }
 
   const cfg = (window.RT_CONFIG && window.RT_CONFIG.intro) || { form: 1700, hold: 1900, disperse: 2000 };
   const forced = /[?&]intro\b/.test(location.search);

@@ -5,20 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Ridge Tank</title>
   <meta name="description" content="Ridge Tank, Mountain Ridge High School's Shark Tank program. Check in at meetings, pitch, earn badges, and climb the members-only leaderboard.">
-  <meta name="theme-color" content="#0e402c">
+  <meta name="theme-color" content="#04110b">
   <!-- The site is already dark; stop dark-mode extensions (e.g. Dark Reader) from repainting it. -->
   <meta name="color-scheme" content="dark light">
   <script>try{var t=localStorage.getItem("rt_theme");if(t==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}</script>
-  <!-- Which look the site wears. "v2" = the poster look (flat green, cream and burgundy). "v1" = the original moving-glass look.
-       To go back for everyone, change DEFAULT_LOOK to "v1". To peek at the other one, add ?look=v1 or ?look=v2 to the address. -->
-  <script>(function(){var DEFAULT_LOOK="v2";var l=DEFAULT_LOOK;try{var q=new URLSearchParams(location.search).get("look");if(q==="v1"||q==="v2")l=q}catch(e){}document.documentElement.setAttribute("data-look",l)})();</script>
+  <!-- Which look the site wears.
+       "v3" = the Tank: moving background, poster type, sharks and scroll motion (css/look-v2.css + css/look-v3.css).
+       "v2" = the flat poster look (css/look-v2.css only).   "v1" = the original glass look (css/styles.css only).
+       To switch everyone, change DEFAULT_LOOK. To peek at one, add ?look=v1, ?look=v2 or ?look=v3 to the address. -->
+  <script>(function(){var DEFAULT_LOOK="v3";var l=DEFAULT_LOOK;try{var q=new URLSearchParams(location.search).get("look");if(q==="v1"||q==="v2"||q==="v3")l=q}catch(e){}var d=document.documentElement;d.setAttribute("data-look",l);if(l!=="v1")d.setAttribute("data-skin","poster")})();</script>
   <meta name="darkreader-lock">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230c4a30'/%3E%3Cpath d='M11 45c8.5-1.8 16-8 20.5-18.5C33.7 21 35 15 35.5 9c8 9.7 15 22.8 18.5 36' fill='none' stroke='white' stroke-width='4.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M9 46h46' stroke='white' stroke-width='4.5' stroke-linecap='round'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,300..800&family=Geist:wght@300..700&family=Geist+Mono:wght@400..600&display=swap">
-  <link rel="stylesheet" href="css/styles.css?v=76">
-  <link rel="stylesheet" href="css/look-v2.css?v=76">
+  <link rel="stylesheet" href="css/styles.css?v=77">
+  <link rel="stylesheet" href="css/look-v2.css?v=77">
+  <link rel="stylesheet" href="css/look-v3.css?v=77">
 </head>
 <body>
   <canvas id="bg" aria-hidden="true"></canvas>
@@ -43,31 +46,32 @@
   </noscript>
 
   <!-- Bump ?v= whenever these files change so browsers fetch the new copy. -->
-  <script src="js/config.js?v=76"></script>
-  <script src="js/mesh.js?v=76"></script>
-  <script src="js/intro.js?v=76"></script>
-  <script src="js/backend.js?v=76"></script>
-  <script src="js/ui.js?v=76"></script>
-  <script src="js/dots.js?v=76"></script>
-  <script src="js/spotlight.js?v=76"></script>
-  <script src="js/data.js?v=76"></script>
-  <script src="js/market.js?v=76"></script>
-  <script src="js/member.js?v=76"></script>
-  <script src="js/sharks.js?v=76"></script>
-  <script src="js/course-data.js?v=76"></script>
-  <script src="js/academy.js?v=76"></script>
-  <script src="js/bounties.js?v=76"></script>
-  <script src="js/submissions.js?v=76"></script>
-  <script src="js/forms.js?v=76"></script>
-  <script src="js/sponsor.js?v=76"></script>
-  <script src="js/updates.js?v=76"></script>
-  <script src="js/chat.js?v=76"></script>
-  <script src="js/admin.js?v=76"></script>
-  <script src="js/assistant.js?v=76"></script>
-  <script src="js/moderation.js?v=76"></script>
-  <script src="js/admin2.js?v=76"></script>
-  <script src="js/fairplay.js?v=76"></script>
-  <script src="js/app.js?v=76"></script>
-  <script src="js/landing2.js?v=76"></script>
+  <script src="js/config.js?v=77"></script>
+  <script src="js/mesh.js?v=77"></script>
+  <script src="js/intro.js?v=77"></script>
+  <script src="js/backend.js?v=77"></script>
+  <script src="js/ui.js?v=77"></script>
+  <script src="js/dots.js?v=77"></script>
+  <script src="js/spotlight.js?v=77"></script>
+  <script src="js/data.js?v=77"></script>
+  <script src="js/market.js?v=77"></script>
+  <script src="js/member.js?v=77"></script>
+  <script src="js/sharks.js?v=77"></script>
+  <script src="js/course-data.js?v=77"></script>
+  <script src="js/academy.js?v=77"></script>
+  <script src="js/bounties.js?v=77"></script>
+  <script src="js/submissions.js?v=77"></script>
+  <script src="js/forms.js?v=77"></script>
+  <script src="js/sponsor.js?v=77"></script>
+  <script src="js/updates.js?v=77"></script>
+  <script src="js/chat.js?v=77"></script>
+  <script src="js/admin.js?v=77"></script>
+  <script src="js/assistant.js?v=77"></script>
+  <script src="js/moderation.js?v=77"></script>
+  <script src="js/admin2.js?v=77"></script>
+  <script src="js/fairplay.js?v=77"></script>
+  <script src="js/app.js?v=77"></script>
+  <script src="js/tank.js?v=77"></script>
+  <script src="js/landing2.js?v=77"></script>
 </body>
 </html>

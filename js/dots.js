@@ -5,7 +5,7 @@
 (function () {
   const RT = (window.RT = window.RT || {});
   // The poster look sets headlines in real type, so nothing is redrawn as dots.
-  if (document.documentElement.dataset.look === 'v2') { RT.dots = { refresh() {}, scan() {} }; return; }
+  if (document.documentElement.dataset.skin === 'poster') { RT.dots = { refresh() {}, scan() {} }; return; }
   const SELECTOR = '.hero-title, .page-title, .section-title, .auth-title, .profile-name, .big-num';
   const state = new Map(); // element -> render state
   const queue = new Set();

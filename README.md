@@ -46,18 +46,24 @@ Sponsors pay from their dashboard (Payments tab) through Stripe Checkout. In Ver
 - For "Manage billing": turn on the customer portal in Stripe (Settings > Billing > Customer portal).
 Open `/api/status` to check both are set. Meeting partners pay $50 now; officers open the final $50 from Officer tools > Sponsors after the meeting.
 
-## The two looks (and how to go back)
+## The three looks (and how to go back)
 
-The site has two looks. Both live in the code at the same time, so switching is one word.
+The site has three looks. All of them live in the code at the same time, so switching is one word.
 
 | Look | What it is | Files |
 | --- | --- | --- |
-| `v2` (default) | The poster look: flat forest green, cream and burgundy, Anton headlines. No moving background, no glass blur, no dotted text, no opening animation. | `css/look-v2.css`, `js/landing2.js`, `fonts/` |
-| `v1` | The original look: moving green and burgundy background, glass panels, dotted headlines. | `css/styles.css` and the rest, unchanged |
+| `v3` (default) | "The Tank": the moving green and burgundy background, poster headlines, solid panels, sharks, water, and scroll motion. | `css/look-v2.css` + `css/look-v3.css`, `js/landing2.js`, `js/tank.js`, `fonts/` |
+| `v2` | The flat poster look: same type and layout, plain background, no motion. | `css/look-v2.css`, `js/landing2.js`, `fonts/` |
+| `v1` | The original look: glass panels, dotted headlines, opening animation. | `css/styles.css` and the rest, unchanged |
 
-- **Peek at either one:** add `?look=v1` or `?look=v2` to the address, like `ridgetank.com/?look=v1`.
-- **Switch everyone back:** in `index.html`, change `DEFAULT_LOOK="v2"` to `"v1"`.
-- **Go all the way back in git:** the tag `look-v1-original` is the site exactly as it was before the redesign. The tag `look-v2` is the first poster version.
+- **Peek at any of them:** add `?look=v1`, `?look=v2` or `?look=v3` to the address, like `ridgetank.com/?look=v1`.
+- **Switch everyone:** in `index.html`, change `DEFAULT_LOOK="v3"`.
+- **Go all the way back in git:** commit `69597b4` on `main` is the site exactly as it was before the redesign.
 
-The landing page extras (next-meeting ticket, Spark / Build / Sell, hoodie price, mystery event) are all set in `js/config.js`:
-`countdown`, `phases`, `leaderboardPrize`, `hoodie`, `mystery`. The hoodie price is worked out from `was` and `percentOff`, so the math can't be wrong.
+**Colour.** Dark mode is green, burgundy and black with soft white text: no cream and no bright red. Light mode is the cream paper of the printed posters. Mint is the one bright accent, kept for the main button and for "now".
+
+**Motion (v3).** `js/tank.js` runs the scroll engine and the slow sea layer. Slow devices get "lite" motion on their own (the loops that repaint all the time hold still); force either with `?motion=lite` or `?motion=full`. People who ask their device for less motion get everything already in place.
+
+Everything the landing page shows is set in `js/config.js`: `countdown` (next meeting), `crowd` (the first-meeting photo and the head count), `proof`, `phases`, `leaderboardPrize`, `hoodie` (the price is worked out from `was` and `percentOff`, so the math can't be wrong), and `mystery`.
+
+**Before the photo goes live:** check with Mr. Hintz that every student in `marketing/meeting-one.jpg` is cleared to appear on a public site. `crowd.show: false` hides it everywhere.

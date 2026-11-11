@@ -5,7 +5,7 @@
 // Boxes are looked up on every pointer move, so screens that render later work automatically.
 // Only boxes near the pointer are touched. Touch input is ignored, so phones never run it.
 (function () {
-  if (document.documentElement.dataset.look === 'v2') return; // no cursor glow in the poster look
+  if (document.documentElement.dataset.skin === 'poster') return; // no cursor glow in the poster look
   const BOXES = [
     '.card:not(.chat)', '.badge-tile', '.badge-chip', '.mini-stat', '.strip-stat',
     '.podium-slot', '.detail-box', '.next-badge', '.ref-stat', '.composer',
