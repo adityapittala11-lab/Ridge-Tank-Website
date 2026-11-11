@@ -15,6 +15,7 @@
 @property --wy { syntax: "<length>"; inherits: false; initial-value: 600px; }
 @property --wvx { syntax: "<length>"; inherits: false; initial-value: 0px; }
 @property --bite { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --bob { syntax: "<length>"; inherits: false; initial-value: 0px; }
 
 html[data-look="v3"] {
   --bg: #04110b;
@@ -31,6 +32,10 @@ html[data-look="v3"][data-theme="light"] {
   --btn-wave: #1d8560;
   --wave-line: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='14' viewBox='0 0 120 14'%3E%3Cpath d='M0 7Q15 0 30 7T60 7T90 7T120 7' fill='none' stroke='%230b2419' stroke-opacity='.5' stroke-width='2'/%3E%3C/svg%3E");
 }
+
+/* Tilted and swinging things must never make the page wider than the screen (phones were getting a sideways scroll). */
+html[data-look="v3"] { overflow-x: hidden; }
+html[data-look="v3"] body { overflow-x: clip; }
 
 /* ---------- the water behind everything ---------- */
 html[data-look="v3"] #bg { display: block; }
@@ -85,6 +90,11 @@ html[data-look="v3"] .reveal { animation: rise 0.7s var(--ease) both; animation-
 /* ---------- things rise into place as you reach them (js/tank.js adds .rv, then .in) ---------- */
 html[data-look="v3"] .rv { opacity: 0; translate: 0 28px; transition: opacity 0.7s var(--ease), translate 0.8s var(--ease); transition-delay: calc(var(--rv-i, 0) * 85ms); }
 html[data-look="v3"] .rv.in { opacity: 1; translate: 0 0; }
+html[data-look="v3"] .section-head.rv { opacity: 1; translate: none; }
+html[data-look="v3"] .section-head.rv .section-title { clip-path: inset(-10% -5% 100% -5%); translate: 0 45%; transition: clip-path 0.85s var(--ease), translate 0.85s var(--ease); }
+html[data-look="v3"] .section-head.rv.in .section-title { clip-path: inset(-10% -5% -10% -5%); translate: 0 0; }
+html[data-look="v3"] .section-head.rv .section-sub { opacity: 0; transition: opacity 0.6s var(--ease) 0.3s; }
+html[data-look="v3"] .section-head.rv.in .section-sub { opacity: 1; }
 
 /* ---------- the main button fills with water when you point at it ---------- */
 html[data-look="v3"] .btn-primary { position: relative; overflow: hidden; isolation: isolate; transition: translate 0.18s var(--ease), background 0.2s; }
@@ -114,18 +124,11 @@ html[data-look="v3"] .btn-primary:hover:not(:disabled)::before { translate: 0 8%
 
 /* ---------- sharks: the back half sways, the tail beats ---------- */
 html[data-look="v3"] .shark .sk-rear, html[data-look="v3"] .shark .sk-tail { transform-box: view-box; }
-html[data-look="v3"] .shark .sk-rear { transform-origin: 104px 41px; animation: skRear var(--beat, 1.4s) ease-in-out infinite; }
-html[data-look="v3"] .shark .sk-tail { transform-origin: 48px 42px; animation: skTail var(--beat, 1.4s) ease-in-out infinite; animation-delay: calc(var(--beat, 1.4s) * -0.12); }
-@keyframes skRear {
-  0%, 100% { transform: rotate(-2.4deg) scaleX(0.98); }
-  25%, 75% { transform: rotate(0deg) scaleX(1); }
-  50% { transform: rotate(2.4deg) scaleX(0.98); }
-}
-@keyframes skTail {
-  0%, 100% { transform: rotate(-8deg) scaleX(0.78); }
-  25%, 75% { transform: rotate(0deg) scaleX(1); }
-  50% { transform: rotate(8deg) scaleX(0.78); }
-}
+html[data-look="v3"] .shark .sk-rear { transform-origin: 104px 41px; animation: skRear calc(var(--beat, 1.4s) / 2) ease-in-out infinite alternate; }
+html[data-look="v3"] .shark .sk-tail { transform-origin: 48px 42px; animation: skTail calc(var(--beat, 1.4s) / 2) ease-in-out infinite alternate, skSqueeze calc(var(--beat, 1.4s) / 4) ease-in-out infinite alternate; animation-delay: calc(var(--beat, 1.4s) * -0.85), 0s; }
+@keyframes skRear { from { transform: rotate(-2.4deg); } to { transform: rotate(2.4deg); } }
+@keyframes skTail { from { rotate: -4deg; } to { rotate: 4deg; } }
+@keyframes skSqueeze { from { scale: 0.62 1; } to { scale: 1 1; } }
 
 /* ---------- hero ---------- */
 html[data-look="v3"] .hero2 { position: relative; min-height: min(880px, calc(100dvh - 92px)); padding-top: 14px; padding-bottom: 112px; gap: 64px; }
@@ -148,28 +151,31 @@ html[data-look="v3"] .ht-water {
   mask-size: 1em 2em;
   -webkit-mask-repeat: repeat-x;
   mask-repeat: repeat-x;
-  -webkit-mask-position: var(--wx) calc(var(--wy) - var(--dive, 0) * 0.64em);
-  mask-position: var(--wx) calc(var(--wy) - var(--dive, 0) * 0.64em);
+  -webkit-mask-position: var(--wx) calc(var(--wy) - var(--dive, 0) * 0.64em + var(--bob));
+  mask-position: var(--wx) calc(var(--wy) - var(--dive, 0) * 0.64em + var(--bob));
 }
-html[data-look="v3"] .ht-water-back { color: #2f9e74; animation: waterRiseBack 2.4s 0.55s var(--ease) both, waterDriftBack 6.4s linear infinite; }
+html[data-look="v3"] .ht-water-back { color: #2f9e74; -webkit-mask-size: 1.37em 2em; mask-size: 1.37em 2em; animation: waterRiseBack 2.4s 0.55s var(--ease) both, waterDriftBack 7.6s linear infinite, waterBob 6.7s ease-in-out infinite alternate-reverse; }
 html[data-look="v3"] .ht-water-front {
   color: transparent;
   -webkit-text-fill-color: transparent;
   background-image:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 97 140'%3E%3Cg fill='none' stroke='%23fff' stroke-opacity='.8' stroke-width='.7'%3E%3Ccircle cx='12' cy='128' r='1.7'/%3E%3Ccircle cx='15.5' cy='121' r='.8'/%3E%3Ccircle cx='58' cy='104' r='1.1'/%3E%3Ccircle cx='83' cy='86' r='2'/%3E%3Ccircle cx='80' cy='78.5' r='.7'/%3E%3Ccircle cx='31' cy='66' r='.9'/%3E%3Ccircle cx='47' cy='41' r='1.5'/%3E%3Ccircle cx='8' cy='30' r='1.1'/%3E%3Ccircle cx='70' cy='14' r='.8'/%3E%3C/g%3E%3C/svg%3E"),
     linear-gradient(var(--mint), var(--mint));
-  background-size: 0.97em 1.4em, auto;
+  background-size: 1.94em 2.8em, auto;
   background-repeat: repeat, no-repeat;
   -webkit-background-clip: text;
   background-clip: text;
-  animation: waterRise 2.4s 0.7s var(--ease) both, waterDrift 4.2s linear infinite, bubblesUp 7s linear infinite;
+  animation: waterRise 2.4s 0.7s var(--ease) both, waterDrift 4.2s linear infinite, bubblesUp 13s linear infinite, waterBob 5.2s ease-in-out infinite alternate;
 }
 @keyframes waterRise { from { --wy: 1.05em; } to { --wy: 0.5em; } }
 @keyframes waterDrift { from { --wx: 0em; } to { --wx: -1em; } }
 @keyframes waterRiseBack { from { --wy: 1.05em; } to { --wy: 0.455em; } }
-@keyframes waterDriftBack { from { --wx: -0.37em; } to { --wx: 0.63em; } }
-@keyframes bubblesUp { from { background-position: 0 0, 0 0; } to { background-position: 0.06em -1.4em, 0 0; } }
+@keyframes waterDriftBack { from { --wx: -0.37em; } to { --wx: 1em; } }
+@keyframes waterBob { from { --bob: -0.014em; } to { --bob: 0.018em; } }
+@keyframes bubblesUp { from { background-position: 0 0, 0 0; } to { background-position: 0 -2.8em, 0 0; } }
 
+html[data-look="v3"] .hero2-sub { animation: fadeUp 0.7s 0.55s var(--ease) both; }
+html[data-look="v3"] .hero2 .hero-cta { animation: fadeUp 0.7s 0.72s var(--ease) both; }
 html[data-look="v3"] .proof { display: flex; flex-wrap: wrap; gap: 10px 26px; margin-top: 4px; animation: fadeUp 0.8s 0.9s var(--ease) both; }
 @keyframes fadeUp { from { opacity: 0; translate: 0 14px; } to { opacity: 1; translate: 0 0; } }
 html[data-look="v3"] .proof li { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 14.5px; color: var(--ink-2); }
@@ -189,7 +195,7 @@ html[data-look="v3"] .ticket {
   transform-origin: 50% 0;
   transform: translateY(var(--py, 0px)) rotate(calc(2deg + var(--tilt, 0deg)));
   filter: drop-shadow(0 26px 26px rgba(0, 0, 0, 0.5));
-  animation: ticketDrop 1s 0.4s both, ticketShake 0.5s 2.1s;
+  animation: ticketDrop 1s 0.4s both;
 }
 html[data-look="v3"] .ticket-paper {
   --stub: 112px;
@@ -211,8 +217,11 @@ html[data-look="v3"] .ticket-paper {
     radial-gradient(circle calc(var(--bite) * 0.25) at calc(100% - var(--bite) * 0.14) calc(100% - var(--bite) * 0.99), transparent 95%, #000);
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
-  animation: chomp 0.5s 2.1s both;
+  --bite: 33px;
 }
+html[data-look="v3"] .ticket.await-bite .ticket-paper { --bite: 0px; }
+html[data-look="v3"] .ticket.await-bite.bite .ticket-paper { animation: chomp 0.12s ease-out both; }
+html[data-look="v3"] .ticket.await-bite.bite { animation: ticketDrop 1s 0.4s both, ticketShake 0.5s; }
 html[data-look="v3"] .ticket-stub::before, html[data-look="v3"] .ticket-stub::after { display: none; }
 @keyframes ticketDrop {
   0% { opacity: 0; rotate: 11deg; translate: 0 -64px; animation-timing-function: cubic-bezier(0.3, 0, 0.5, 1); }
@@ -220,7 +229,7 @@ html[data-look="v3"] .ticket-stub::before, html[data-look="v3"] .ticket-stub::af
   76% { rotate: 1.1deg; translate: 0 -2px; animation-timing-function: ease-in-out; }
   100% { opacity: 1; rotate: 0deg; translate: 0 0; }
 }
-@keyframes chomp { 0% { --bite: 0px; } 28% { --bite: 41px; } 55% { --bite: 30px; } 100% { --bite: 33px; } }
+@keyframes chomp { from { --bite: 0px; } to { --bite: 33px; } }
 @keyframes ticketShake {
   0%, 100% { translate: 0 0; rotate: 0deg; }
   18% { translate: 6px 5px; rotate: 1.5deg; }
@@ -232,12 +241,12 @@ html[data-look="v3"] .ticket-stub::before, html[data-look="v3"] .ticket-stub::af
    tips forward, dives under, and comes back up further on, with a wake behind it while it is at the surface. */
 html[data-look="v3"] .waterline { position: absolute; left: calc(50% - 50vw); width: 100vw; bottom: 20px; height: 64px; pointer-events: none; }
 html[data-look="v3"] .wl-wave { position: absolute; left: 0; right: 0; bottom: 0; height: 14px; background: var(--wave-line) repeat-x 0 0 / 120px 14px; animation: waveSlide 7s linear infinite; }
-html[data-look="v3"] .wl-wave-back { bottom: 5px; opacity: 0.45; animation-duration: 12s; animation-direction: reverse; }
+html[data-look="v3"] .wl-wave-back { bottom: 4px; opacity: 0.3; background-size: 172px 14px; animation: waveSlideBack 13s linear infinite; }
 @keyframes waveSlide { to { background-position-x: -120px; } }
+@keyframes waveSlideBack { to { background-position-x: 172px; } }
 html[data-look="v3"] .wl-clip { position: absolute; left: 0; right: 0; top: 0; bottom: 7px; overflow: hidden; }
 html[data-look="v3"] .wl-swimmer { position: absolute; left: 0; bottom: 0; width: 52px; height: 36px; animation: cruise 24s linear infinite; }
 html[data-look="v3"] .wl-fin { position: absolute; inset: 0; width: 100%; height: 100%; color: var(--ink); transform-origin: 60% 100%; animation: finTilt 24s linear infinite; }
-html[data-look="v3"] .wl-wake { position: absolute; right: 70%; bottom: 0; width: 170px; height: 2px; background: linear-gradient(90deg, transparent, rgb(var(--tint) / 0.6)); transform-origin: 100% 50%; animation: wake 24s linear infinite; }
 @keyframes cruise {
   0% { transform: translate(-70px, 46px); animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1); }
   7% { transform: translate(5vw, 0px); animation-timing-function: linear; }
@@ -256,12 +265,6 @@ html[data-look="v3"] .wl-wake { position: absolute; right: 70%; bottom: 0; width
   61%, 94% { rotate: 0deg; }
   100% { rotate: 18deg; }
 }
-@keyframes wake {
-  0%, 5% { opacity: 0; scale: 0.15 1; }
-  13%, 35% { opacity: 1; scale: 1 1; }
-  41%, 58% { opacity: 0; scale: 0.15 1; }
-  67%, 93% { opacity: 1; scale: 1 1; }
-  100% { opacity: 0; scale: 0.3 1; }
 }
 
 /* ---------- the first meeting: a print on a pin ---------- */
@@ -556,9 +559,6 @@ html[data-look="v3"] .auth-big { position: relative; font: 400 clamp(64px, 8.6vw
 html[data-look="v3"] .auth-line { position: relative; max-width: 26em; font-size: 19px; line-height: 1.45; color: var(--ink-2); }
 html[data-look="v3"] .auth-side .ticket { margin-top: 14px; width: min(420px, 100%); align-self: flex-start; }
 html[data-look="v3"] .auth-photo { margin-top: 22px; width: min(440px, 100%); rotate: 1.6deg; animation: fadeUp 0.9s 0.35s var(--ease) both; }
-html[data-look="v3"] .auth-shark { position: absolute; z-index: 0; left: -8%; top: -30px; width: min(46vw, 620px); height: auto; color: var(--ink); opacity: 0.07; --beat: 2.4s; animation: authSwim 16s ease-in-out infinite alternate; pointer-events: none; }
-html[data-look="v3"] .auth-side > :not(.auth-shark) { z-index: 1; }
-@keyframes authSwim { from { transform: translate(-4%, 0) rotate(1deg); } to { transform: translate(14%, -14px) rotate(-1deg); } }
 
 /* ---------- phones ---------- */
 @media (max-width: 980px) {
@@ -566,7 +566,7 @@ html[data-look="v3"] .auth-side > :not(.auth-shark) { z-index: 1; }
   html[data-look="v3"] .auth-side { position: static; padding-top: 0; gap: 10px; }
   html[data-look="v3"] .auth-big { font-size: clamp(46px, 13vw, 76px); }
   html[data-look="v3"] .auth-line { font-size: 16px; }
-  html[data-look="v3"] .auth-side .ticket, html[data-look="v3"] .auth-photo, html[data-look="v3"] .auth-shark { display: none; }
+  html[data-look="v3"] .auth-side .ticket, html[data-look="v3"] .auth-photo { display: none; }
   html[data-look="v3"] .auth-split .auth-card { justify-self: center; max-width: 460px; }
   html[data-look="v3"] .sp-hero-split { grid-template-columns: 1fr; gap: 34px; }
   html[data-look="v3"] .sp-photo { max-width: 460px; }
@@ -614,19 +614,18 @@ html[data-look="v3"] [data-play]:not(.playing), html[data-look="v3"] [data-play]
 html.tank-lite[data-look="v3"] .wave-top, html.tank-lite[data-look="v3"] .water-layer, html.tank-lite[data-look="v3"] .wl-wave,
 html.tank-lite[data-look="v3"] .ht-water, html.tank-lite[data-look="v3"] .mystery-mark .q, html.tank-lite[data-look="v3"] .tier-shark,
 html.tank-lite[data-look="v3"] .shark .sk-rear, html.tank-lite[data-look="v3"] .shark .sk-tail, html.tank-lite[data-look="v3"] .year-fin,
-html.tank-lite[data-look="v3"] .points-card .stand-main::after, html.tank-lite[data-look="v3"] .auth-shark { animation: none !important; }
+html.tank-lite[data-look="v3"] .points-card .stand-main::after { animation: none !important; }
 html.tank-lite[data-look="v3"] .ht-water-front { --wy: 0.5em; }
 html.tank-lite[data-look="v3"] .ht-water-back { --wy: 0.455em; }
 html.tank-lite[data-look="v3"] #sea { display: none; }
 
 /* ---------- less motion, for anyone who asks their device for it ---------- */
 @media (prefers-reduced-motion: reduce) {
-  html[data-look="v3"] .view, html[data-look="v3"] .reveal, html[data-look="v3"] .ht-line, html[data-look="v3"] .ticket, html[data-look="v3"] .ticket-paper, html[data-look="v3"] .ht-water, html[data-look="v3"] .proof, html[data-look="v3"] .wl-wave, html[data-look="v3"] .wl-swimmer, html[data-look="v3"] .wl-fin, html[data-look="v3"] .wl-wake,
-  html[data-look="v3"] .wave-top, html[data-look="v3"] .water-layer, html[data-look="v3"] .mystery .mystery-shark, html[data-look="v3"] .mystery-mark .q, html[data-look="v3"] .tier-shark, html[data-look="v3"] .year-fin, html[data-look="v3"] .auth-big, html[data-look="v3"] .auth-shark, html[data-look="v3"] .auth-photo,
+  html[data-look="v3"] .view, html[data-look="v3"] .reveal, html[data-look="v3"] .ht-line, html[data-look="v3"] .ticket, html[data-look="v3"] .ticket-paper, html[data-look="v3"] .ht-water, html[data-look="v3"] .proof, html[data-look="v3"] .wl-wave, html[data-look="v3"] .wl-swimmer, html[data-look="v3"] .wl-fin,
+  html[data-look="v3"] .wave-top, html[data-look="v3"] .water-layer, html[data-look="v3"] .mystery .mystery-shark, html[data-look="v3"] .mystery-mark .q, html[data-look="v3"] .tier-shark, html[data-look="v3"] .year-fin, html[data-look="v3"] .auth-big, html[data-look="v3"] .auth-photo, html[data-look="v3"] .hero2-sub, html[data-look="v3"] .hero2 .hero-cta,
   html[data-look="v3"] .shark .sk-rear, html[data-look="v3"] .shark .sk-tail, html[data-look="v3"] .points-card .stand-main::after, html[data-look="v3"] .btn-primary::before { animation: none !important; }
   html[data-look="v3"] .ht-water-front { --wy: 0.5em; }
   html[data-look="v3"] .ht-water-back { --wy: 0.455em; }
-  html[data-look="v3"] .ticket-paper { --bite: 33px; }
   html[data-look="v3"] .wl-swimmer { transform: translate(18vw, 0); }
   html[data-look="v3"] .mystery .mystery-shark { transform: translate(30vw, 0); }
   html[data-look="v3"] .rv { opacity: 1; translate: none; rotate: none; }

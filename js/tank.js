@@ -33,7 +33,7 @@
     let n = 0, slow = 0, last = 0;
     function f(now) {
       if (document.hidden) return;              // can't judge a tab nobody is looking at
-      if (last) { n++; if (now - last > 42) slow++; }
+      if (last) { n++; if (now - last > 28) slow++; }
       last = now;
       if (n < 60) requestAnimationFrame(f);
       else if (slow > 30) html.classList.add('tank-lite');
@@ -55,6 +55,7 @@
     if (document.body) mount(); else document.addEventListener('DOMContentLoaded', mount);
 
     let W = 0, H = 0, dpr = 1, specks = [], bubbles = [], raf = 0, last = 0, lastY = window.scrollY, nextBubble = 2;
+    let surface = -1e9, surfaceEl = null, tick = 0; // the hero's waterline, when it is on screen: above it is air
     const rnd = (a, b) => a + Math.random() * (b - a);
 
     function speck(anywhere) {
@@ -85,10 +86,13 @@
       const t = now / 1000;
       const y = window.scrollY, dy = y - lastY; lastY = y;
       ctx.clearRect(0, 0, W, H);
+      if (tick++ % 20 === 0) surfaceEl = document.querySelector('.waterline');
+      surface = surfaceEl && surfaceEl.isConnected ? surfaceEl.getBoundingClientRect().bottom - 8 : -1e9;
 
       for (const s of specks) {
         s.y += s.vy * dt - dy * s.z * 0.3; // scrolling down pushes them up past you, the close ones most
         if (s.y < -6) { s.y = H + 4; s.x = rnd(0, W); } else if (s.y > H + 6) { s.y = -4; s.x = rnd(0, W); }
+        if (s.y < surface) continue;
         const x = s.x + Math.sin(t * s.f + s.ph) * s.sway;
         ctx.globalAlpha = s.a;
         ctx.fillStyle = '#d8f3e6';
@@ -106,7 +110,7 @@
         const b = bubbles[i];
         b.y += b.vy * dt - dy * 0.45;
         b.r += dt * 0.12; // they swell a touch as they rise
-        if (b.y < -12 || b.y > H + 80) { bubbles.splice(i, 1); continue; }
+        if (b.y < -12 || b.y > H + 80 || b.y - b.r < surface) { bubbles.splice(i, 1); continue; } // gone, or popped at the surface
         const x = b.x + Math.sin(t * b.f + b.ph) * b.amp;
         ctx.globalAlpha = b.a;
         ctx.strokeStyle = '#c9f2df';
@@ -138,7 +142,7 @@
     '#how .section-head', '.how-list li',
     '.hoodie-photos img', '.hoodie-copy > *',
     '#tiers .section-head', '.tier-stop',
-    '#faq .section-head', '.faq-item', '.closer .card', '#officers .section-head', '.officer'
+    '#faq .section-head', '.closer .card', '#officers .section-head'
   ];
 
   function countTo(el) {
@@ -185,6 +189,23 @@
     } else {
       rising.forEach(el => el.classList.add('in'));
       root.querySelectorAll('[data-play]').forEach(el => el.classList.add('playing'));
+    }
+
+    // ---- the bite: something takes a bite out of the ticket once it has landed and you can see it (once per visit) ----
+    const tk = root.querySelector('.hero2 .ticket');
+    let bitten = false;
+    try { bitten = sessionStorage.getItem('rt_bitten') === '1'; } catch (e) { /* storage blocked */ }
+    if (tk && !reduce && !bitten && 'IntersectionObserver' in window) {
+      tk.classList.add('await-bite');
+      const born = performance.now();
+      const watch = new IntersectionObserver(entries => entries.forEach(e => {
+        if (e.intersectionRatio < 0.6) return;
+        watch.disconnect();
+        setTimeout(() => { tk.classList.add('bite'); try { sessionStorage.setItem('rt_bitten', '1'); } catch (x) { /* ignore */ } },
+          Math.max(450, 2100 - (performance.now() - born)));
+      }), { threshold: [0.6] });
+      watch.observe(tk);
+      state.ios.push(watch);
     }
 
     // ---- everything tied to the scroll position ----

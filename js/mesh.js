@@ -217,8 +217,13 @@
   let raf = 0;
   const pts = new Float32Array(N * 2);
 
+  let lastDraw = 0;
   function frame(now) {
     raf = requestAnimationFrame(frame);
+    // Look v3 marks slow devices with "tank-lite": there the background is drawn 8 times a second, which still reads as
+    // slow water and leaves the device free for scrolling.
+    if (document.documentElement.classList.contains('tank-lite')) { if (now - lastDraw < 125) return; }
+    lastDraw = now;
     const t = (now - start) / 1000 * (reduceMotion ? 0.25 : 1);
 
     for (let i = 0; i < PATHS.length; i++) {

@@ -112,7 +112,7 @@
       // The waterline at the foot of the hero: two wave lines, and a fin that cruises, dives and comes back up.
       V3 ? h('div', { class: 'waterline', 'aria-hidden': 'true' },
         h('div', { class: 'wl-wave wl-wave-back' }), h('div', { class: 'wl-wave' }),
-        h('div', { class: 'wl-clip' }, h('div', { class: 'wl-swimmer' }, h('span', { class: 'wl-wake' }), fin('wl-fin')))) : null);
+        h('div', { class: 'wl-clip' }, h('div', { class: 'wl-swimmer' }, fin('wl-fin')))) : null);
   }
 
   // ---------- the first meeting, in one photo ----------
@@ -123,7 +123,6 @@
     const num = h('span', null, String(c.count) + (c.countSuffix || ''));
     if (V3) {
       pic.dataset.px = '0.04'; pic.dataset.swing = '0.7';
-      num.dataset.countFrom = '0'; num.dataset.countTo = String(c.count); num.dataset.countSuffix = c.countSuffix || '';
     }
     return h('section', { class: 'section in crowd', id: 'crowd' },
       pic,
@@ -208,7 +207,7 @@
     const big = h('strong', { 'aria-hidden': 'true' }, money(price));
     if (V3) {
       front.dataset.px = '0.05'; back.dataset.px = '-0.04';
-      front.dataset.swing = '0.8'; back.dataset.swing = '-0.6';
+      front.dataset.swing = '0.8'; back.dataset.swing = '0.6'; // both prints swing the same way, the back one a little less
       // The price ticks down from the old one when it scrolls into view (js/tank.js).
       if (off) { big.dataset.countFrom = String(c.was); big.dataset.countTo = String(price); big.dataset.countPrefix = '$'; }
     }
@@ -301,8 +300,6 @@
     if (!V3) return handle;
 
     tierSharks(tiers);
-    const closer = root.querySelector('.closer .card');
-    if (closer) closer.classList.add('bitten');
     document.querySelectorAll('body > .nudge, body > .depth, body > .scrollbar').forEach(el => el.remove()); // left over from a redraw
     const extras = [nudgeBar(), depthGauge(root), h('div', { class: 'scrollbar', 'aria-hidden': 'true' }, h('div', { class: 'scrollbar-fill' }))].filter(Boolean);
     extras.forEach(el => document.body.appendChild(el));
@@ -341,7 +338,7 @@
         if (pic) pic.hidden = !up;
       };
       say(t && t.mode);
-      wrap.insertBefore(h('aside', { class: 'auth-side' }, shark('auth-shark'), big, line, tk, pic), wrap.firstChild);
+      wrap.insertBefore(h('aside', { class: 'auth-side' }, big, line, tk, pic), wrap.firstChild);
       const inner = handle.update;
       handle.update = nt => { if (inner) inner(nt); say(nt && nt.mode); };
       return handle;
