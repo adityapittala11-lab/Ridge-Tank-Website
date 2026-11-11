@@ -1,5 +1,6 @@
 // Ridge Tank site settings. Nothing secret lives here: the database address, the login secret and the AI key
 // are all Vercel environment variables (see README.md). Every table is locked down with row level security (db/*.sql).
+window.RT_ARRIVED = location.href; // the address the visitor arrived on, before the router tidies it up
 window.RT_CONFIG = {
   school: 'Mountain Ridge High School',
   season: '2026-2027',
@@ -143,6 +144,22 @@ window.RT_CONFIG = {
     { name: 'Build', from: '2026-12-02', to: '2026-12-31', when: 'Dec 2 to Dec 31', text: 'Make the smallest version that works. Test it on three people. Fix it.' },
     { name: 'Sell', from: '2027-01-13', to: '2027-05-12', when: 'Jan 13 on', text: 'Launch, make your first real sale, and show it at Demo Day on Feb 10.' }
   ],
+  // Clips and photos from the first meeting, shown under the group photo. show: false hides the whole section.
+  pitches: {
+    show: true,
+    title: 'Real pitches. First meeting.',
+    text: 'Nobody rehearsed. They had an idea, stood up, and pitched it to the room.',
+    clips: [
+      { src: 'marketing/pitch-1.mp4', poster: 'marketing/pitch-1.jpg', label: 'Pitch 1' },
+      { src: 'marketing/pitch-2.mp4', poster: 'marketing/pitch-2.jpg', label: 'Pitch 2' },
+      { src: 'marketing/pitch-3.mp4', poster: 'marketing/pitch-3.jpg', label: 'Pitch 3' }
+    ],
+    photos: [
+      { src: 'marketing/meeting-room.jpg', alt: 'The Media Center during the first meeting, with the guest speaker on both screens', caption: 'A startup CEO on the big screens, taking questions.' },
+      { src: 'marketing/meeting-candid.jpg', alt: 'Two members working out a pitch on a phone', caption: 'Working out the pitch, two minutes before going up.' }
+    ]
+  },
+
   // Three short facts under the Join button. Keep them true.
   proof: ['40+ students at the first meeting', '40 Academy levels, from idea to first sale', 'Free to join'],
   // The line under the phases. Set to '' to hide it.
@@ -150,11 +167,12 @@ window.RT_CONFIG = {
 
   // The club hoodie on the landing page. The price is worked out from "was" and "percentOff", so the math is always right:
   // $25 with 20% off = $20. Only show a crossed-out price that people will really pay later (the price after launch).
-  // orderUrl: where the button goes once orders are open. Leave '' to show "Orders open soon". Set show to false to hide it.
+  // orders: false shows "Orders open soon" instead of the order form. The real price is charged by api/hoodie.js (HOODIE_CENTS).
   hoodie: {
     show: true,
     was: 25, percentOff: 20, priceNote: 'Launch price',
-    orderUrl: '',
+    orders: true,              // true = the "Get the hoodie" button opens the order form (paid by card through Stripe)
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
     perks: ['Front row at events', 'Skip the line at the door', 'One extra raffle entry']
   },
 

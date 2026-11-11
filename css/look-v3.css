@@ -630,3 +630,69 @@ html.tank-lite[data-look="v3"] #sea { display: none; }
   html[data-look="v3"] .mystery .mystery-shark { transform: translate(30vw, 0); }
   html[data-look="v3"] .rv { opacity: 1; translate: none; rotate: none; }
 }
+
+/* =========================================================
+   Pitches, the hoodie order, and livelier dashboards.
+   ========================================================= */
+html[data-look="v3"] .pitch-wall { gap: 72px; }
+html[data-look="v3"] .clip { transform-origin: 50% 0; transform: rotate(var(--tilt, 0deg)); box-shadow: 0 30px 44px -26px rgba(0, 0, 0, 0.8); transition: translate 0.25s var(--ease); }
+html[data-look="v3"] .clip:hover { translate: 0 -6px; }
+html[data-look="v3"] .clip:nth-child(2) { margin-top: 34px; }
+html[data-look="v3"] .clip.rv { opacity: 0; translate: 0 60px; rotate: 5deg; transition: opacity 0.6s var(--ease), translate 1s cubic-bezier(0.2, 1.3, 0.35, 1), rotate 1s cubic-bezier(0.2, 1.3, 0.35, 1); transition-delay: calc(var(--rv-i, 0) * 140ms); }
+html[data-look="v3"] .clip.rv.in { opacity: 1; translate: 0 0; rotate: 0deg; }
+html[data-look="v3"] .clip-fin { animation: bob 2.6s ease-in-out infinite; }
+html[data-look="v3"] .pitch-print { transform-origin: 50% 0; transform: translateY(var(--py, 0px)) rotate(var(--tilt, 0deg)); }
+html[data-look="v3"] .pitch-print.rv { opacity: 0; rotate: 8deg; translate: 0 50px; transition: opacity 0.6s var(--ease), rotate 1.2s cubic-bezier(0.2, 1.5, 0.35, 1), translate 1s var(--ease); transition-delay: calc(0.25s + var(--rv-i, 0) * 160ms); }
+html[data-look="v3"] .pitch-print.rv.in { opacity: 1; rotate: -1.6deg; translate: 0 0; }
+html[data-look="v3"] .pitch-print:nth-child(2).rv.in { rotate: 2.4deg; }
+
+/* ---------- member dashboard: grouped, and it moves like the front page ---------- */
+html[data-look="v3"] .dash-label { display: flex; align-items: center; gap: 10px; margin: 0 0 18px; font: 400 26px/1 var(--font-poster); letter-spacing: 0.02em; text-transform: uppercase; animation: fadeUp 0.7s 0.15s var(--ease) both; }
+html[data-look="v3"] .dash-label-fin { width: 22px; color: var(--g-300); }
+html[data-look="v3"] .home-grid { margin-top: 0; }
+html[data-look="v3"] .view-home .home-top { margin-bottom: 44px; }
+html[data-look="v3"] .view-home .page-head { margin-bottom: 10px; }
+html[data-look="v3"] .view-home .page-title { animation: lineUp 0.9s var(--ease) both; }
+html[data-look="v3"] .dash-water { position: relative; height: 44px; margin: 0 calc(50% - 50vw) 34px; overflow: hidden; pointer-events: none; }
+html[data-look="v3"] .dash-swimmer { position: absolute; left: 0; bottom: 7px; width: 40px; height: 28px; animation: cruise 30s linear infinite; }
+html[data-look="v3"] .view-home .countdown-banner { transform-origin: 12% 0; animation: ticketDrop 1s 0.25s both; filter: drop-shadow(0 22px 22px rgba(0, 0, 0, 0.45)); }
+html[data-look="v3"] .view-home .ac-home { animation: rise 0.8s 0.45s var(--ease) both; }
+html[data-look="v3"] .view-home .ac-home .btn-primary { animation: nudgePulse 2.8s 2s ease-in-out infinite; }
+@keyframes nudgePulse { 0%, 100% { translate: 0 0; } 50% { translate: 4px 0; } }
+html[data-look="v3"] .points-card .stand-main.has-shark::after { display: none; }
+html[data-look="v3"] .my-shark { position: absolute; right: 5%; top: 0; width: 84px; height: auto; color: #a8cdb9; pointer-events: none; animation: sharkIn 1.6s 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both, idle 5s 2.1s ease-in-out infinite; }
+html[data-look="v3"] .my-shark.t1 { width: 118px; color: var(--g-300); }
+html[data-look="v3"] .my-shark.t2 { width: 156px; color: #fff; }
+html[data-look="v3"] .my-shark.t3 { width: 204px; color: var(--b-300); }
+html[data-look="v3"][data-theme="light"] .my-shark { color: var(--forest); }
+@keyframes sharkIn { from { opacity: 0; translate: -260px 12px; } to { opacity: 1; translate: 0 0; } }
+html[data-look="v3"] .view-home .timeline li { animation: rise 0.6s var(--ease) both; }
+html[data-look="v3"] .view-home .timeline li:nth-child(1) { animation-delay: 0.7s; }
+html[data-look="v3"] .view-home .timeline li:nth-child(2) { animation-delay: 0.82s; }
+html[data-look="v3"] .view-home .timeline li:nth-child(3) { animation-delay: 0.94s; }
+html[data-look="v3"] .view-home .timeline li:nth-child(n+4) { animation-delay: 1.05s; }
+html[data-look="v3"] .view-home .timeline li { transition: translate 0.2s var(--ease); }
+html[data-look="v3"] .view-home .timeline li:hover { translate: 6px 0; }
+html[data-look="v3"] .view-home .card { transition: border-color 0.25s, translate 0.25s var(--ease); }
+html[data-look="v3"] .view-home .dash-grid > .card:hover { border-color: var(--line-2); translate: 0 -3px; }
+
+/* ---------- sponsor dashboard: the header rises, the pay card drops in, the steps tick down the list ---------- */
+html[data-look="v3"] .sp-dash-head .page-title { animation: lineUp 0.9s var(--ease) both; }
+html[data-look="v3"] .sp-paynow { transform-origin: 8% 0; animation: ticketDrop 1s 0.3s both; filter: drop-shadow(0 22px 22px rgba(0, 0, 0, 0.45)); }
+html[data-look="v3"] .sp-paynow .btn-primary { animation: nudgePulse 2.8s 2s ease-in-out infinite; }
+html[data-look="v3"] .sp-steps-li { animation: rise 0.6s var(--ease) both; }
+html[data-look="v3"] .sp-steps-li:nth-child(1) { animation-delay: 0.5s; }
+html[data-look="v3"] .sp-steps-li:nth-child(2) { animation-delay: 0.64s; }
+html[data-look="v3"] .sp-steps-li:nth-child(3) { animation-delay: 0.78s; }
+html[data-look="v3"] .sp-steps-li:nth-child(4) { animation-delay: 0.92s; }
+html[data-look="v3"] .sp-steps-li:nth-child(5) { animation-delay: 1.06s; }
+html[data-look="v3"] .sp-overview { gap: 30px; }
+@media (max-width: 899px) {
+  html[data-look="v3"] .clip:nth-child(2) { margin-top: 0; }
+  html[data-look="v3"] .my-shark { right: 2%; scale: 0.8; transform-origin: 100% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-look="v3"] .dash-label, html[data-look="v3"] .view-home .page-title, html[data-look="v3"] .dash-swimmer, html[data-look="v3"] .view-home .countdown-banner, html[data-look="v3"] .view-home .ac-home, html[data-look="v3"] .view-home .ac-home .btn-primary, html[data-look="v3"] .my-shark, html[data-look="v3"] .view-home .timeline li,
+  html[data-look="v3"] .sp-dash-head .page-title, html[data-look="v3"] .sp-paynow, html[data-look="v3"] .sp-paynow .btn-primary, html[data-look="v3"] .sp-steps-li, html[data-look="v3"] .clip-fin { animation: none !important; }
+}
+html.tank-lite[data-look="v3"] .dash-swimmer, html.tank-lite[data-look="v3"] .view-home .ac-home .btn-primary, html.tank-lite[data-look="v3"] .sp-paynow .btn-primary, html.tank-lite[data-look="v3"] .clip-fin { animation: none !important; }

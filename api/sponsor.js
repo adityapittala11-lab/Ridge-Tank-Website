@@ -48,6 +48,39 @@ async function spotsLeft(client) {
   return out;
 }
 
+// One call to Stripe. (This helper went missing in an earlier change, which broke every sponsor payment button.)
+async function stripe(path, fields) {
+  const body = new URLSearchParams();
+  for (const [k, v] of Object.entries(fields)) if (v != null && v !== '') body.append(k, String(v));
+  const r = await fetch(STRIPE() + '/v1/' + path, { method: 'POST', headers: { Authorization: 'Bearer ' + stripeKey(), 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+  const out = await r.json().catch(() => null);
+  if (!r.ok || !out) throw new Error((out && out.error && out.error.message) || 'Stripe did not answer.');
+  return out;
+}
+
+// Opens a Stripe Checkout page for one thing this sponsor can pay for, and answers its address.
+async function checkoutUrl(req, a, opt, backPath) {
+  const back = siteOrigin(req) + backPath;
+  const monthly = opt.kind === 'monthly';
+  const session = await stripe('checkout/sessions', {
+    mode: monthly ? 'subscription' : 'payment',
+    'line_items[0][quantity]': 1,
+    'line_items[0][price_data][currency]': 'usd',
+    'line_items[0][price_data][unit_amount]': opt.cents,
+    'line_items[0][price_data][product_data][name]': monthly ? NAMES.monthly[a.level] : NAMES[opt.kind],
+    'line_items[0][price_data][recurring][interval]': monthly ? 'month' : '',
+    customer: a.stripe_customer || '',
+    customer_email: a.stripe_customer ? '' : a.email,
+    client_reference_id: a.id,
+    'metadata[account_id]': a.id,
+    'metadata[kind]': opt.kind,
+    'subscription_data[metadata][account_id]': monthly ? a.id : '',
+    success_url: back + '?paid=1',
+    cancel_url: back + '?paid=0'
+  });
+  return session.url;
+}
+
 async function paymentInfo(client, a) {
   const r = await client.query('select kind, amount_cents, created_at from sponsor_portal.payments where account_id = $1 order by created_at desc limit 50', [a.id]);
   const kinds = new Set(r.rows.map(x => x.kind));
@@ -189,12 +222,19 @@ async function run(req, b) {
           [email, hashPassword(password), v.business, v.contact_name, v.phone, v.website, v.level, v.meeting, v.pitch_note, v.logo]);
         const a = r.rows[0];
         await notifyOfficers(a);
-        if (confirmNow) return ok({ confirm: false, ...session(a) });
+        // Payment comes before login: the new sponsor goes straight to the Stripe page for the plan they picked.
+        // If that page can't be opened, sign-up still works and they can pay later from their dashboard.
+        let payUrl = null;
+        try {
+          const first = (await paymentInfo(client, a)).options[0];
+          if (first) payUrl = await checkoutUrl(req, a, first, confirmNow ? '/#/sponsor/dashboard/payments' : '/#/sponsor');
+        } catch (e) { payUrl = null; }
+        if (confirmNow) return ok({ confirm: false, payUrl, ...session(a) });
         try { await sendConfirmation(req, a); } catch (e) {
           await client.query('delete from sponsor_portal.accounts where id = $1', [a.id]);
           return fail('We couldn’t send an email to that address. Check it and try again.', 'mail_failed');
         }
-        return ok({ confirm: true, email });
+        return ok({ confirm: true, email, payUrl });
       }
 
       const r = await client.query('select * from sponsor_portal.accounts where lower(email) = $1', [email]);
@@ -228,26 +268,7 @@ async function run(req, b) {
         const info = await paymentInfo(client, a);
         const opt = info.options.find(o => o.kind === String(b.kind || ''));
         if (!opt) return fail('Nothing is due right now.', 'nothing_due');
-        const origin = siteOrigin(req);
-        const back = origin + '/#/sponsor/dashboard/payments';
-        const monthly = opt.kind === 'monthly';
-        const session = await stripe('checkout/sessions', {
-          mode: monthly ? 'subscription' : 'payment',
-          'line_items[0][quantity]': 1,
-          'line_items[0][price_data][currency]': 'usd',
-          'line_items[0][price_data][unit_amount]': opt.cents,
-          'line_items[0][price_data][product_data][name]': monthly ? NAMES.monthly[a.level] : NAMES[opt.kind],
-          'line_items[0][price_data][recurring][interval]': monthly ? 'month' : '',
-          customer: a.stripe_customer || '',
-          customer_email: a.stripe_customer ? '' : a.email,
-          client_reference_id: a.id,
-          'metadata[account_id]': a.id,
-          'metadata[kind]': opt.kind,
-          'subscription_data[metadata][account_id]': monthly ? a.id : '',
-          success_url: back + '?paid=1',
-          cancel_url: back + '?paid=0'
-        });
-        return ok({ url: session.url });
+        return ok({ url: await checkoutUrl(req, a, opt, '/#/sponsor/dashboard/payments') });
       }
 
       if (action === 'portal') {

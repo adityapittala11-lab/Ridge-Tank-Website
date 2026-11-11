@@ -4,6 +4,7 @@
 // then copy the "Signing secret" (whsec_...) into Vercel as STRIPE_WEBHOOK_SECRET.
 import crypto from 'node:crypto';
 import { getPool, ensureSchema } from './_pg.js';
+import { sendMail, mailConfigured } from './_mail.js';
 
 export const config = { api: { bodyParser: false } };
 
@@ -42,7 +43,16 @@ export default async function handler(req, res) {
     const client = await getPool().connect();
     try {
       const o = (ev.data && ev.data.object) || {};
-      if (ev.type === 'checkout.session.completed' && o.payment_status !== 'unpaid') {
+      if (ev.type === 'checkout.session.completed' && o.payment_status !== 'unpaid' && o.metadata && o.metadata.kind === 'hoodie_order') {
+        // A student bought a hoodie: mark the order paid (once) and tell the officers who, what size and how many.
+        const r = await client.query("update shop.hoodie_orders set status = 'paid', paid_at = now() where ref = $1 and status <> 'paid' returning name, email, size, qty, amount_cents", [o.id]);
+        const to = String(process.env.HOODIE_NOTIFY || process.env.SPONSOR_NOTIFY || '').split(',').map(s => s.trim()).filter(Boolean);
+        if (r.rows.length && to.length && mailConfigured()) {
+          const x = r.rows[0];
+          const text = `Hoodie order paid\n\n${x.name} · ${x.email}\nSize ${x.size} x ${x.qty}\n$${(x.amount_cents / 100).toFixed(2)}`;
+          for (const addr of to) { try { await sendMail({ to: addr, subject: 'Hoodie order: ' + x.name + ', ' + x.size + ' x ' + x.qty, text, html: '<pre style="font:14px/1.5 system-ui,sans-serif;white-space:pre-wrap">' + text.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])) + '</pre>' }); } catch (e) { /* the order is saved either way */ } }
+        }
+      } else if (ev.type === 'checkout.session.completed' && o.payment_status !== 'unpaid') {
         const id = (o.metadata && o.metadata.account_id) || o.client_reference_id;
         const kind = (o.metadata && o.metadata.kind) || '';
         if (o.customer) await client.query('update sponsor_portal.accounts set stripe_customer = $2 where id = $1', [id, o.customer]);

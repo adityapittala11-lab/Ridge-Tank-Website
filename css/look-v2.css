@@ -262,7 +262,7 @@ html[data-skin="poster"] .mystery, html[data-skin="poster"] .hoodie {
   margin: 84px calc(50% - 50vw) 0;
   padding: 72px calc(50vw - 50%);
 }
-html[data-skin="poster"] .mystery { background: var(--myst-bg); color: var(--myst-ink); display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 56px; align-items: center; }
+html[data-skin="poster"] .mystery { background: var(--myst-bg); color: var(--myst-ink); display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 56px; align-items: start; }
 html[data-skin="poster"] .mystery-mark { display: flex; font: 400 clamp(120px, 21vw, 280px)/0.8 var(--font-poster); color: var(--myst-mark); letter-spacing: 0.02em; }
 html[data-skin="poster"] .mystery-mark .q { display: block; }
 html[data-skin="poster"] .mystery-copy { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
@@ -275,7 +275,7 @@ html[data-skin="poster"] .redact { display: block; height: 1.05em; max-width: 10
 html[data-skin="poster"] .mystery-reveal { font-weight: 800; padding: 6px 12px; background: var(--mint); color: var(--pine-ink); }
 html[data-skin="poster"] .mystery-note { font-size: 15px; color: color-mix(in srgb, var(--myst-ink) 80%, transparent); }
 
-html[data-skin="poster"] .hoodie { background: var(--wine); color: var(--snow); display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 56px; align-items: center; }
+html[data-skin="poster"] .hoodie { background: var(--wine); color: var(--snow); display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 56px; align-items: start; }
 /* the two hoodie shots sit like prints pinned to the wall */
 html[data-skin="poster"] .hoodie-photos { display: grid; grid-template-columns: 1fr 1fr; gap: 0; padding: 10px 0 30px; }
 html[data-skin="poster"] .hoodie-photos img { display: block; width: 100%; height: auto; aspect-ratio: 1 / 1.03; object-fit: cover; border: 8px solid var(--print-edge); box-shadow: 0 30px 44px -26px rgba(0, 0, 0, 0.7); }
@@ -338,4 +338,32 @@ html[data-skin="poster"] .closer .card .btn-primary, html[data-skin="poster"][da
 @media (prefers-reduced-motion: reduce) {
   html[data-skin="poster"] .ticket, html[data-skin="poster"] .hoodie-off, html[data-skin="poster"] .hoodie-photos img { transform: none !important; }
   html[data-skin="poster"] .print { rotate: none; }
+}
+
+/* ---------- pitches from the first meeting: three clips and two pinned photos ---------- */
+html[data-skin="poster"] .pitch-wall { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 56px; align-items: start; }
+html[data-skin="poster"] .clip-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+html[data-skin="poster"] .clip { position: relative; aspect-ratio: 478 / 850; background: #000; overflow: hidden; }
+html[data-skin="poster"] .clip video { display: block; width: 100%; height: 100%; object-fit: cover; }
+html[data-skin="poster"] .clip-play { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 8px; padding: 0 0 22px; color: #fff; font-weight: 800; font-size: 15px; background: linear-gradient(180deg, transparent 55%, rgba(4, 17, 11, 0.85)); }
+html[data-skin="poster"] .clip-fin { width: 44px; color: var(--mint); rotate: 90deg; }
+html[data-skin="poster"] .clip.on .clip-play { display: none; }
+html[data-skin="poster"] .pitch-prints { display: grid; gap: 28px; }
+html[data-skin="poster"] .pitch-print:nth-child(2) { width: 62%; justify-self: end; rotate: 2.4deg; margin-top: -8%; }
+/* the hoodie order form */
+html[data-skin="poster"] .order-sizes { display: flex; flex-wrap: wrap; gap: 8px; }
+html[data-skin="poster"] .order-size { min-width: 54px; height: 46px; padding: 0 14px; font-weight: 800; border: 1.5px solid var(--line-2); color: var(--ink); }
+html[data-skin="poster"] .order-size[aria-checked="true"] { background: var(--g-300); border-color: var(--g-300); color: var(--pine-ink); }
+html[data-skin="poster"][data-theme="light"] .order-size[aria-checked="true"] { color: var(--paper); }
+html[data-skin="poster"] .order-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+html[data-skin="poster"] .order-qty { display: flex; align-items: center; gap: 14px; }
+html[data-skin="poster"] .order-qty .icon-btn { font-size: 20px; font-weight: 700; }
+html[data-skin="poster"] .order-count { min-width: 1.2em; text-align: center; font: 400 30px/1 var(--font-poster); }
+html[data-skin="poster"] .order-sum { font-weight: 700; color: var(--ink-2); }
+html[data-skin="poster"] .order-total { margin-left: 8px; font: 400 40px/1 var(--font-poster); color: var(--ink); }
+@media (max-width: 899px) {
+  html[data-skin="poster"] .pitch-wall { grid-template-columns: 1fr; gap: 40px; }
+  html[data-skin="poster"] .clip-row { grid-template-columns: repeat(3, 64%); gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -16px; padding: 0 16px 8px; }
+  html[data-skin="poster"] .clip { scroll-snap-align: center; }
+  html[data-skin="poster"] .pitch-print:nth-child(2) { width: 78%; margin-top: 0; }
 }
