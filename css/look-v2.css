@@ -1,0 +1,290 @@
+/* =========================================================
+   Ridge Tank, look v2: "the poster wall".
+   Flat forest green, cream paper and burgundy, the same as the printed posters. Anton for the big
+   headlines, Archivo for everything else. No moving background, no glass blur, no glow, no dotted text.
+
+   Everything here sits behind html[data-look="v2"] so the original look (styles.css alone) is untouched.
+   Go back to the original: index.html, DEFAULT_LOOK = "v1". Peek at either: add ?look=v1 or ?look=v2.
+   ========================================================= */
+
+@font-face { font-family: "Anton"; font-weight: 400; font-display: swap; src: url(../fonts/anton.woff2) format("woff2"); }
+@font-face { font-family: "Archivo"; font-weight: 100 900; font-stretch: 62% 125%; font-display: swap; src: url(../fonts/archivo.woff2) format("woff2"); }
+
+html[data-look="v2"] {
+  --paper: #f2ece0;
+  --forest: #0e402c;
+  --forest-deep: #0a3324;
+  --pine-ink: #0b2419;
+  --mint: #6fe0a8;
+  --burgundy: #7a1434;
+  --alarm: #c8102e;
+
+  --tint: 242 236 224;
+  --panel: 10 51 36;
+  --bg: var(--forest);
+  --ink: var(--paper);
+  --ink-2: rgba(242, 236, 224, 0.84);
+  --ink-3: rgba(242, 236, 224, 0.66);
+  --ink-4: rgba(242, 236, 224, 0.46);
+  --line: rgba(242, 236, 224, 0.16);
+  --line-2: rgba(242, 236, 224, 0.3);
+  --glass: var(--forest-deep);
+  --glass-strong: #082a1d;
+  --g-300: var(--mint);
+  --g-400: #4fcf90;
+
+  --ticket-bg: var(--paper);
+  --ticket-ink: var(--pine-ink);
+  --ticket-accent: var(--burgundy);
+
+  --font-poster: "Anton", "Archivo", Impact, "Arial Narrow", sans-serif;
+  --font-display: "Archivo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-ui: "Archivo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Archivo", ui-sans-serif, system-ui, sans-serif;
+}
+html[data-look="v2"][data-theme="light"] {
+  --tint: 11 36 25;
+  --panel: 251 247 238;
+  --bg: var(--paper);
+  --ink: var(--pine-ink);
+  --ink-2: rgba(11, 36, 25, 0.84);
+  --ink-3: rgba(11, 36, 25, 0.66);
+  --ink-4: rgba(11, 36, 25, 0.46);
+  --line: rgba(11, 36, 25, 0.16);
+  --line-2: rgba(11, 36, 25, 0.32);
+  --glass: #fbf7ee;
+  --glass-strong: #fbf7ee;
+  --g-200: var(--forest);
+  --g-300: #14694a;
+  --g-400: #14694a;
+  --ticket-bg: var(--forest);
+  --ticket-ink: var(--paper);
+  --ticket-accent: var(--mint);
+}
+
+/* ---------- the page itself: one flat colour ---------- */
+html[data-look="v2"] body, html[data-look="v2"][data-theme="light"] body { background: var(--bg); }
+html[data-look="v2"] #bg, html[data-look="v2"] .grain, html[data-look="v2"] #intro { display: none; }
+html[data-look="v2"] *, html[data-look="v2"] *::before, html[data-look="v2"] *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; text-shadow: none; }
+html[data-look="v2"] .view, html[data-look="v2"] .reveal { animation: none; }
+html[data-look="v2"] .section { opacity: 1; transform: none; transition: none; }
+html[data-look="v2"] .lift:hover { transform: none; }
+html[data-look="v2"] .spot::before, html[data-look="v2"] .spot::after { display: none; }
+
+/* ---------- type ---------- */
+html[data-look="v2"] h1, html[data-look="v2"] h2, html[data-look="v2"] h3, html[data-look="v2"] h4 { font-weight: 800; font-stretch: 88%; letter-spacing: -0.01em; }
+html[data-look="v2"] .hero-title, html[data-look="v2"] .page-title, html[data-look="v2"] .section-title, html[data-look="v2"] .auth-title, html[data-look="v2"] .big-num {
+  font-family: var(--font-poster);
+  font-weight: 400;
+  font-stretch: normal;
+  letter-spacing: 0.005em;
+  line-height: 0.98;
+  text-transform: uppercase;
+}
+html[data-look="v2"] .page-title { font-size: clamp(38px, 5.4vw, 64px); }
+html[data-look="v2"] .section-title { font-size: clamp(36px, 5vw, 64px); max-width: 16em; }
+html[data-look="v2"] .section-sub { color: var(--ink-2); font-size: 17px; max-width: 58ch; }
+html[data-look="v2"] .mono { letter-spacing: 0; }
+html[data-look="v2"] .card-label, html[data-look="v2"] .eyebrow, html[data-look="v2"] .or-divider, html[data-look="v2"] .how-num, html[data-look="v2"] .cd-sub, html[data-look="v2"] .cd-eyebrow {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+html[data-look="v2"] .card-label { color: var(--ink-2); }
+
+/* ---------- top bar: a plain strip across the top ---------- */
+html[data-look="v2"] #topbar {
+  top: 0; left: 0; transform: none;
+  width: 100%;
+  padding: 0 max(16px, calc((100% - 1160px) / 2));
+  background: var(--bg);
+  border: 0;
+  border-bottom: 1px solid var(--line-2);
+  box-shadow: none;
+}
+html[data-look="v2"] .brand-mark { background: var(--burgundy); box-shadow: none; }
+html[data-look="v2"] .brand-name { font: 400 22px/1 var(--font-poster); letter-spacing: 0.02em; text-transform: uppercase; }
+html[data-look="v2"] #topbar .menu-panel, html[data-look="v2"] .picker-list { background: var(--glass); border: 1px solid var(--line-2); box-shadow: 0 18px 36px -18px rgba(0, 0, 0, 0.55); }
+html[data-look="v2"] #bottombar { background: var(--glass); }
+html[data-look="v2"] #app { padding-top: 92px; }
+
+/* ---------- surfaces and controls ---------- */
+html[data-look="v2"] .glass, html[data-look="v2"] .card { background: var(--glass); border: 1px solid var(--line); box-shadow: none; }
+html[data-look="v2"] .card.spot, html[data-look="v2"] .podium-slot.spot, html[data-look="v2"] .badge-tile.spot { box-shadow: none; }
+html[data-look="v2"] .badge-tile, html[data-look="v2"] .badge-chip, html[data-look="v2"] .strip-stat { background-color: rgb(var(--tint) / 0.05); }
+html[data-look="v2"] .btn { font-weight: 700; }
+html[data-look="v2"] .btn-primary { color: var(--pine-ink); background: var(--mint); box-shadow: none; }
+html[data-look="v2"] .btn-primary:hover:not(:disabled) { color: var(--pine-ink); background: #92ecc0; filter: none; transform: none; box-shadow: none; }
+html[data-look="v2"][data-theme="light"] .btn-primary { color: var(--paper); background: var(--forest); }
+html[data-look="v2"][data-theme="light"] .btn-primary:hover:not(:disabled) { color: var(--paper); background: #14694a; }
+html[data-look="v2"] .btn-ghost { background: transparent; border: 1.5px solid var(--line-2); }
+html[data-look="v2"] .btn-danger { background: #a51d45; box-shadow: none; }
+html[data-look="v2"] .seg-ind { background: rgb(111 224 168 / 0.2); border-color: var(--g-300); box-shadow: none; }
+html[data-look="v2"] .bar-fill { background: var(--g-300); box-shadow: none; }
+html[data-look="v2"] .input:focus { box-shadow: none; border-color: var(--g-300); }
+html[data-look="v2"] .profile-avatar .avatar { box-shadow: 0 0 0 3px var(--glass), 0 0 0 5px var(--g-300); }
+html[data-look="v2"] .podium-slot.p1 .podium-avatar .avatar { box-shadow: 0 0 0 3px var(--glass), 0 0 0 5px var(--g-300); }
+html[data-look="v2"] .f-panel, html[data-look="v2"][data-theme="light"] .f-panel { background: var(--glass); box-shadow: none; }
+html[data-look="v2"] .f-glow { display: none; }
+html[data-look="v2"] .f-anim, html[data-look="v2"] .f-panel.in .f-anim { opacity: 1; filter: none; transform: none; animation: none; transition: none; }
+html[data-look="v2"] .avatar { box-shadow: none; }
+html[data-look="v2"] .av-g1 { background: #1f8a5c; }
+html[data-look="v2"] .av-g2 { background: #14694a; }
+html[data-look="v2"] .av-g3 { background: #2a7d6b; }
+html[data-look="v2"] .av-b1 { background: #a51d45; }
+html[data-look="v2"] .av-b2 { background: var(--burgundy); }
+html[data-look="v2"] .modal { box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.6); }
+
+/* the red meeting countdown on Home: flat, no stripes, no pulse */
+html[data-look="v2"] .countdown-banner { background: var(--alarm); border: 0; box-shadow: none; }
+html[data-look="v2"] .countdown-banner::after { display: none; }
+html[data-look="v2"] .cd-big { font-family: var(--font-poster); font-weight: 400; animation: none; }
+html[data-look="v2"] .cd-eyebrow, html[data-look="v2"] .cd-cta { color: #fff; }
+
+/* ---------- landing: hero with the ticket ---------- */
+html[data-look="v2"] .hero2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+  gap: 56px;
+  align-items: center;
+  padding: 40px 0 72px;
+}
+html[data-look="v2"] .hero2-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 26px; min-width: 0; }
+html[data-look="v2"] .hero2 .hero-title { font-size: clamp(96px, 17vw, 236px); line-height: 0.93; white-space: normal; margin-left: -0.03em; }
+html[data-look="v2"] .hero2-sub { max-width: 30em; font-size: clamp(18px, 1.7vw, 21px); line-height: 1.45; color: var(--ink-2); }
+html[data-look="v2"] .hero2 .hero-cta { justify-content: flex-start; margin: 0; }
+
+html[data-look="v2"] .ticket {
+  position: relative;
+  display: flex;
+  background: var(--ticket-bg);
+  color: var(--ticket-ink);
+  transform: rotate(2deg);
+}
+html[data-look="v2"] .ticket-main { flex: 1 1 auto; min-width: 0; padding: 26px 24px 24px; display: flex; flex-direction: column; gap: 6px; }
+html[data-look="v2"] .ticket-kicker { font-weight: 700; font-size: 15px; color: var(--ticket-accent); }
+html[data-look="v2"] .ticket-date { font: 400 clamp(44px, 4.6vw, 60px)/0.98 var(--font-poster); text-transform: uppercase; letter-spacing: 0.005em; margin: 2px 0 8px; }
+html[data-look="v2"] .ticket-where { font-weight: 700; font-size: 18px; }
+html[data-look="v2"] .ticket-what { font-size: 15.5px; }
+html[data-look="v2"] .ticket-free { font-size: 14.5px; margin-top: 12px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, var(--ticket-ink) 22%, transparent); }
+html[data-look="v2"] .ticket-stub {
+  position: relative;
+  flex: none;
+  width: 112px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 16px 10px;
+  text-align: center;
+  border-left: 2px dashed color-mix(in srgb, var(--ticket-ink) 38%, transparent);
+}
+/* the two punched notches where the stub tears off */
+html[data-look="v2"] .ticket-stub::before, html[data-look="v2"] .ticket-stub::after {
+  content: "";
+  position: absolute;
+  left: -12px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50% !important;
+  background: var(--bg);
+}
+html[data-look="v2"] .ticket-stub::before { top: -11px; }
+html[data-look="v2"] .ticket-stub::after { bottom: -11px; }
+html[data-look="v2"] .ticket-count { font: 400 76px/0.9 var(--font-poster); color: var(--ticket-accent); }
+html[data-look="v2"] .ticket-count.is-today { font-size: 34px; text-transform: uppercase; }
+html[data-look="v2"] .ticket-count-label { font-weight: 700; font-size: 13.5px; line-height: 1.2; }
+html[data-look="v2"] .ticket-inline { max-width: 440px; margin: 8px 0 8px 6px; }
+
+/* ---------- landing: the year ---------- */
+html[data-look="v2"] .phase-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 2px solid var(--ink); }
+html[data-look="v2"] .phase { padding: 22px 28px 8px 0; }
+html[data-look="v2"] .phase + .phase { padding-left: 28px; border-left: 1px solid var(--line-2); }
+html[data-look="v2"] .phase-top { display: flex; align-items: center; gap: 10px; min-height: 26px; }
+html[data-look="v2"] .phase-num { font-weight: 700; font-size: 14px; color: var(--ink-3); }
+html[data-look="v2"] .phase-now { font-weight: 800; font-size: 12.5px; padding: 4px 9px; background: var(--g-300); color: var(--pine-ink); }
+html[data-look="v2"][data-theme="light"] .phase-now { color: var(--paper); }
+html[data-look="v2"] .phase-name { font: 400 clamp(52px, 6.4vw, 84px)/0.95 var(--font-poster); text-transform: uppercase; letter-spacing: 0.005em; margin: 10px 0 8px; }
+html[data-look="v2"] .phase.is-now .phase-name { color: var(--g-300); }
+html[data-look="v2"] .phase-when { font-weight: 700; font-size: 16px; margin-bottom: 8px; }
+html[data-look="v2"] .phase-text { color: var(--ink-2); max-width: 32ch; }
+html[data-look="v2"] .prize-line { display: flex; align-items: center; gap: 12px; margin-top: 30px; padding: 16px 20px; background: var(--burgundy); color: #fff; font-weight: 700; font-size: 17px; }
+html[data-look="v2"] .prize-line .ico { flex: none; }
+
+/* ---------- landing: full-width colour blocks ---------- */
+html[data-look="v2"] .mystery, html[data-look="v2"] .hoodie {
+  margin: 84px calc(50% - 50vw) 0;
+  padding: 72px calc(50vw - 50%);
+}
+html[data-look="v2"] .mystery { background: var(--alarm); color: #fff; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 48px; align-items: center; }
+html[data-look="v2"] .mystery-mark { font: 400 clamp(120px, 21vw, 280px)/0.8 var(--font-poster); color: #2a0409; letter-spacing: 0.02em; }
+html[data-look="v2"] .mystery-copy { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+html[data-look="v2"] .mystery .section-title { color: #fff; }
+html[data-look="v2"] .mystery-text { font-size: clamp(18px, 1.9vw, 22px); line-height: 1.4; max-width: 28em; }
+html[data-look="v2"] .mystery-reveal { font-weight: 800; padding: 6px 12px; background: #2a0409; color: #fff; }
+html[data-look="v2"] .mystery-note { font-size: 15px; color: rgba(255, 255, 255, 0.9); }
+
+html[data-look="v2"] .hoodie { background: #561a2d; color: var(--paper); display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 48px; align-items: center; }
+/* the two hoodie shots sit like prints pinned to the wall */
+html[data-look="v2"] .hoodie-photos { display: grid; grid-template-columns: 1fr 1fr; gap: 0; padding: 10px 0 30px; }
+html[data-look="v2"] .hoodie-photos img { display: block; width: 100%; height: auto; aspect-ratio: 1 / 1.03; object-fit: cover; border: 8px solid var(--paper); }
+html[data-look="v2"] .hoodie-photos img:first-child { transform: rotate(-2.5deg); position: relative; z-index: 1; }
+html[data-look="v2"] .hoodie-photos img:last-child { transform: rotate(2deg) translate(-14px, 26px); }
+html[data-look="v2"] .hoodie-copy { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+html[data-look="v2"] .hoodie .section-title { color: var(--paper); }
+html[data-look="v2"] .hoodie-pitch { font-size: 18px; line-height: 1.45; max-width: 26em; color: rgba(242, 236, 224, 0.92); }
+html[data-look="v2"] .hoodie-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 14px; margin-top: 4px; }
+html[data-look="v2"] .hoodie-price strong { font: 400 clamp(72px, 8vw, 104px)/0.9 var(--font-poster); color: #fff; }
+html[data-look="v2"] .hoodie-price s { font: 400 34px/1 var(--font-poster); color: rgba(242, 236, 224, 0.6); text-decoration-thickness: 3px; }
+html[data-look="v2"] .hoodie-off { align-self: center; font-weight: 800; font-size: 15px; padding: 6px 11px; background: var(--mint); color: var(--pine-ink); transform: rotate(-3deg); }
+html[data-look="v2"] .hoodie-note { font-size: 14.5px; color: rgba(242, 236, 224, 0.8); margin-top: -6px; }
+html[data-look="v2"] .hoodie-perks { display: flex; flex-direction: column; gap: 8px; margin: 6px 0 2px; }
+html[data-look="v2"] .hoodie-perks li { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; }
+html[data-look="v2"] .hoodie-perks .ico { color: var(--mint); }
+html[data-look="v2"] .hoodie-fair { font-size: 14.5px; color: rgba(242, 236, 224, 0.8); max-width: 30em; }
+html[data-look="v2"] .hoodie-soon { font-weight: 800; font-size: 16px; padding: 12px 18px; border: 2px dashed rgba(242, 236, 224, 0.55); }
+html[data-look="v2"] .hoodie .btn-primary { background: var(--mint); color: var(--pine-ink); }
+
+/* ---------- landing: the older sections, flattened ---------- */
+html[data-look="v2"] #faq .eyebrow { display: none; }
+html[data-look="v2"] .how-list { border-top: 2px solid var(--ink); }
+html[data-look="v2"] .how-num { color: var(--ink-3); }
+html[data-look="v2"] .tier-track::before { background: var(--line-2); }
+html[data-look="v2"] .tier-node { box-shadow: none; }
+html[data-look="v2"] .faq-list { gap: 0; border-top: 2px solid var(--ink); }
+html[data-look="v2"] .faq-item, html[data-look="v2"] .faq-item[open] { background: none; border: 0; border-bottom: 1px solid var(--line-2); }
+html[data-look="v2"] .faq-item summary { padding: 20px 0; font-weight: 700; font-size: 18px; }
+html[data-look="v2"] .faq-item p { padding: 0 0 22px; }
+html[data-look="v2"] .closer .card { background: var(--burgundy); border: 0; color: #fff; }
+html[data-look="v2"] .closer .card .muted { color: rgba(255, 255, 255, 0.85); }
+html[data-look="v2"] .closer .card .btn-primary, html[data-look="v2"][data-theme="light"] .closer .card .btn-primary { background: var(--paper); color: var(--pine-ink); }
+
+/* ---------- phones ---------- */
+@media (max-width: 899px) {
+  html[data-look="v2"] #topbar { top: 0; padding: 0 16px; }
+  html[data-look="v2"] #app { padding-top: 80px; }
+  html[data-look="v2"] .hero2 { grid-template-columns: 1fr; gap: 40px; padding: 20px 0 48px; }
+  html[data-look="v2"] .hero2 .hero-title { font-size: clamp(88px, 27vw, 190px); }
+  html[data-look="v2"] .ticket { transform: rotate(1deg); max-width: 440px; }
+  html[data-look="v2"] .mystery, html[data-look="v2"] .hoodie { grid-template-columns: 1fr; gap: 28px; margin-top: 64px; padding-top: 52px; padding-bottom: 52px; }
+  html[data-look="v2"] .mystery-mark { font-size: clamp(110px, 34vw, 200px); }
+  html[data-look="v2"] .hoodie-photos { padding-right: 12px; }
+  html[data-look="v2"] .hoodie-photos img:last-child { transform: rotate(2deg) translate(-6px, 18px); }
+}
+@media (max-width: 720px) {
+  html[data-look="v2"] .phase-list { grid-template-columns: 1fr; }
+  html[data-look="v2"] .phase, html[data-look="v2"] .phase + .phase { padding: 20px 0; border-left: 0; }
+  html[data-look="v2"] .phase + .phase { border-top: 1px solid var(--line-2); }
+  html[data-look="v2"] .phase-text { max-width: none; }
+}
+@media (max-width: 420px) {
+  html[data-look="v2"] .ticket-stub { width: 92px; }
+  html[data-look="v2"] .ticket-count { font-size: 62px; }
+  html[data-look="v2"] .ticket-main { padding: 22px 18px 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-look="v2"] .ticket, html[data-look="v2"] .hoodie-off, html[data-look="v2"] .hoodie-photos img { transform: none !important; }
+}

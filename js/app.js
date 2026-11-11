@@ -517,7 +517,7 @@
 
     const tierInfo = [
       ['Reef Shark', 0, 'Where everyone starts.'],
-      ['Tiger Shark', 1000, 'About 10 meetings in.'],
+      ['Tiger Shark', 1000, 'Meetings, pitches and bounties add up.'],
       ['Great White', 2500, 'Showing up and pitching.'],
       ['Megalodon', 5000, 'A full year, all in.']
     ];

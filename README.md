@@ -45,3 +45,19 @@ Sponsors pay from their dashboard (Payments tab) through Stripe Checkout. In Ver
 - `STRIPE_WEBHOOK_SECRET`: in Stripe go to Developers > Webhooks > Add endpoint, URL `https://<your site>/api/stripe-webhook`, events `checkout.session.completed`, `invoice.paid`, `customer.subscription.deleted`. Copy the signing secret (`whsec_...`).
 - For "Manage billing": turn on the customer portal in Stripe (Settings > Billing > Customer portal).
 Open `/api/status` to check both are set. Meeting partners pay $50 now; officers open the final $50 from Officer tools > Sponsors after the meeting.
+
+## The two looks (and how to go back)
+
+The site has two looks. Both live in the code at the same time, so switching is one word.
+
+| Look | What it is | Files |
+| --- | --- | --- |
+| `v2` (default) | The poster look: flat forest green, cream and burgundy, Anton headlines. No moving background, no glass blur, no dotted text, no opening animation. | `css/look-v2.css`, `js/landing2.js`, `fonts/` |
+| `v1` | The original look: moving green and burgundy background, glass panels, dotted headlines. | `css/styles.css` and the rest, unchanged |
+
+- **Peek at either one:** add `?look=v1` or `?look=v2` to the address, like `ridgetank.com/?look=v1`.
+- **Switch everyone back:** in `index.html`, change `DEFAULT_LOOK="v2"` to `"v1"`.
+- **Go all the way back in git:** the tag `look-v1-original` is the site exactly as it was before the redesign. The tag `look-v2` is the first poster version.
+
+The landing page extras (next-meeting ticket, Spark / Build / Sell, hoodie price, mystery event) are all set in `js/config.js`:
+`countdown`, `phases`, `leaderboardPrize`, `hoodie`, `mystery`. The hoodie price is worked out from `was` and `percentOff`, so the math can't be wrong.

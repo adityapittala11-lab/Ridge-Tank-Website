@@ -3,6 +3,7 @@
 (function () {
   const canvas = document.getElementById('bg');
   if (!canvas) return;
+  if (document.documentElement.dataset.look === 'v2') return; // the poster look has a plain background
 
   const gl = canvas.getContext('webgl', {
     antialias: false, alpha: false, depth: false, stencil: false,
