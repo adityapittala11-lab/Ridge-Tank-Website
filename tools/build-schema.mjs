@@ -10,7 +10,11 @@ const files = fs.readdirSync(path.join(ROOT, 'db')).filter(f => f.endsWith('.sql
 const prevFile = path.join(ROOT, 'api', '_schema.js');
 const prev = fs.existsSync(prevFile) ? fs.readFileSync(prevFile, 'utf8') : '';
 const prevVer = Number((prev.match(/SCHEMA_VERSION = (\d+)/) || [])[1] || 0);
-const out = files.map(f => ({ name: f, sql: fs.readFileSync(path.join(ROOT, 'db', f), 'utf8') }));
+const out = files.map(f => ({
+  name: f,
+  // Keep the generated bundle stable across Windows and Unix checkouts.
+  sql: fs.readFileSync(path.join(ROOT, 'db', f), 'utf8').replace(/\r\n/g, '\n')
+}));
 const sqlJson = JSON.stringify(out, null, 1);
 const VERSION = process.argv[2] ? Number(process.argv[2]) : (prev.includes(sqlJson) ? prevVer || 1 : prevVer + 1);
 const body =
