@@ -1,0 +1,341 @@
+/* =========================================================
+   Ridge Tank: the poster skin, shared by look v2 and look v3.
+   Poster type (Anton for the big headlines, Archivo for everything else), solid panels, no glass blur,
+   no glow, no dotted text.
+
+   COLOUR
+   Dark mode is green, burgundy and black with soft white text. No cream in dark mode.
+   Light mode is the cream paper of the printed posters with green and burgundy on it.
+   Mint is the one bright accent in both, saved for the button that matters and for "now".
+   There is no bright red anywhere: next to burgundy it reads as a clash, not as an accent.
+
+   Everything here sits behind html[data-skin="poster"], so the original look (styles.css alone) is untouched.
+   Look v2 = this file alone (flat background). Look v3 = this file + css/look-v3.css (moving background,
+   sharks, scroll motion). Pick a look in index.html (DEFAULT_LOOK), or peek with ?look=v1, ?look=v2, ?look=v3.
+   ========================================================= */
+
+@font-face { font-family: "Anton"; font-weight: 400; font-display: swap; src: url(../fonts/anton.woff2) format("woff2"); }
+@font-face { font-family: "Archivo"; font-weight: 100 900; font-stretch: 62% 125%; font-display: swap; src: url(../fonts/archivo.woff2) format("woff2"); }
+
+html[data-skin="poster"] {
+  --paper: #f2ece0;       /* cream: the page colour in light mode only */
+  --snow: #f1f4f1;        /* soft white: text in dark mode, and on any block that is always dark */
+  --forest: #0e402c;
+  --forest-deep: #0a3324;
+  --pine-ink: #0b2419;
+  --mint: #6fe0a8;
+  --burgundy: #7a1434;
+  --wine: #561a2d;        /* the hoodie block: matches the backdrop of the hoodie photos */
+  --abyss: #17050b;       /* the mystery block: burgundy taken almost to black */
+
+  --tint: 241 244 241;
+  --panel: 10 51 36;
+  --bg: var(--forest);
+  --ink: var(--snow);
+  --ink-2: rgba(241, 244, 241, 0.84);
+  --ink-3: rgba(241, 244, 241, 0.66);
+  --ink-4: rgba(241, 244, 241, 0.46);
+  --line: rgba(241, 244, 241, 0.16);
+  --line-2: rgba(241, 244, 241, 0.3);
+  --glass: var(--forest-deep);
+  --glass-strong: #082a1d;
+  --g-300: var(--mint);
+  --g-400: #4fcf90;
+
+  /* the next-meeting ticket (landing page, log in page, Home) */
+  --ticket-bg: var(--burgundy);
+  --ticket-ink: #fff;
+  --ticket-accent: var(--mint);
+  /* the mystery block */
+  --myst-bg: var(--abyss);
+  --myst-ink: var(--snow);
+  --myst-mark: #9b1c45;
+  --myst-shadow: #2b0b16;
+  --myst-crest: var(--burgundy);
+  /* the white edge of a pinned photo */
+  --print-edge: #fff;
+
+  --font-poster: "Anton", "Archivo", Impact, "Arial Narrow", sans-serif;
+  --font-display: "Archivo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-ui: "Archivo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Archivo", ui-sans-serif, system-ui, sans-serif;
+}
+html[data-skin="poster"][data-theme="light"] {
+  --tint: 11 36 25;
+  --panel: 251 247 238;
+  --bg: var(--paper);
+  --ink: var(--pine-ink);
+  --ink-2: rgba(11, 36, 25, 0.84);
+  --ink-3: rgba(11, 36, 25, 0.66);
+  --ink-4: rgba(11, 36, 25, 0.46);
+  --line: rgba(11, 36, 25, 0.16);
+  --line-2: rgba(11, 36, 25, 0.32);
+  --glass: #fbf7ee;
+  --glass-strong: #fbf7ee;
+  --g-200: var(--forest);
+  --g-300: #14694a;
+  --g-400: #14694a;
+  --ticket-bg: var(--forest);
+  --ticket-ink: var(--paper);
+  --ticket-accent: var(--mint);
+  --myst-bg: var(--forest);
+  --myst-ink: var(--paper);
+  --myst-mark: var(--mint);
+  --myst-shadow: #124c35;
+  --myst-crest: #14694a;
+}
+
+/* ---------- the page itself: one flat colour ---------- */
+html[data-skin="poster"] body, html[data-skin="poster"][data-theme="light"] body { background: var(--bg); }
+html[data-skin="poster"] #bg, html[data-skin="poster"] .grain, html[data-skin="poster"] #intro { display: none; }
+html[data-skin="poster"] *, html[data-skin="poster"] *::before, html[data-skin="poster"] *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; text-shadow: none; }
+html[data-skin="poster"] .view, html[data-skin="poster"] .reveal { animation: none; }
+html[data-skin="poster"] .section { opacity: 1; transform: none; transition: none; }
+html[data-skin="poster"] .lift:hover { transform: none; }
+html[data-skin="poster"] .spot::before, html[data-skin="poster"] .spot::after { display: none; }
+
+/* ---------- type ---------- */
+html[data-skin="poster"] h1, html[data-skin="poster"] h2, html[data-skin="poster"] h3, html[data-skin="poster"] h4 { font-weight: 800; font-stretch: 88%; letter-spacing: -0.01em; }
+html[data-skin="poster"] .hero-title, html[data-skin="poster"] .page-title, html[data-skin="poster"] .section-title, html[data-skin="poster"] .auth-title, html[data-skin="poster"] .big-num {
+  font-family: var(--font-poster);
+  font-weight: 400;
+  font-stretch: normal;
+  letter-spacing: 0.005em;
+  line-height: 0.98;
+  text-transform: uppercase;
+}
+html[data-skin="poster"] .page-title { font-size: clamp(38px, 5.4vw, 64px); }
+html[data-skin="poster"] .section-title { font-size: clamp(36px, 5vw, 64px); max-width: 16em; }
+html[data-skin="poster"] .section-sub { color: var(--ink-2); font-size: 17px; max-width: 58ch; }
+html[data-skin="poster"] .mono { letter-spacing: 0; }
+html[data-skin="poster"] .card-label, html[data-skin="poster"] .eyebrow, html[data-skin="poster"] .or-divider, html[data-skin="poster"] .how-num, html[data-skin="poster"] .cd-sub, html[data-skin="poster"] .cd-eyebrow {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+html[data-skin="poster"] .card-label { color: var(--ink-2); }
+
+/* ---------- top bar: a plain strip across the top ---------- */
+html[data-skin="poster"] #topbar {
+  top: 0; left: 0; transform: none;
+  width: 100%;
+  padding: 0 max(16px, calc((100% - 1160px) / 2));
+  background: var(--bg);
+  border: 0;
+  border-bottom: 1px solid var(--line-2);
+  box-shadow: none;
+}
+html[data-skin="poster"] .brand-mark { background: var(--burgundy); box-shadow: none; }
+html[data-skin="poster"] .brand-name { font: 400 22px/1 var(--font-poster); letter-spacing: 0.02em; text-transform: uppercase; }
+html[data-skin="poster"] #topbar .menu-panel, html[data-skin="poster"] .picker-list { background: var(--glass); border: 1px solid var(--line-2); box-shadow: 0 18px 36px -18px rgba(0, 0, 0, 0.55); }
+html[data-skin="poster"] #bottombar { background: var(--glass); }
+html[data-skin="poster"] #app { padding-top: 92px; }
+
+/* ---------- surfaces and controls ---------- */
+html[data-skin="poster"] .glass, html[data-skin="poster"] .card { background: var(--glass); border: 1px solid var(--line); box-shadow: none; }
+html[data-skin="poster"] .card.spot, html[data-skin="poster"] .podium-slot.spot, html[data-skin="poster"] .badge-tile.spot { box-shadow: none; }
+html[data-skin="poster"] .badge-tile, html[data-skin="poster"] .badge-chip, html[data-skin="poster"] .strip-stat { background-color: rgb(var(--tint) / 0.05); }
+html[data-skin="poster"] .btn { font-weight: 700; }
+html[data-skin="poster"] .btn-primary { color: var(--pine-ink); background: var(--mint); box-shadow: none; }
+html[data-skin="poster"] .btn-primary:hover:not(:disabled) { color: var(--pine-ink); background: #92ecc0; filter: none; transform: none; box-shadow: none; }
+html[data-skin="poster"][data-theme="light"] .btn-primary { color: var(--paper); background: var(--forest); }
+html[data-skin="poster"][data-theme="light"] .btn-primary:hover:not(:disabled) { color: var(--paper); background: #14694a; }
+html[data-skin="poster"] .btn-ghost { background: transparent; border: 1.5px solid var(--line-2); }
+html[data-skin="poster"] .btn-danger { background: #a51d45; box-shadow: none; }
+html[data-skin="poster"] .seg-ind { background: rgb(111 224 168 / 0.2); border-color: var(--g-300); box-shadow: none; }
+html[data-skin="poster"] .bar-fill { background: var(--g-300); box-shadow: none; }
+html[data-skin="poster"] .input:focus { box-shadow: none; border-color: var(--g-300); }
+html[data-skin="poster"] .profile-avatar .avatar { box-shadow: 0 0 0 3px var(--glass), 0 0 0 5px var(--g-300); }
+html[data-skin="poster"] .podium-slot.p1 .podium-avatar .avatar { box-shadow: 0 0 0 3px var(--glass), 0 0 0 5px var(--g-300); }
+html[data-skin="poster"] .f-panel, html[data-skin="poster"][data-theme="light"] .f-panel { background: var(--glass); box-shadow: none; }
+html[data-skin="poster"] .f-glow { display: none; }
+html[data-skin="poster"] .f-anim, html[data-skin="poster"] .f-panel.in .f-anim { opacity: 1; filter: none; transform: none; animation: none; transition: none; }
+html[data-skin="poster"] .avatar { box-shadow: none; }
+html[data-skin="poster"] .av-g1 { background: #1f8a5c; }
+html[data-skin="poster"] .av-g2 { background: #14694a; }
+html[data-skin="poster"] .av-g3 { background: #2a7d6b; }
+html[data-skin="poster"] .av-b1 { background: #a51d45; }
+html[data-skin="poster"] .av-b2 { background: var(--burgundy); }
+html[data-skin="poster"] .modal { box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.6); }
+
+/* the meeting countdown on Home: the same ticket as the landing page, with the count on the stub */
+html[data-skin="poster"] .countdown-banner { background: var(--ticket-bg); color: var(--ticket-ink); border: 0; box-shadow: none; }
+html[data-skin="poster"] .countdown-banner:hover { filter: none; color: var(--ticket-ink); }
+html[data-skin="poster"] .countdown-banner::after { display: none; }
+html[data-skin="poster"] .cd-num { min-width: 190px; background: none; border-right: 2px dashed color-mix(in srgb, var(--ticket-ink) 38%, transparent); }
+html[data-skin="poster"] .cd-big { font: 400 54px/0.95 var(--font-poster); letter-spacing: 0.01em; color: var(--ticket-accent); animation: none; }
+html[data-skin="poster"] .cd-sub { color: var(--ticket-ink); opacity: 0.85; }
+html[data-skin="poster"] .cd-info { padding: 18px 24px; gap: 5px; }
+html[data-skin="poster"] .cd-eyebrow { color: var(--ticket-accent); }
+html[data-skin="poster"] .cd-what { font: 400 30px/1.02 var(--font-poster); text-transform: uppercase; letter-spacing: 0.01em; }
+html[data-skin="poster"] .cd-when { color: var(--ticket-ink); font-weight: 700; font-size: 15.5px; }
+html[data-skin="poster"] .cd-cta { color: var(--ticket-ink); opacity: 0.82; }
+@media (max-width: 640px) {
+  html[data-skin="poster"] .cd-num { min-width: 0; border-right: 0; border-bottom: 2px dashed color-mix(in srgb, var(--ticket-ink) 38%, transparent); }
+  html[data-skin="poster"] .cd-big { font-size: 40px; }
+}
+
+/* ---------- landing: hero with the ticket ---------- */
+html[data-skin="poster"] .hero2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+  gap: 56px;
+  align-items: center;
+  padding: 40px 0 72px;
+}
+html[data-skin="poster"] .hero2-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 26px; min-width: 0; }
+html[data-skin="poster"] .hero2 .hero-title { font-size: clamp(96px, 17vw, 236px); line-height: 0.93; white-space: normal; margin-left: -0.03em; }
+html[data-skin="poster"] .hero2-sub { max-width: 30em; font-size: clamp(18px, 1.7vw, 21px); line-height: 1.45; color: var(--ink-2); }
+html[data-skin="poster"] .hero2 .hero-cta { justify-content: flex-start; margin: 0; }
+
+html[data-skin="poster"] .ticket { position: relative; transform: rotate(2deg); }
+html[data-skin="poster"] .ticket[hidden] { display: none; }
+html[data-skin="poster"] .ticket-paper { position: relative; display: flex; background: var(--ticket-bg); color: var(--ticket-ink); }
+html[data-skin="poster"] .ticket-main { flex: 1 1 auto; min-width: 0; padding: 26px 24px 24px; display: flex; flex-direction: column; gap: 6px; }
+html[data-skin="poster"] .ticket-kicker { font-weight: 700; font-size: 15px; color: var(--ticket-accent); }
+html[data-skin="poster"] .ticket-date { font: 400 clamp(44px, 4.6vw, 60px)/0.98 var(--font-poster); text-transform: uppercase; letter-spacing: 0.005em; margin: 2px 0 8px; }
+html[data-skin="poster"] .ticket-where { font-weight: 700; font-size: 18px; }
+html[data-skin="poster"] .ticket-what { font-size: 15.5px; }
+html[data-skin="poster"] .ticket-free { font-size: 14.5px; margin-top: 12px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, var(--ticket-ink) 24%, transparent); }
+html[data-skin="poster"] .ticket-stub {
+  position: relative;
+  flex: none;
+  width: 112px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 16px 10px;
+  text-align: center;
+  border-left: 2px dashed color-mix(in srgb, var(--ticket-ink) 40%, transparent);
+}
+/* the two punched notches where the stub tears off */
+html[data-skin="poster"] .ticket-stub::before, html[data-skin="poster"] .ticket-stub::after {
+  content: "";
+  position: absolute;
+  left: -12px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50% !important;
+  background: var(--bg);
+}
+html[data-skin="poster"] .ticket-stub::before { top: -11px; }
+html[data-skin="poster"] .ticket-stub::after { bottom: -11px; }
+html[data-skin="poster"] .ticket-count { font: 400 76px/0.9 var(--font-poster); color: var(--ticket-accent); }
+html[data-skin="poster"] .ticket-count.is-today { font-size: 34px; text-transform: uppercase; }
+html[data-skin="poster"] .ticket-count-label { font-weight: 700; font-size: 13.5px; line-height: 1.2; }
+html[data-skin="poster"] .ticket-inline { max-width: 440px; margin: 8px 0 8px 6px; }
+
+/* ---------- a photo pinned to the wall ---------- */
+html[data-skin="poster"] .print { margin: 0; padding: 10px 10px 0; background: var(--print-edge); rotate: -1.6deg; box-shadow: 0 34px 54px -28px rgba(0, 0, 0, 0.7); }
+html[data-skin="poster"] .print[hidden] { display: none; }
+html[data-skin="poster"] .print img { display: block; width: 100%; height: auto; }
+html[data-skin="poster"] .print figcaption { padding: 10px 4px 12px; font-weight: 700; font-size: 14px; line-height: 1.3; color: var(--pine-ink); }
+
+/* ---------- landing: the first meeting ---------- */
+html[data-skin="poster"] .crowd { display: grid; grid-template-columns: minmax(0, 1.18fr) minmax(0, 1fr); gap: 64px; align-items: center; }
+html[data-skin="poster"] .crowd-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; min-width: 0; }
+html[data-skin="poster"] .crowd-num { font: 400 clamp(120px, 15vw, 210px)/0.8 var(--font-poster); letter-spacing: 0.005em; color: var(--g-300); font-variant-numeric: tabular-nums; }
+html[data-skin="poster"] .crowd .section-title { font-size: clamp(34px, 4.2vw, 56px); }
+html[data-skin="poster"] .crowd .btn { margin-top: 8px; }
+
+/* ---------- landing: the year ---------- */
+html[data-skin="poster"] .phase-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 2px solid var(--ink); }
+html[data-skin="poster"] .phase { padding: 22px 28px 8px 0; }
+html[data-skin="poster"] .phase + .phase { padding-left: 28px; border-left: 1px solid var(--line-2); }
+html[data-skin="poster"] .phase-top { display: flex; align-items: center; gap: 10px; min-height: 26px; }
+html[data-skin="poster"] .phase-num { font-weight: 700; font-size: 14px; color: var(--ink-3); }
+html[data-skin="poster"] .phase-now { font-weight: 800; font-size: 12.5px; padding: 4px 9px; background: var(--g-300); color: var(--pine-ink); }
+html[data-skin="poster"][data-theme="light"] .phase-now { color: var(--paper); }
+html[data-skin="poster"] .phase-name { font: 400 clamp(52px, 6.4vw, 84px)/0.95 var(--font-poster); text-transform: uppercase; letter-spacing: 0.005em; margin: 10px 0 8px; }
+html[data-skin="poster"] .phase.is-now .phase-name { color: var(--g-300); }
+html[data-skin="poster"] .phase-when { font-weight: 700; font-size: 16px; margin-bottom: 8px; }
+html[data-skin="poster"] .phase-text { color: var(--ink-2); max-width: 32ch; }
+html[data-skin="poster"] .prize-line { display: flex; align-items: center; gap: 12px; margin-top: 30px; padding: 16px 20px; background: var(--burgundy); color: #fff; font-weight: 700; font-size: 17px; }
+html[data-skin="poster"] .prize-line .ico { flex: none; color: var(--mint); }
+
+/* ---------- landing: full-width colour blocks ---------- */
+html[data-skin="poster"] .mystery, html[data-skin="poster"] .hoodie {
+  margin: 84px calc(50% - 50vw) 0;
+  padding: 72px calc(50vw - 50%);
+}
+html[data-skin="poster"] .mystery { background: var(--myst-bg); color: var(--myst-ink); display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 56px; align-items: center; }
+html[data-skin="poster"] .mystery-mark { display: flex; font: 400 clamp(120px, 21vw, 280px)/0.8 var(--font-poster); color: var(--myst-mark); letter-spacing: 0.02em; }
+html[data-skin="poster"] .mystery-mark .q { display: block; }
+html[data-skin="poster"] .mystery-copy { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+html[data-skin="poster"] .mystery .section-title { color: var(--myst-ink); }
+html[data-skin="poster"] .mystery-text { font-size: clamp(18px, 1.9vw, 22px); line-height: 1.4; max-width: 28em; }
+/* the blacked-out lines: when, where and what are all still secret */
+html[data-skin="poster"] .mystery-file { display: grid; grid-template-columns: auto 1fr; gap: 9px 16px; align-items: center; margin: 4px 0 2px; font-weight: 800; font-size: 16px; }
+html[data-skin="poster"] .mystery-file dd { display: flex; }
+html[data-skin="poster"] .redact { display: block; height: 1.05em; max-width: 100%; background: var(--myst-mark); }
+html[data-skin="poster"] .mystery-reveal { font-weight: 800; padding: 6px 12px; background: var(--mint); color: var(--pine-ink); }
+html[data-skin="poster"] .mystery-note { font-size: 15px; color: color-mix(in srgb, var(--myst-ink) 80%, transparent); }
+
+html[data-skin="poster"] .hoodie { background: var(--wine); color: var(--snow); display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 56px; align-items: center; }
+/* the two hoodie shots sit like prints pinned to the wall */
+html[data-skin="poster"] .hoodie-photos { display: grid; grid-template-columns: 1fr 1fr; gap: 0; padding: 10px 0 30px; }
+html[data-skin="poster"] .hoodie-photos img { display: block; width: 100%; height: auto; aspect-ratio: 1 / 1.03; object-fit: cover; border: 8px solid var(--print-edge); box-shadow: 0 30px 44px -26px rgba(0, 0, 0, 0.7); }
+html[data-skin="poster"] .hoodie-photos img:first-child { transform: rotate(-2.5deg); position: relative; z-index: 1; }
+html[data-skin="poster"] .hoodie-photos img:last-child { transform: rotate(2deg) translate(-14px, 26px); }
+html[data-skin="poster"] .hoodie-copy { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+html[data-skin="poster"] .hoodie .section-title { color: var(--snow); }
+html[data-skin="poster"] .hoodie-pitch { font-size: 18px; line-height: 1.45; max-width: 26em; color: rgba(241, 244, 241, 0.92); }
+html[data-skin="poster"] .hoodie-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 14px; margin-top: 4px; }
+html[data-skin="poster"] .hoodie-price strong { font: 400 clamp(72px, 8vw, 104px)/0.9 var(--font-poster); color: #fff; font-variant-numeric: tabular-nums; }
+html[data-skin="poster"] .hoodie-price s { font: 400 34px/1 var(--font-poster); color: rgba(241, 244, 241, 0.6); text-decoration-thickness: 3px; }
+html[data-skin="poster"] .hoodie-off { align-self: center; font-weight: 800; font-size: 15px; padding: 6px 11px; background: var(--mint); color: var(--pine-ink); transform: rotate(-3deg); }
+html[data-skin="poster"] .hoodie-note { font-size: 14.5px; color: rgba(241, 244, 241, 0.8); margin-top: -6px; }
+html[data-skin="poster"] .hoodie-perks { display: flex; flex-direction: column; gap: 8px; margin: 6px 0 2px; }
+html[data-skin="poster"] .hoodie-perks li { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; }
+html[data-skin="poster"] .hoodie-perks .ico { color: var(--mint); }
+html[data-skin="poster"] .hoodie-fair { font-size: 14.5px; color: rgba(241, 244, 241, 0.8); max-width: 30em; }
+html[data-skin="poster"] .hoodie-soon { font-weight: 800; font-size: 16px; padding: 12px 18px; border: 2px dashed rgba(241, 244, 241, 0.55); }
+html[data-skin="poster"] .hoodie .btn-primary, html[data-skin="poster"][data-theme="light"] .hoodie .btn-primary { background: var(--mint); color: var(--pine-ink); }
+
+/* ---------- landing: the older sections, flattened ---------- */
+html[data-skin="poster"] #faq .eyebrow { display: none; }
+html[data-skin="poster"] .how-list { border-top: 2px solid var(--ink); }
+html[data-skin="poster"] .how-num { color: var(--ink-3); }
+html[data-skin="poster"] .tier-track::before { background: var(--line-2); }
+html[data-skin="poster"] .tier-node { box-shadow: none; }
+html[data-skin="poster"] .faq-list { gap: 0; border-top: 2px solid var(--ink); }
+html[data-skin="poster"] .faq-item, html[data-skin="poster"] .faq-item[open] { background: none; border: 0; border-bottom: 1px solid var(--line-2); }
+html[data-skin="poster"] .faq-item summary { padding: 20px 0; font-weight: 700; font-size: 18px; }
+html[data-skin="poster"] .faq-item p { padding: 0 0 22px; }
+html[data-skin="poster"] .closer .card { background: var(--forest); border: 0; color: var(--snow); }
+html[data-skin="poster"][data-theme="light"] .closer .card { background: var(--forest); color: var(--paper); }
+html[data-skin="poster"] .closer .card .muted { color: rgba(241, 244, 241, 0.85); }
+html[data-skin="poster"] .closer .card .btn-primary, html[data-skin="poster"][data-theme="light"] .closer .card .btn-primary { background: var(--mint); color: var(--pine-ink); }
+
+/* ---------- phones ---------- */
+@media (max-width: 899px) {
+  html[data-skin="poster"] #topbar { top: 0; padding: 0 16px; }
+  html[data-skin="poster"] #app { padding-top: 80px; }
+  html[data-skin="poster"] .hero2 { grid-template-columns: 1fr; gap: 40px; padding: 20px 0 48px; }
+  html[data-skin="poster"] .hero2 .hero-title { font-size: clamp(88px, 27vw, 190px); }
+  html[data-skin="poster"] .ticket { transform: rotate(1deg); max-width: 440px; }
+  html[data-skin="poster"] .crowd { grid-template-columns: 1fr; gap: 34px; }
+  html[data-skin="poster"] .mystery, html[data-skin="poster"] .hoodie { grid-template-columns: 1fr; gap: 28px; margin-top: 64px; padding-top: 52px; padding-bottom: 52px; }
+  html[data-skin="poster"] .mystery-mark { font-size: clamp(110px, 34vw, 200px); }
+  html[data-skin="poster"] .hoodie-photos { padding-right: 12px; }
+  html[data-skin="poster"] .hoodie-photos img:last-child { transform: rotate(2deg) translate(-6px, 18px); }
+}
+@media (max-width: 720px) {
+  html[data-skin="poster"] .phase-list { grid-template-columns: 1fr; }
+  html[data-skin="poster"] .phase, html[data-skin="poster"] .phase + .phase { padding: 20px 0; border-left: 0; }
+  html[data-skin="poster"] .phase + .phase { border-top: 1px solid var(--line-2); }
+  html[data-skin="poster"] .phase-text { max-width: none; }
+}
+@media (max-width: 420px) {
+  html[data-skin="poster"] .ticket-stub { width: 92px; }
+  html[data-skin="poster"] .ticket-count { font-size: 62px; }
+  html[data-skin="poster"] .ticket-main { padding: 22px 18px 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-skin="poster"] .ticket, html[data-skin="poster"] .hoodie-off, html[data-skin="poster"] .hoodie-photos img { transform: none !important; }
+  html[data-skin="poster"] .print { rotate: none; }
+}

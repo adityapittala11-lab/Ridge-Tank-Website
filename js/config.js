@@ -123,7 +123,43 @@ window.RT_CONFIG = {
 
   // Red countdown banner on Home. The calendar's next meeting wins if there is one; this is the fallback.
   // Set date to '' to hide the banner.
-  countdown: { date: '2026-11-19', time: '2:25 PM', place: 'Media Center', text: 'Phase 01: Spark kickoff with Sabin Lomac from Shark Tank' },
+  countdown: { date: '2026-11-19', time: '2:25 PM', place: 'Media Center', text: 'Phase 01: Spark kickoff' },
+
+  // The first-meeting photo on the landing page, the sign-up page and the sponsor page. show: false hides it everywhere.
+  // Keep "count" true: it is the number of students who came.
+  crowd: {
+    show: true,
+    photo: 'marketing/meeting-one.jpg', photoSmall: 'marketing/meeting-one-900.jpg',
+    alt: 'Ridge Tank members standing together in the Media Center after the first meeting',
+    caption: 'Oct 21, 2026. Meeting one, in the Media Center.',
+    count: 40, countSuffix: '+',
+    title: 'showed up to meeting one.',
+    text: 'No sign-up, no cost. They walked in and spent the hour asking a real startup CEO anything they wanted. The next meeting kicks off Spark.'
+  },
+
+  // The year, shown on the landing page. Dates are yyyy-mm-dd; the phase that contains today is marked "Now".
+  phases: [
+    { name: 'Spark', from: '2026-10-21', to: '2026-12-02', when: 'Now to Dec 2', text: 'Find a real problem, pick your idea, and talk to the people who have it.' },
+    { name: 'Build', from: '2026-12-02', to: '2026-12-31', when: 'Dec 2 to Dec 31', text: 'Make the smallest version that works. Test it on three people. Fix it.' },
+    { name: 'Sell', from: '2027-01-13', to: '2027-05-12', when: 'Jan 13 on', text: 'Launch, make your first real sale, and show it at Demo Day on Feb 10.' }
+  ],
+  // Three short facts under the Join button. Keep them true.
+  proof: ['40+ students at the first meeting', '40 Academy levels, from idea to first sale', 'Free to join'],
+  // The line under the phases. Set to '' to hide it.
+  leaderboardPrize: 'The leaderboard closes Dec 31. First place wins iFLY tickets.',
+
+  // The club hoodie on the landing page. The price is worked out from "was" and "percentOff", so the math is always right:
+  // $25 with 20% off = $20. Only show a crossed-out price that people will really pay later (the price after launch).
+  // orderUrl: where the button goes once orders are open. Leave '' to show "Orders open soon". Set show to false to hide it.
+  hoodie: {
+    show: true,
+    was: 25, percentOff: 20, priceNote: 'Launch price',
+    orderUrl: '',
+    perks: ['Front row at events', 'Skip the line at the door', 'One extra raffle entry']
+  },
+
+  // The mystery event teaser (a cream block with burgundy question marks; when, where and what are blacked out). Fill in "reveal" (like 'Revealed Dec 2') once there is a date. show: false hides it.
+  mystery: { show: true, title: 'Mystery event', text: 'Something big is coming to Ridge Tank. We’ll tell you when. We won’t tell you what.', reveal: 'Details soon' },
 
   // Crew teams (Bounties > Forms). "value" must be short lowercase letters only. 3 spots per team (the database enforces 3).
   teams: {
