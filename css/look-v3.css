@@ -737,3 +737,33 @@ html[data-look="v3"] .home-grid .card { border-radius: 4px; }
   html[data-look="v3"] .nextup { padding: 22px 20px; }
   html[data-look="v3"] .nextup .btn { width: 100%; }
 }
+
+/* ---------- Academy win / fail flourish (js/academy.js celebrate) ---------- */
+html[data-look="v3"] .ac-round { position: relative; overflow: hidden; }
+.ac-cel { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; pointer-events: none; opacity: 1; transition: opacity 0.4s ease; }
+.ac-cel.gone { opacity: 0; }
+.ac-cel.win { background: radial-gradient(60% 60% at 50% 42%, rgba(111,224,168,0.18), rgba(14,64,44,0.0) 70%); }
+.ac-cel.miss { background: radial-gradient(60% 60% at 50% 42%, rgba(122,20,52,0.22), rgba(14,64,44,0.0) 72%); }
+.ac-cel-ring { position: absolute; top: 42%; left: 50%; width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--mint, #6fe0a8); transform: translate(-50%,-50%) scale(0.4); opacity: 0.9; animation: acRing 1.3s cubic-bezier(0.2,0.7,0.3,1) forwards; }
+.ac-cel-ring.r2 { border-color: rgba(111,224,168,0.5); animation-delay: 0.18s; }
+@keyframes acRing { to { transform: translate(-50%,-50%) scale(3.6); opacity: 0; } }
+.ac-cel-stars { position: relative; display: flex; gap: 14px; color: var(--mint, #6fe0a8); filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4)); }
+.ac-cel-star { transform: translateY(14px) scale(0); animation: acStar 0.7s cubic-bezier(0.18,1.3,0.4,1) forwards; animation-delay: var(--d, 0ms); }
+@keyframes acStar { 60% { transform: translateY(-6px) scale(1.18) rotate(8deg); } 100% { transform: translateY(0) scale(1) rotate(0); } }
+.ac-cel-word { position: absolute; bottom: 26%; font: 400 clamp(40px, 8vw, 72px)/1 var(--font-poster); letter-spacing: 0.03em; color: var(--snow, #f1f4f1); text-transform: uppercase; opacity: 0; transform: translateY(16px); animation: acWord 0.6s ease 0.3s forwards; }
+.ac-cel-word.miss { color: #ff9bb2; transform: translateY(0) rotate(-4deg); animation: acMiss 0.5s ease forwards; }
+@keyframes acWord { to { opacity: 1; transform: none; } }
+@keyframes acMiss { 0%,100% { transform: translateX(0) rotate(-4deg); } 20% { transform: translateX(-10px) rotate(-4deg); } 40% { transform: translateX(9px) rotate(-3deg); } 60% { transform: translateX(-6px) rotate(-4deg); } 80% { transform: translateX(4px) rotate(-3deg); } }
+.ac-cel-sweep { position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(122,20,52,0.35) 50%, transparent 70%); transform: translateX(-100%); animation: acSweep 0.8s ease forwards; }
+@keyframes acSweep { to { transform: translateX(100%); } }
+.ac-cel-shark { position: absolute; top: 44%; left: -70px; width: 64px; height: 64px; opacity: 0; animation: acSwim 1.8s cubic-bezier(0.4,0,0.5,1) 0.1s forwards; }
+.ac-cel-shark svg { width: 100%; height: 100%; }
+@keyframes acSwim { 10% { opacity: 1; } 90% { opacity: 1; } 100% { left: calc(100% + 70px); opacity: 0; } }
+
+/* ---------- Academy path: nodes pop in as each season scrolls up ---------- */
+html[data-look="v3"] .ac-node { transition: transform 0.22s var(--ease), box-shadow 0.22s var(--ease); }
+html[data-look="v3"] .ac-node:hover { transform: translateY(-3px) scale(1.04); }
+html[data-look="v3"] .ac-season.r-wait .ac-node { opacity: 0; transform: translateY(14px) scale(0.9); }
+html[data-look="v3"] .ac-season.r-wait.in-view .ac-node { animation: acNodePop 0.5s cubic-bezier(0.18,1.2,0.4,1) forwards; animation-delay: calc(var(--n, 0) * 55ms); }
+@keyframes acNodePop { from { opacity: 0; transform: translateY(14px) scale(0.9); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ac-cel { display: none; } html[data-look="v3"] .ac-season.r-wait .ac-node { opacity: 1; transform: none; } }

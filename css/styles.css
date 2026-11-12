@@ -2186,3 +2186,8 @@ body.lb-open { overflow: hidden; }
 .sp-dash-body .sp-plan.featured { transform: none; }
 @media (max-width: 860px) { .sp-cats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 480px) { .sp-cats { grid-template-columns: 1fr; } .sp-paynow { flex-wrap: wrap; } }
+
+/* ---------- scroll reveal (js/reveal.js): below-the-fold elements wait for scroll ---------- */
+.reveal.r-wait { animation: none !important; opacity: 0; transform: translateY(22px); transition: opacity 0.6s var(--ease), transform 0.6s var(--ease); }
+.reveal.r-wait.in-view { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .reveal.r-wait { opacity: 1 !important; transform: none !important; transition: none; } }

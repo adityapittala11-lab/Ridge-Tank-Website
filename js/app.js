@@ -99,6 +99,12 @@
       console.error(e);
       container.appendChild(h('div', { class: 'card' }, 'This page hit an error. Try reloading.'));
     }
+    const revealStop = RT.reveal ? RT.reveal(container) : null;
+    if (revealStop) {
+      const inner = handle && handle.cleanup;
+      handle = handle || {};
+      handle.cleanup = function () { try { revealStop(); } catch (e) {} if (inner) inner(); };
+    }
     current = { key: t.key, target: t, handle };
   }
   RT.route = route;

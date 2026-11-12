@@ -325,20 +325,20 @@
       : opened(blocks[0].a, p.t) ? h('p', { class: 'ac-status now' }, done + ' of 10 done')
       : h('p', { class: 'ac-status' }, 'Opens ' + shortDate(blocks[0].opens));
     const finale = C.meetings.find(m => m.season === s && m.kind === 'event' && /Mini|Demo|Gauntlet|Finale/.test(m.title));
-    const el = h('section', { class: 'ac-season' },
+    const el = h('section', { class: 'ac-season reveal' },
       h('div', { class: 'ac-season-h' }, h('h3', null, `Season ${s}: ${se.name}`), status, h('p', { class: 'muted' }, se.dates + ' · ' + se.goal)));
     blocks.forEach(b => {
       const path = h('div', { class: 'ac-path' });
       for (let n = b.a; n <= b.b; n++) {
         const st = lstate(n, p), L = C.levels[n];
-        path.appendChild(h('a', { class: 'ac-node ' + st, href: '#/academy/level/' + n, 'aria-label': `Level ${n}, ${L.t}, ${st === 'ahead' ? 'open' : st}` },
+        path.appendChild(h('a', { class: 'ac-node ' + st, href: '#/academy/level/' + n, style: { '--n': String(n - b.a) }, 'aria-label': `Level ${n}, ${L.t}, ${st === 'ahead' ? 'open' : st}` },
           h('span', { class: 'ac-dot' }, String(n)),
           h('span', { class: 'ac-nm' }, h('span', { class: 't' }, L.t),
             h('span', { class: 's' }, agentText(n) + ' · ' + se.xp + ' XP' + (L.mission ? ' · real-world mission' : '')),
             st === 'done' ? h('span', { class: 'st' }, starRow(p.best[n].stars, 11)) : null)));
       }
       const cl = blockClaim(b, p);
-      path.appendChild(h('a', { class: 'ac-node cp ' + (cl.state === 'claimed' ? 'done' : cl.state === 'ready' ? 'current' : 'locked'), href: '#/academy/edges', 'aria-label': 'Reward: ' + b.reward },
+      path.appendChild(h('a', { class: 'ac-node cp ' + (cl.state === 'claimed' ? 'done' : cl.state === 'ready' ? 'current' : 'locked'), href: '#/academy/edges', style: { '--n': String(b.b - b.a + 1) }, 'aria-label': 'Reward: ' + b.reward },
         h('span', { class: 'ac-dot' }, icon(cl.state === 'claimed' ? 'check' : cl.state === 'ready' ? 'award' : 'lock', cl.state === 'locked' ? 15 : 18)),
         h('span', { class: 'ac-nm' }, h('span', { class: 't' }, edgeName(b)),
           h('span', { class: 's' }, cl.state === 'claimed' ? 'Collected ' + shortDate(cl.on) : cl.state === 'ready' ? 'Check in at a meeting to collect' : 'Reward for levels ' + b.a + ' to ' + b.b))));
@@ -640,8 +640,10 @@
       h('span', { class: 'ac-count' }, count),
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Close', onclick: closeRound }, icon('x', 18)));
     const panel = h('div', { class: 'ac-round', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Shark round with ' + sp.ag }, head);
-    if (R.verdict) panel.appendChild(verdictEl());
-    else {
+    if (R.verdict) {
+      panel.appendChild(verdictEl());
+      if (!R.verdict.error && !R.celebrated) { R.celebrated = true; celebrate(panel, R.verdict); }
+    } else {
       const msgs = h('div', { class: 'ac-msgs no-copy' }, R.msgs.map(msgEl), R.busy ? h('div', { class: 'ac-msg' }, portrait(R.busyWho, 34), h('div', { class: 'ac-bub', 'aria-label': 'Typing' }, h('span', { class: 'ac-typing' }, h('i'), h('i'), h('i')))) : null);
       const off = R.busy || R.done;
       const box = h('textarea', { class: 'input textarea', rows: 3, 'aria-label': 'Your answer', disabled: off,
@@ -752,6 +754,29 @@
       drawRound();
       setTimeout(() => { if (R === mine) R.wrap.querySelectorAll('.ac-bar i').forEach(b => { b.style.width = b.dataset.w; }); }, 60);
     });
+  }
+
+  // A quick win/fail flourish over the scored round. Pass = stars burst + ripple; fail = red sweep + "not yet".
+  // Purely decorative and skipped when the member prefers reduced motion.
+  function celebrate(panel, v) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const pass = !!v.passed && !v.held;
+    const cel = h('div', { class: 'ac-cel ' + (pass ? 'win' : 'miss'), 'aria-hidden': 'true' });
+    const starSvg = '<svg width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z" fill="currentColor"/></svg>';
+    if (pass) {
+      const n = Math.max(1, v.stars || 1);
+      cel.appendChild(h('span', { class: 'ac-cel-ring' }));
+      cel.appendChild(h('span', { class: 'ac-cel-ring r2' }));
+      const stars = h('div', { class: 'ac-cel-stars' });
+      for (let i = 0; i < n; i++) { const s = h('span', { class: 'ac-cel-star' }); s.innerHTML = starSvg; s.style.setProperty('--d', (i * 90) + 'ms'); s.style.setProperty('--x', String(i - (n - 1) / 2)); stars.appendChild(s); }
+      const shark = h('span', { class: 'ac-cel-shark' }); shark.innerHTML = sharkSvg(R.spec.ag);
+      cel.append(shark, stars, h('div', { class: 'ac-cel-word' }, R.spec.kind === 'level' ? 'Passed' : 'Nailed it'));
+    } else {
+      cel.append(h('span', { class: 'ac-cel-sweep' }), h('div', { class: 'ac-cel-word miss' }, 'Not yet'));
+    }
+    panel.appendChild(cel);
+    const life = pass ? 1950 : 1350;
+    setTimeout(() => { cel.classList.add('gone'); setTimeout(() => cel.remove(), 420); }, life);
   }
 
   function verdictEl() {
