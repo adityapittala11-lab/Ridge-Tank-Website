@@ -184,14 +184,21 @@
 
   // ---------------- public page: pitch + sign up / log in ----------------
   function publicPage(root, t) {
+    const go = () => { const f = document.getElementById('sponsor-form'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
     const hero = h('section', { class: 'sp-hero reveal' },
       h('span', { class: 'sp-kicker mono' }, icon('fin', 14), 'Sponsor Ridge Tank'),
-      h('h1', { class: 'sp-title' }, 'Back the next generation of founders.'),
-      h('p', { class: 'sp-lead' }, 'Ridge Tank is Mountain Ridge High School’s Shark Tank-style startup program. Students build real businesses and pitch them to judges. 49 students came to our first meeting.'),
+      h('h1', { class: 'sp-title' }, 'Be the name they remember when they start their first company.'),
+      h('p', { class: 'sp-lead' }, 'In a few years, these students will be hiring, building and buying. Ridge Tank is where Mountain Ridge High School students build real startups and pitch them Shark Tank-style. Back them now, and your business grows up with them.'),
+      h('div', { class: 'sp-cta-row' },
+        h('button', { class: 'btn btn-primary btn-lg', type: 'button', onclick: go }, 'Sponsor a meeting for $100'),
+        h('span', { class: 'muted small' }, 'Your $100 pays for the food, prizes and activities at one full meeting.')),
+      h('div', { class: 'sp-backed' },
+        h('span', { class: 'muted small' }, 'Already backing us'),
+        h('strong', null, 'Lund Mortgage Team'), h('strong', null, 'Sylvan Learning')),
       h('div', { class: 'sp-hero-stats' },
         stat('49', 'students at meeting one'),
-        stat('$100', 'covers a whole meeting'),
-        stat('~$2', 'per student')));
+        stat('~$2', 'per student'),
+        stat('1', 'meeting, fully funded')));
 
     const perks = h('section', { class: 'sp-perks reveal', style: { '--i': 1 } },
       cfg.perks.map(p => h('div', { class: 'card sp-perk' }, h('span', { class: 'sp-perk-ico' }, icon(p.icon, 20)), h('h3', null, p.title), h('p', { class: 'muted' }, p.text))));
@@ -267,23 +274,12 @@
 
       const first = () => (name.value.trim().split(/\s+/)[0] || '');
       const steps = [
-        { title: 'What’s your business called?', sub: 'This is how we’ll say it on posters and on screen.', body: () => [RT.field('Business name', business)], focus: business,
-          check: () => business.value.trim().length < 2 ? 'Enter your business name.' : '' },
-        { title: 'Nice to meet you. Who are we talking to?', sub: 'So we know who to thank.', body: () => [RT.field('Your name', name)], focus: name,
-          check: () => name.value.trim().length < 2 ? 'Enter your name.' : '' },
-        { title: () => (first() ? first() + ', where should we send your updates?' : 'Where should we send your updates?'), sub: 'This is also your dashboard login.',
-          body: () => [RT.field('Email', email, 'Any email works.'), RT.field('Phone (optional)', phone)], focus: email,
-          check: () => {
-            if (!/^\S+@\S+\.\S+$/.test(email.value.trim())) return 'Enter a real email address.';
-            const d = phone.value.replace(/\D/g, '');
-            return d && (d.length < 10 || d.length > 15) ? 'Enter a 10-digit phone number, or leave it empty.' : '';
-          } },
-        { title: 'How would you like to back us?', sub: 'Pick one. Nothing is charged when you sign up. You pick your plan and pay from your dashboard.', body: () => [level.el()], wide: true,
+        { title: 'Who are we thanking?', sub: 'Your business name goes on the posters. Your email is your login.', body: () => [RT.field('Business name', business), RT.field('Email', email)], focus: business,
+          check: () => business.value.trim().length < 2 ? 'Enter your business name.' : !/^\S+@\S+\.\S+$/.test(email.value.trim()) ? 'Enter a real email address.' : '' },
+        { title: 'How would you like to back us?', sub: 'Pick one. You pay on the next screen.', body: () => [level.el()], wide: true,
           check: () => { const c = catByValue(level.getValue()); const sp = c.spots && spotsCache && spotsCache[c.value]; return sp && !sp.left ? 'That one is sold out. Pick another.' : ''; } },
-        { title: 'Which meeting should we feature you at?', sub: 'You can change this later.', body: () => [meeting], skip: () => !isMeeting(), check: () => '' },
-        { title: 'Add your logo', sub: 'Optional. It goes on the posters, so the sooner the better.', body: () => [logo.el, RT.field('Website (optional)', site)], optional: true, check: () => '' },
-        { title: 'Last step. Make your password.', sub: 'Then you’re in.', body: () => [RT.field('Password', pw), RT.field('Note', note),
-          h('label', { class: 'check-row' }, agree, h('span', null, 'I understand nothing is charged until I choose to pay from my dashboard.'))],
+        { title: 'Pick a password, then pay.', sub: 'Logo, phone and meeting date come after payment, from your dashboard.', body: () => [RT.field('Password', pw),
+          h('label', { class: 'check-row' }, agree, h('span', null, 'I understand I’ll pay on the next screen, by card through Stripe.'))],
           focus: pw.input, last: true, check: () => pw.input.value.length < 8 ? 'Use a password with at least 8 characters.' : !agree.checked ? 'Check the box to continue.' : '' }
       ];
       let i = 0;
@@ -306,7 +302,7 @@
         bar.firstChild.style.width = Math.round((at / live.length) * 100) + '%';
         back.hidden = i === 0;
         skip.hidden = !st.optional;
-        next.textContent = st.last ? 'Continue to payment' : 'Continue';
+        next.textContent = st.last ? 'Pay now' : 'Continue';
         const title = typeof st.title === 'function' ? st.title() : st.title;
         const panel = h('div', { class: 'sp-panel' + (st.wide ? ' wide' : '') + (dir ? ' from-' + dir : '') },
           h('h2', { class: 'sp-q' }, title), h('p', { class: 'muted sp-sub' }, st.sub), ...st.body());
@@ -328,8 +324,8 @@
         busy(next, async () => {
           try {
             const out = await call('signUp', {
-              email: em, password: pw.input.value, business: business.value, contact_name: name.value, phone: phone.value,
-              website: site.value, level: catByValue(level.getValue()).plans[0], meeting: isMeeting() ? meeting.getValue() : 'any', pitch_note: note.value, logo: logo.getValue() || null
+              email: em, password: pw.input.value, business: business.value, contact_name: business.value.trim(),
+              level: catByValue(level.getValue()).plans[0], meeting: 'any'
             });
             // Payment comes before login: go straight to the Stripe page. The confirmation email is already on its way.
             if (out.payUrl) { if (!out.confirm) store.set(out); location.href = out.payUrl; return; }
@@ -395,41 +391,40 @@
 
     function overviewPane(pane) {
       const lvl = levelOf(acct.level);
+      const c = catOf(acct.level);
       const approved = acct.status === 'approved';
-      const steps = [
-        { title: 'Signed up', text: 'Thanks for backing Ridge Tank.', state: 'done' },
-        { title: 'You’re a partner', text: approved ? 'You’re an official partner.' : acct.status === 'declined' ? 'We can’t take this one. See the note below.' : 'We’ll be in touch shortly.', state: approved ? 'done' : acct.status === 'declined' ? 'stop' : 'now' },
-        { title: 'Payment', text: acct.level === 'inkind' ? lvl.pay : 'Pick your plan and pay by card in the Payments tab.', state: approved ? 'now' : 'later' },
-        { title: 'Meeting day', text: meetingLabel(acct.meeting), state: 'later' },
-        { title: 'Thank-you photos', text: 'We send you photos from the meeting as proof.', state: 'later' }
-      ];
       const pay = acct.pay || {};
-      const paidSomething = (pay.payments || []).length > 0 || acct.subscribed;
-      if (acct.level !== 'inkind' && !paidSomething) {
-        const c = catOf(acct.level);
-        pane.appendChild(h('div', { class: 'card sp-paynow' },
-          h('span', { class: 'sp-cat-ico' }, icon(c.icon, 22)),
-          h('div', { class: 'grow min0' }, h('strong', null, c.label), h('p', { class: 'muted small' }, c.plans.length > 1 ? 'Pick your plan and pay securely by card.' : lvl.pay)),
-          h('button', { class: 'btn btn-primary', type: 'button', onclick: () => RT.go('sponsor/dashboard/payments') }, icon('card', 16), 'Pay here')));
-      }
+      const paid = (pay.payments || []).length > 0 || acct.subscribed;
+      const todo = [];
+      if (!acct.logo) todo.push({ t: 'Add your logo', n: 'It goes on the posters.', go: 'profile' });
+      if (!acct.phone) todo.push({ t: 'Add a phone number', n: 'So we can reach you on meeting day.', go: 'profile' });
+      if (c.value === 'meeting' && (!acct.meeting || acct.meeting === 'any')) todo.push({ t: 'Pick your meeting', n: 'Choose which one we feature you at.', go: 'profile' });
       if (acct.message) pane.appendChild(h('div', { class: 'card sp-message' }, h('span', { class: 'card-label' }, 'Message from Ridge Tank'), h('p', null, acct.message)));
+      const rows = [
+        ['Sponsorship', c.label],
+        ['Plan', lvl.label],
+        c.value === 'meeting' ? ['Meeting', meetingLabel(acct.meeting)] : null,
+        ['Amount', lvl.price]
+      ].filter(Boolean);
+      const status = acct.level === 'inkind' ? 'In-kind' : paid ? 'Paid' : 'Payment due';
+      pane.appendChild(h('section', { class: 'sp-receipt' },
+        h('div', { class: 'sp-receipt-top' },
+          h('div', null, h('span', { class: 'card-label' }, 'Receipt'), h('h2', { class: 'sp-receipt-h' }, lvl.price.replace(' once', ''))),
+          h('span', { class: 'sp-receipt-stamp ' + (paid ? 'is-paid' : 'is-due') }, status)),
+        h('dl', { class: 'sp-receipt-rows' }, rows.map(r => [h('dt', null, r[0]), h('dd', null, r[1])])),
+        !paid && acct.level !== 'inkind'
+          ? h('div', { class: 'sp-receipt-pay' }, h('p', { class: 'muted small' }, lvl.pay), h('button', { class: 'btn btn-primary btn-lg', type: 'button', onclick: () => RT.go('sponsor/dashboard/payments') }, icon('card', 16), 'Pay ' + lvl.price.replace(' once', '')))
+          : h('p', { class: 'sp-receipt-thanks' }, paid ? 'Thank you. You’re backing the next founders.' : lvl.pay)));
+      if (todo.length) pane.appendChild(h('section', { class: 'card sp-todo' },
+        h('span', { class: 'card-label' }, 'Finish up'),
+        todo.map(x => h('button', { class: 'sp-todo-row', type: 'button', onclick: () => RT.go('sponsor/dashboard/' + x.go) }, h('span', null, h('strong', null, x.t), h('span', { class: 'muted small' }, ' ' + x.n)), icon('chevronRight', 16)))));
       pane.appendChild(h('div', { class: 'sp-overview' },
         h('section', { class: 'card' },
-          h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Your progress')),
-          h('ol', { class: 'sp-steps' }, steps.map((s, i) => h('li', { class: 'sp-steps-li is-' + s.state },
-            h('span', { class: 'sp-dot' }, s.state === 'done' ? icon('check', 14) : s.state === 'stop' ? icon('x', 14) : String(i + 1)),
-            h('div', null, h('strong', null, s.title), h('p', { class: 'muted small' }, s.text)))))),
-        h('div', { class: 'stack' },
-          h('section', { class: 'card' },
-            h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Your sponsorship'), h('button', { class: 'link-btn', type: 'button', onclick: () => RT.go('sponsor/dashboard/profile') }, 'Change')),
-            h('dl', { class: 'sp-kv' },
-              h('dt', null, 'Category'), h('dd', null, catOf(acct.level).label),
-              h('dt', null, 'Plan'), h('dd', null, lvl.label + ' · ' + lvl.price),
-              catOf(acct.level).value === 'meeting' ? h('dt', null, 'Meeting') : null, catOf(acct.level).value === 'meeting' ? h('dd', null, meetingLabel(acct.meeting)) : null,
-              h('dt', null, 'Logo'), h('dd', null, acct.logo ? 'Uploaded' : h('button', { class: 'link-btn', type: 'button', onclick: () => RT.go('sponsor/dashboard/profile') }, 'Add your logo')))),
-          h('section', { class: 'card' },
-            h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'What you get')),
-            h('ul', { class: 'sp-get' }, cfg.perks.map(p => h('li', null, icon('check', 15, 'accent'), h('span', null, p.title))))))));
+          h('span', { class: 'card-label' }, 'What happens next'),
+          h('p', null, !approved ? 'We’re looking over your sign-up and will email you shortly.' : 'You’re an official partner. We put your name on the posters before the meeting, and send you photos from the day.')),
+        h('section', { class: 'card' },
+          h('span', { class: 'card-label' }, 'What you get'),
+          h('ul', { class: 'sp-get' }, (lvl.gets || cfg.perks.map(p => p.title)).map(x => h('li', null, icon('check', 15, 'accent'), h('span', null, x)))))));
     }
 
     function profilePane(pane) {

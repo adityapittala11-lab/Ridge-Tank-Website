@@ -254,6 +254,7 @@
       bottomEl.appendChild(bottomSeg);
     } else if (!S.user) {
       right.appendChild(h('a', { class: 'btn btn-ghost btn-sm hide-sm', href: '#/', onclick: e => { e.preventDefault(); RT.jump('faq'); } }, 'FAQ'));
+      right.appendChild(h('a', { class: 'btn btn-ghost btn-sm hide-sm nav-sponsors', href: '#/sponsor' }, 'Sponsors'));
       right.appendChild(h('a', { class: 'btn btn-ghost btn-sm hide-sm', href: '#/login' }, 'Log in'));
       right.appendChild(h('a', { class: 'btn btn-primary btn-sm hide-sm', href: '#/signup' }, 'Join'));
     }
@@ -326,6 +327,7 @@
     } else {
       items.push(link('#/', 'About the program', 'fin'));
       items.push(h('a', { class: 'menu-item', href: '#/', onclick: e => { e.preventDefault(); closeMenu(); RT.jump('faq'); } }, icon('chat', 18), h('span', { class: 'grow' }, 'FAQ')));
+      items.push(link('#/sponsor', 'Sponsors', 'award'));
       items.push(link('#/login', 'Log in', 'user'));
       items.push(h('a', { class: 'btn btn-primary btn-block', href: '#/signup', onclick: closeMenu }, 'Join Ridge Tank'));
     }

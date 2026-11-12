@@ -60,6 +60,8 @@
     root.appendChild(RT.pageHead('Home', subLine));
     const banner = RT.meetingBanner ? RT.meetingBanner() : null;
     if (banner) root.appendChild(banner);
+    const nextUp = h('section', { class: 'nextup reveal' });
+    root.appendChild(nextUp);
     const top = h('div', { class: 'home-top' });
     if (RT.academyHomeCard) top.appendChild(RT.academyHomeCard());
     root.appendChild(top);
@@ -74,6 +76,7 @@
     loadMine().then(d => {
       const { cur, next } = RT.tierFor(d.mine.total_points, S.tiers);
       subLine.textContent = `Welcome back, ${String(S.me.name || '').split(' ')[0]}.`;
+      renderNext(nextUp, d, next);
       renderStanding(cStanding, d, cur, next);
       renderWeek(cWeek);
       renderBountiesMini(cBounties);
@@ -85,6 +88,29 @@
     }).catch(e => toast(friendly(e), 'error'));
     return {};
   };
+
+  // One clear thing to do next: the next meeting, else the best open bounty, else the leaderboard.
+  function renderNext(el, d, next) {
+    const today = RT.localDateISO();
+    const m = S.meetings.filter(x => x.meeting_date >= today).sort((a, b) => (a.meeting_date < b.meeting_date ? -1 : 1))[0];
+    const b = S.bounties.filter(x => RT.bountyInfo(x).open).sort((x, y) => (y.points || 0) - (x.points || 0))[0];
+    let kicker, title, text, href, cta;
+    if (m) {
+      const days = daysUntil(m.meeting_date);
+      kicker = days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : 'In ' + days + ' days';
+      title = 'Be at ' + (m.name || 'the next meeting');
+      text = 'Check in when you arrive to earn Bites. ' + fmtDate(m.meeting_date, { weekday: 'long', month: 'short', day: 'numeric' }) + (m.location ? ' · ' + m.location : '') + '.';
+      href = '#/updates'; cta = 'See the plan';
+    } else if (b) {
+      kicker = '+' + b.points + ' Bites';
+      title = b.title; text = RT.bountyMeta(b); href = '#/bounties'; cta = 'Take it on';
+    } else {
+      kicker = 'Your move'; title = 'Climb the leaderboard'; text = next ? 'You’re ' + (next.point_threshold - d.mine.total_points) + ' Bites from ' + next.name + '.' : 'You’re at the top tier.'; href = '#/leaderboard'; cta = 'See the board';
+    }
+    clear(el).append(
+      h('div', { class: 'nextup-body' }, h('span', { class: 'nextup-kicker' }, kicker), h('h2', { class: 'nextup-title' }, title), h('p', { class: 'muted' }, text)),
+      h('a', { class: 'btn btn-primary btn-lg', href }, cta));
+  }
 
   // One card: Bites, tier progress, rank and badges, with links to the full pages.
   function renderStanding(el, d, cur, next) {
