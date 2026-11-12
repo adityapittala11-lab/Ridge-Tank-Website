@@ -58,6 +58,66 @@ async function stripe(path, fields) {
   return out;
 }
 
+// One GET to Stripe (lists and lookups).
+async function stripeGet(path, params) {
+  const q = new URLSearchParams();
+  for (const [k, v] of Object.entries(params || {})) {
+    if (Array.isArray(v)) v.forEach(x => q.append(k, String(x))); else if (v != null && v !== '') q.append(k, String(v));
+  }
+  const r = await fetch(STRIPE() + '/v1/' + path + (q.toString() ? '?' + q : ''), { headers: { Authorization: 'Bearer ' + stripeKey() } });
+  const out = await r.json().catch(() => null);
+  if (!r.ok || !out) throw new Error((out && out.error && out.error.message) || 'Stripe did not answer.');
+  return out;
+}
+
+const UUID = /^[0-9a-f-]{36}$/i;
+const ONE_TIME_KINDS = ['deposit', 'balance', 'meeting', 'hoodie', 'event'];
+
+// Writes what ONE Stripe Checkout session says into our payments table. Idempotent: a session is keyed by its id,
+// so seeing it twice (webhook + this) never counts twice. A fully refunded session is removed, so the dashboard
+// and the spot count stay truthful after a refund. Answers true when a paid one-time payment is on record.
+async function recordSession(client, s) {
+  if (!s || s.object !== 'checkout.session') return false;
+  const id = (s.metadata && s.metadata.account_id) || s.client_reference_id;
+  if (!UUID.test(String(id || ''))) return false;
+  const kind = (s.metadata && s.metadata.kind) || '';
+  if (s.customer) await client.query('update sponsor_portal.accounts set stripe_customer = $2 where id = $1 and stripe_customer is distinct from $2', [id, s.customer]);
+  if (s.mode === 'subscription') {
+    if (s.subscription) await client.query('update sponsor_portal.accounts set stripe_subscription = $2 where id = $1 and stripe_subscription is distinct from $2', [id, s.subscription]);
+    return false; // monthly plans are recorded per invoice by the webhook
+  }
+  if (!ONE_TIME_KINDS.includes(kind)) return false;
+  const pi = s.payment_intent && typeof s.payment_intent === 'object' ? s.payment_intent : null;
+  const charge = pi && pi.latest_charge && typeof pi.latest_charge === 'object' ? pi.latest_charge : null;
+  const refunded = !!(charge && charge.refunded);
+  if (s.payment_status === 'paid' && !refunded) {
+    await client.query('insert into sponsor_portal.payments (account_id, kind, amount_cents, ref) values ($1, $2, $3, $4) on conflict (ref) do nothing', [id, kind, s.amount_total || 0, s.id]);
+    return true;
+  }
+  if (refunded) await client.query('delete from sponsor_portal.payments where ref = $1', [s.id]);
+  return false;
+}
+
+// Asks Stripe directly instead of trusting only the webhook. With a session id: that one session.
+// Without: the latest 100 sessions, which heals every account at once. Never throws; a Stripe hiccup
+// must not break the dashboard.
+async function syncFromStripe(client, sessionId) {
+  if (!stripeKey()) return { ok: false };
+  try {
+    if (sessionId) {
+      if (!/^cs_[A-Za-z0-9_]+$/.test(sessionId)) return { ok: false };
+      const s = await stripeGet('checkout/sessions/' + sessionId, { 'expand[]': ['payment_intent.latest_charge'] });
+      return { ok: true, recorded: await recordSession(client, s), accountId: (s.metadata && s.metadata.account_id) || s.client_reference_id || null, paid: s.payment_status === 'paid' };
+    }
+    const list = await stripeGet('checkout/sessions', { limit: 100, 'expand[]': ['data.payment_intent.latest_charge'] });
+    let n = 0;
+    for (const s of (list.data || [])) { try { if (await recordSession(client, s)) n++; } catch (e) { /* next */ } }
+    return { ok: true, recorded: n };
+  } catch (e) {
+    return { ok: false, error: e && e.message };
+  }
+}
+
 // Opens a Stripe Checkout page for one thing this sponsor can pay for, and answers its address.
 async function checkoutUrl(req, a, opt, backPath) {
   const back = siteOrigin(req) + backPath;
@@ -75,7 +135,7 @@ async function checkoutUrl(req, a, opt, backPath) {
     'metadata[account_id]': a.id,
     'metadata[kind]': opt.kind,
     'subscription_data[metadata][account_id]': monthly ? a.id : '',
-    success_url: back + '?paid=1',
+    success_url: back + '?paid=1&cs={CHECKOUT_SESSION_ID}',
     cancel_url: back + '?paid=0'
   });
   return session.url;
@@ -247,6 +307,13 @@ async function run(req, b) {
 
     if (action === 'spots') return ok(await spotsLeft(client));
 
+    // Coming back from Stripe Checkout: confirm that session right now, webhook or no webhook.
+    if (action === 'confirmPay') {
+      if (tooManyTries('sponsor-confirm|' + clientIp(req), 30)) return fail('Too many tries. Wait a minute.', 'rate_limited');
+      const out = await syncFromStripe(client, String(b.session || ''));
+      return ok({ recorded: !!out.recorded, paid: !!out.paid });
+    }
+
     // Always answers "ok", so it can't be used to find out who has an account.
     if (action === 'resend') {
       const email = String(b.email || '').trim().toLowerCase();
@@ -260,14 +327,25 @@ async function run(req, b) {
       const a = await signedIn(req, client);
       if (!a) return fail('Please log in again.', 'signed_out');
 
-      if (action === 'me') return ok(Object.assign(publicAccount(a), { pay: await paymentInfo(client, a) }));
+      if (action === 'me') {
+        // Before saying "payment due", check with Stripe: a missed webhook must never ask a sponsor to pay twice.
+        // One Stripe lookup per dashboard open. Cheap at our size, and it also clears a payment after a refund.
+        const cs = String(b.session || '');
+        if (cs) await syncFromStripe(client, cs);
+        if (stripeKey()) await syncFromStripe(client);
+        return ok(Object.assign(publicAccount(a), { pay: await paymentInfo(client, a) }));
+      }
 
       if (action === 'pay') {
         if (!stripeKey()) return fail('Payments aren’t switched on yet. Email us and we’ll sort it out.', 'pay_off');
         if (a.status !== 'approved') return fail('Payments aren’t open for this account. Email us and we’ll sort it out.', 'not_approved');
+        await syncFromStripe(client); // if they already paid and we missed it, this records it and the option below disappears
         const info = await paymentInfo(client, a);
         const opt = info.options.find(o => o.kind === String(b.kind || ''));
-        if (!opt) return fail('Nothing is due right now.', 'nothing_due');
+        if (!opt) {
+          const paidAlready = info.paidKinds.includes(String(b.kind || '')) || (ONCE[a.level] && info.paidKinds.includes(a.level));
+          return fail(paidAlready ? 'You’ve already paid for this. Thank you! Refresh and it will show as paid.' : 'Nothing is due right now.', paidAlready ? 'already_paid' : 'nothing_due');
+        }
         return ok({ url: await checkoutUrl(req, a, opt, '/#/sponsor/dashboard/payments') });
       }
 

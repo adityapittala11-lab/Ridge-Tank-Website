@@ -1,7 +1,9 @@
 // Vercel Function "/api/stripe-webhook": Stripe tells us when a sponsor has paid.
 // In Stripe: Developers > Webhooks > Add endpoint > https://<your site>/api/stripe-webhook, with the events
-//   checkout.session.completed, invoice.paid, customer.subscription.deleted
+//   checkout.session.completed, invoice.paid, customer.subscription.deleted, charge.refunded
 // then copy the "Signing secret" (whsec_...) into Vercel as STRIPE_WEBHOOK_SECRET.
+// The sponsor dashboard also checks with Stripe directly (api/sponsor.js syncFromStripe), so a missed
+// webhook can no longer leave a paid sponsor looking unpaid.
 import crypto from 'node:crypto';
 import { getPool, ensureSchema } from './_pg.js';
 import { sendMail, mailConfigured } from './_mail.js';
@@ -23,6 +25,19 @@ export function verifySignature(raw, header, secret, nowSec = Math.floor(Date.no
   if (!t || !sigs.length || Math.abs(nowSec - Number(t)) > 300) return false;
   const want = crypto.createHmac('sha256', secret).update(t + '.' + raw).digest('hex');
   return sigs.some(s => s.length === want.length && crypto.timingSafeEqual(Buffer.from(s), Buffer.from(want)));
+}
+
+// A refund: find the Checkout session(s) behind that charge and take the payment back off the books,
+// so the dashboard and the hoodie/event spot counts stay truthful.
+async function unrecordRefund(client, charge) {
+  const key = process.env.STRIPE_SECRET_KEY || '';
+  const pi = charge && (typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent && charge.payment_intent.id);
+  if (!key || !pi || !charge.refunded) return; // partial refunds are left for an officer to judge
+  const base = String(process.env.STRIPE_API_BASE || 'https://api.stripe.com');
+  const r = await fetch(base + '/v1/checkout/sessions?payment_intent=' + encodeURIComponent(pi) + '&limit=5', { headers: { Authorization: 'Bearer ' + key } });
+  const out = await r.json().catch(() => null);
+  if (!r.ok || !out || !Array.isArray(out.data)) return;
+  for (const s of out.data) await client.query('delete from sponsor_portal.payments where ref = $1', [s.id]);
 }
 
 async function record(client, accountId, kind, cents, ref) {
@@ -67,6 +82,8 @@ export default async function handler(req, res) {
         if (id) await record(client, id, 'monthly', o.amount_paid || 0, o.id);
       } else if (ev.type === 'customer.subscription.deleted') {
         await client.query('update sponsor_portal.accounts set stripe_subscription = null where stripe_subscription = $1', [o.id]);
+      } else if (ev.type === 'charge.refunded') {
+        await unrecordRefund(client, o);
       }
     } finally { client.release(); }
     res.status(200).json({ received: true });
