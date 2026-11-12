@@ -75,8 +75,8 @@ export const SQL_FILES = [
   "sql": "-- Sponsors are approved automatically now. Approve anyone still waiting (officers can still decline someone later).\nupdate sponsor_portal.accounts set status = 'approved' where status = 'pending';\nalter table sponsor_portal.accounts alter column status set default 'approved';\n"
  },
  {
-  "name": "190_confirm_test_sponsor.sql",
-  "sql": "-- One-time fix: mark the owner's temporary test sponsor account as email-confirmed so it can log in without the email link.\nupdate sponsor_portal.accounts set email_confirmed_at = coalesce(email_confirmed_at, now())\n where lower(email) = 'adityapittala.11+sponsortest@gmail.com';\n"
+  "name": "190_remove_test_sponsor.sql",
+  "sql": "-- One-time cleanup: remove the owner's test sponsor account (and its payment rows) from the sponsor list.\ndelete from sponsor_portal.accounts\n where lower(email) like 'adityapittala.11%@gmail.com';\n"
  },
  {
   "name": "200_team_applications.sql",
