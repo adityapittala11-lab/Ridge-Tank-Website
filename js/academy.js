@@ -701,6 +701,8 @@
     R.msgs.push({ me: true, t: v }); R.answers.push(v); R.turns++;
     R.tel.push(statsOut(R.stats)); R.stats = newStats(); R.hint = '';
     const sp = R.spec, idx = R.turns - 1;
+    // Cheat code: typing "Krishna" ends the round now; the server passes it with full marks.
+    if (v.toLowerCase() === 'krishna') { finish(); return; }
     if (sp.mode === 'grill' && R.turns >= sp.needed) { finish(); return; }
     if (idx < sp.lines.length) respond(sp.lines[idx][0], sp.lines[idx][1], () => { if (sp.mode === 'talk' && R && R.turns >= sp.needed) finish(); });
   }
