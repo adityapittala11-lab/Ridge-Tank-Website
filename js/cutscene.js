@@ -717,13 +717,20 @@
         const d = Math.exp(-(ts - 2.35) * 3); // pinned: grinding the ray into the sand
         head = { x: R.x + Math.sin(ts * 30) * L * 0.012 * d, y: R.y + L * 0.02 - Math.abs(Math.sin(ts * 15)) * L * 0.02 * d };
       }
+      const lastP = S.trail.pts[S.trail.pts.length - 1];
+      const hv = lastP ? { x: (head.x - lastP.x) / Math.max(sdt, 1e-3), y: (head.y - lastP.y) / Math.max(sdt, 1e-3) } : { x: 0, y: 0 }, hs = Math.hypot(hv.x, hv.y);
       S.trail.push(head.x, head.y);
+      const zoomNow = 1 + 0.16 * E.inOut(seg(t, 1.7, 2.7)), fxN = lerp(W / 2, R.x, E.inOut(seg(t, 1.7, 2.7)) * 0.6), fyN = lerp(H / 2, R.y, E.inOut(seg(t, 1.7, 2.7)) * 0.6);
+      const scr = p => ({ x: (p.x - fxN) * zoomNow + W / 2, y: (p.y - fyN) * zoomNow + H / 2 });
+      S.bokeh = true;
+      if (S.focus && S.focus.hold && t > 2.7) S.focus.hold = false;
       // --- events ---
       if (ts > S.nextScan && ts < 1.8) { S.nextScan += 0.34; spawn(S, { type: 'ring', x: head.x, y: head.y, r: L * 0.08, grow: L * 0.85, a: 0.55, w: 1.8, color: '#6fe0a8', max: 0.95 }); }
-      if (!S.found && ts >= 1.72) { S.found = true; S.flash = 0.08; spawn(S, { type: 'ring', x: R.x, y: R.y, r: S.rs * 0.6, grow: S.rs * 1.6, a: 0.9, w: 3, color: '#6fe0a8', max: 0.6 }); spawn(S, { type: 'ring', x: R.x, y: R.y, r: S.rs * 0.5, grow: S.rs * 2.6, a: 0.5, w: 1.5, color: '#6fe0a8', max: 0.9 }); }
+      if (!S.found && ts >= 1.72) { S.found = true; S.flash = 0.08; { const q = scr(R); S.chroma = 5; S.focus = { x: q.x, y: q.y, a: 0.45 }; S.zoom = { x: q.x, y: q.y, amt: -0.04 }; } spawn(S, { type: 'ring', x: R.x, y: R.y, r: S.rs * 0.6, grow: S.rs * 1.6, a: 0.9, w: 3, color: '#6fe0a8', max: 0.6 }); spawn(S, { type: 'ring', x: R.x, y: R.y, r: S.rs * 0.5, grow: S.rs * 2.6, a: 0.5, w: 1.5, color: '#6fe0a8', max: 0.9 }); }
       if (S.found) S.glow = ts < 2.35 ? 0.55 + 0.45 * Math.sin(ts * 28) : Math.max(0, S.glow - dt * 1.4);
       if (!S.pin && ts >= 2.35) {
-        S.pin = true; S.flash = 0.18; S.shake = 13 + 6 * k;
+        S.pin = true; S.flash = 0.12; S.shake = 13 + 6 * k;
+        { const q = scr(R); hit(S, q.x, q.y, 1 + 0.3 * k); S.focus.hold = true; S.focus.a = 0.55; }
         for (let i = 0; i < 30; i++) { const an = rnd(0, TAU), sp = rnd(120, 420); spawn(S, { type: 'mist', x: R.x + Math.cos(an) * S.rs * 0.3, y: R.y + Math.sin(an) * S.rs * 0.3, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, drag: 0.9, r: rnd(L * 0.08, L * 0.18), color: '#dfe6d2', a: 0.55, max: rnd(1.6, 2.8) }); }
         for (let i = 0; i < 70; i++) { const an = rnd(0, TAU), sp = rnd(150, 520); spawn(S, { type: 'scale', x: R.x, y: R.y, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, drag: 0.9, r: rnd(0.8, 2), spin: rnd(-10, 10), max: rnd(0.6, 1.3) }); }
         spawn(S, { type: 'ring', x: R.x, y: R.y, r: L * 0.06, grow: L * 0.9, a: 0.7, w: 3, color: '#f2ece0', max: 0.7 });
@@ -741,7 +748,8 @@
       topRay(ctx, R.x, R.y, -0.5, S.rs, '#7a1434', flap, buried, S.glow);
       const speed = ts < 1.8 ? 0.8 : ts < 2.35 ? 1.6 : 1.2 + 0.8 * Math.exp(-(ts - 2.35) * 2);
       S.ph = (S.ph || 0) + sdt * 8 * speed;
-      topShark(ctx, S.trail, { len: L, color: S.color, kind: 'hammer', phase: S.ph, amp: ts < 2.35 ? 0.06 : 0.1, shadow: 0.38 });
+      { const o = { len: L, color: S.color, kind: 'hammer', phase: S.ph, amp: ts < 2.35 ? 0.06 : 0.1, shadow: 0.38 }, fast = clamp(hs / (L * 2.6), 0, 1), bl = fast * L * 0.1;
+        if (ts > 1.75 && ts < 2.4 && bl > 2) ghosts(ctx, hv.x / hs * bl, hv.y / hs * bl, 4, 0.5, a => topShark(ctx, S.trail, Object.assign({}, o, { alpha: a, shadow: a < 1 ? 0 : 0.38 }))); else topShark(ctx, S.trail, o); }
       stepParts(ctx, S, dt, 'over');
       ctx.restore();
       if (S.flash > 0.01) { ctx.fillStyle = `rgba(226,250,238,${S.flash.toFixed(3)})`; ctx.fillRect(0, 0, W, H); S.flash *= Math.pow(0.003, dt); }
