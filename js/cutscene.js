@@ -1060,18 +1060,26 @@
       if (qs > 0.01) { ctx.save(); ctx.translate(qx, qy); ctx.rotate(ts < 1.92 ? Math.sin(ts * 3) * 0.12 : 0); ctx.scale(qs, qs); ctx.fillStyle = ts < 1.92 ? '#7a1434' : '#6fe0a8'; ctx.beginPath(); ctx.arc(0, 0, 30 * u, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.moveTo(-10 * u, 22 * u); ctx.lineTo(-24 * u, 36 * u); ctx.lineTo(4 * u, 28 * u); ctx.fill(); ctx.fillStyle = ts < 1.92 ? '#f2ece0' : '#0e402c'; ctx.font = `${Math.round(40 * u)}px Anton, Impact, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(ts < 1.92 ? '?' : '!', 0, 2 * u); ctx.restore(); }
       // your words: speech bubbles thrown at Cam
       hits.forEach((h, i) => {
-        const a = seg(ts, h - 0.45, h); if (a <= 0 || a >= 1) return;
-        const x = lerp(-60 * u, cx - 30 * u, a), y = lerp(H * (0.3 + i * 0.12), hy, a) - Math.sin(Math.PI * a) * 60 * u, sz = (i === 2 ? 1.35 : 1) * u;
-        ctx.save(); ctx.translate(x, y); ctx.rotate(Math.sin(a * 6) * 0.15); ctx.fillStyle = '#f2ece0'; ctx.beginPath(); ctx.roundRect(-48 * sz, -24 * sz, 96 * sz, 48 * sz, 18 * sz); ctx.fill();
-        ctx.beginPath(); ctx.moveTo(-26 * sz, 20 * sz); ctx.lineTo(-40 * sz, 36 * sz); ctx.lineTo(-10 * sz, 22 * sz); ctx.fill();
-        ctx.fillStyle = '#0e402c'; for (let j = -1; j <= 1; j++) { ctx.beginPath(); ctx.arc(j * 20 * sz, 0, 6 * sz, 0, TAU); ctx.fill(); } ctx.restore();
+        const a0 = seg(ts, h - 0.45, h); if (a0 <= 0 || a0 >= 1) return;
+        const sz = (i === 2 ? 1.35 : 1) * u;
+        // the bubble, with a motion-blur trail of fainter copies behind it
+        const bubble = (a, al) => {
+          if (a <= 0) return;
+          const x = lerp(-60 * u, cx - 30 * u, a), y = lerp(H * (0.3 + i * 0.12), hy, a) - Math.sin(Math.PI * a) * 60 * u;
+          ctx.save(); ctx.globalAlpha = al; ctx.translate(x, y); ctx.rotate(Math.sin(a * 6) * 0.15); ctx.fillStyle = '#f2ece0'; ctx.beginPath(); ctx.roundRect(-48 * sz, -24 * sz, 96 * sz, 48 * sz, 18 * sz); ctx.fill();
+          ctx.beginPath(); ctx.moveTo(-26 * sz, 20 * sz); ctx.lineTo(-40 * sz, 36 * sz); ctx.lineTo(-10 * sz, 22 * sz); ctx.fill();
+          ctx.fillStyle = '#0e402c'; for (let j = -1; j <= 1; j++) { ctx.beginPath(); ctx.arc(j * 20 * sz, 0, 6 * sz, 0, TAU); ctx.fill(); } ctx.restore();
+        };
+        const sp = E.inQ(a0);
+        for (const [d, al] of [[0.12, 0.12], [0.08, 0.2], [0.04, 0.32]]) bubble(a0 - d * (0.5 + sp), al);
+        bubble(a0, 1);
       });
-      hits.forEach((h, i) => { if (!S['h' + i] && ts >= h) { S['h' + i] = true; S.shake = i === 2 ? 10 + 4 * k : 3; for (let j = 0; j < (i === 2 ? 14 : 8); j++) { const an = rnd(-1.6, 1.6) + Math.PI, sp = rnd(120, 320); spawn(S, { type: 'scale', x: cx - 30 * u, y: hy, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, g: 600, r: rnd(2, 4), spin: rnd(-12, 12), max: 0.7 }); } } });
+      hits.forEach((h, i) => { if (!S['h' + i] && ts >= h) { S['h' + i] = true; S.shake = i === 2 ? 10 + 4 * k : 3; if (i < 2) { S.chroma = 4; S.zoom = { x: cx - 30 * u, y: hy, amt: 0.04 }; S.kick = { x: 9, y: 2 }; } else { hit(S, cx, hy, 0.85 + 0.2 * k); S.kick = { x: 16, y: 4 }; } for (let j = 0; j < (i === 2 ? 14 : 8); j++) { const an = rnd(-1.6, 1.6) + Math.PI, sp = rnd(120, 320); spawn(S, { type: 'scale', x: cx - 30 * u, y: hy, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, g: 600, r: rnd(2, 4), spin: rnd(-12, 12), max: 0.7 }); } } });
       // confetti when Cam is won over
       if (!S.cf && ts >= 1.95) { S.cf = true; S.flash = 0.12; const cols = ['#6fe0a8', '#f2ece0', '#7a1434', S.color]; for (let i = 0; i < 90 + 40 * k; i++) { const an = rnd(-Math.PI * 0.95, -Math.PI * 0.05), sp = rnd(300, 820) * u; S.conf.push({ x: cx + rnd(-40, 40) * u, y: hy, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, c: cols[i % 4], r: rnd(4, 9) * u, sp: rnd(-10, 10), a: rnd(0, 6) }); } }
       for (const c of S.conf) { c.vy += 900 * u * dt; c.vx *= Math.pow(0.5, dt); c.vy *= Math.pow(0.7, dt); c.x += c.vx * dt; c.y += c.vy * dt; c.a += c.sp * dt; ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.a); ctx.scale(1, Math.abs(Math.cos(c.a * 1.7)) + 0.15); ctx.fillStyle = c.c; ctx.fillRect(-c.r, -c.r * 0.5, c.r * 2, c.r); ctx.restore(); }
       stepParts(ctx, S, dt, 'over');
-      if (!S.st && ts >= 2.45) { S.st = true; S.shake = 14 + 6 * k; for (let i = 0; i < 26; i++) { const an = rnd(0, TAU), sp = rnd(80, 300); spawn(S, { type: 'mist', x: W * 0.27 + Math.cos(an) * 60 * u, y: H * 0.36 + Math.sin(an) * 30 * u, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, drag: 0.85, r: rnd(3, 8) * u, color: '#7a1434', a: 0.9, max: 3 }); } }
+      if (!S.st && ts >= 2.45) { S.st = true; S.shake = 14 + 6 * k; hit(S, W * 0.27, H * 0.36, 0.7); S.focus.a = 0.3; S.kick = { x: 0, y: 14 }; for (let i = 0; i < 26; i++) { const an = rnd(0, TAU), sp = rnd(80, 300); spawn(S, { type: 'mist', x: W * 0.27 + Math.cos(an) * 60 * u, y: H * 0.36 + Math.sin(an) * 30 * u, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, drag: 0.85, r: rnd(3, 8) * u, color: '#7a1434', a: 0.9, max: 3 }); } }
       if (ts < 3.25) stamp(ctx, W * 0.27, H * 0.36, 'WON OVER', 50 * u, '#c23a62', ts - 2.3, -0.14);
       if (S.flash > 0.01) { ctx.fillStyle = `rgba(255,248,250,${S.flash.toFixed(3)})`; ctx.fillRect(0, 0, W, H); S.flash *= Math.pow(0.003, dt); }
       vignette(ctx, W, H, 0.6);
