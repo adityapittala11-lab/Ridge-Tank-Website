@@ -65,6 +65,10 @@
     const hl = ctx.createLinearGradient(0, 18, 0, 40); hl.addColorStop(0, 'rgba(255,255,255,0.18)'); hl.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = hl; ctx.fillRect(90, 0, 120, 40); ctx.restore();
     if (o.stripes) { ctx.save(); ctx.clip(P.front); ctx.fillStyle = 'rgba(0,0,0,0.26)'; for (let x = 112; x < 168; x += 10) { ctx.beginPath(); ctx.moveTo(x, 24); ctx.quadraticCurveTo(x - 3, 38, x - 1, 52); ctx.lineTo(x + 3, 52); ctx.quadraticCurveTo(x + 1, 38, x + 4, 24); ctx.fill(); } ctx.restore(); }
+    // the snout comes toward you: a lit cone over the middle of the face, with a shadow under it
+    const sg = ctx.createRadialGradient(-0.04, -0.2 - lift, 0.02, 0, -0.06 - lift, 0.34); sg.addColorStop(0, shade(col, 0.22)); sg.addColorStop(0.6, col); sg.addColorStop(1, mid);
+    ctx.fillStyle = 'rgba(20,2,8,0.35)'; ctx.beginPath(); ctx.ellipse(0, 0.0 - lift * 0.5, 0.31, 0.2, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = sg; ctx.beginPath(); ctx.ellipse(0, -0.08 - lift, 0.29, 0.21, 0, 0, TAU); ctx.fill();
     // gills
     ctx.strokeStyle = rgba(shade(o.color, -0.6), 0.55); ctx.lineWidth = 1.3; ctx.lineCap = 'round';
     for (let i = 0; i < 5; i++) { const gx = 150 + i * 3.6; ctx.beginPath(); ctx.moveTo(gx, 34 + i * 0.4); ctx.quadraticCurveTo(gx + 2.2, 42, gx - 0.4, 51 - i * 0.3); ctx.stroke(); }
@@ -810,8 +814,139 @@
     }
   };
 
+  // ---------- a shark seen head-on, coming straight at you. Unit space: body is 1 wide. ----------
+  // o: { color, belly, jaw 0..1, yaw -1..1, eyeRoll 0..1, alpha }
+  function frontShark(ctx, x, y, sc, o) {
+    const jaw = o.jaw || 0, yaw = o.yaw || 0, col = o.color, belly = o.belly || '#efe8da';
+    ctx.save(); ctx.translate(x, y); ctx.scale(sc * (1 - Math.abs(yaw) * 0.12), sc); ctx.globalAlpha = o.alpha == null ? 1 : o.alpha;
+    const dark = shade(col, -0.45), mid = shade(col, -0.2);
+    // dorsal fin and the top of the tail behind it, swinging with the yaw
+    ctx.fillStyle = dark;
+    ctx.beginPath(); ctx.moveTo(-0.11, -0.27); ctx.quadraticCurveTo(-0.05 - yaw * 0.1, -0.55, 0.0 - yaw * 0.2, -0.78); ctx.quadraticCurveTo(0.06 - yaw * 0.08, -0.48, 0.12, -0.27); ctx.closePath(); ctx.fill();
+    // pectoral fins, swept down and out like wings
+    ctx.fillStyle = mid;
+    for (const sd of [1, -1]) { ctx.beginPath(); ctx.moveTo(sd * 0.34, 0.08); ctx.quadraticCurveTo(sd * 0.75, 0.2 - yaw * sd * 0.05, sd * 1.0, 0.52 - yaw * sd * 0.08); ctx.quadraticCurveTo(sd * 0.6, 0.42, sd * 0.26, 0.27); ctx.closePath(); ctx.fill(); }
+    // the body: dark back, the colour across the middle, a pale belly
+    const lift = jaw * 0.06;
+    const body = () => { ctx.beginPath(); ctx.moveTo(0, -0.36 - lift); ctx.bezierCurveTo(0.3, -0.36 - lift, 0.5, -0.16, 0.5, 0.03); ctx.bezierCurveTo(0.5, 0.24, 0.28, 0.38, 0, 0.38); ctx.bezierCurveTo(-0.28, 0.38, -0.5, 0.24, -0.5, 0.03); ctx.bezierCurveTo(-0.5, -0.16, -0.3, -0.36 - lift, 0, -0.36 - lift); ctx.closePath(); };
+    const g = ctx.createLinearGradient(0, -0.38, 0, 0.38); g.addColorStop(0, dark); g.addColorStop(0.4, mid); g.addColorStop(0.62, col); g.addColorStop(0.74, shade(belly, -0.15)); g.addColorStop(1, shade(belly, -0.1));
+    ctx.fillStyle = g; body(); ctx.fill();
+    ctx.save(); body(); ctx.clip();
+    const hl = ctx.createRadialGradient(-0.12, -0.26, 0, -0.12, -0.26, 0.45); hl.addColorStop(0, 'rgba(255,255,255,0.22)'); hl.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = hl; ctx.fillRect(-0.6, -0.6, 1.2, 1.2);
+    const rim = ctx.createRadialGradient(0, 0, 0.25, 0, 0, 0.55); rim.addColorStop(0, 'rgba(0,0,0,0)'); rim.addColorStop(1, 'rgba(0,0,0,0.4)'); ctx.fillStyle = rim; ctx.fillRect(-0.6, -0.6, 1.2, 1.2);
+    // the snout comes toward you: a lit cone over the middle of the face, with a shadow under it
+    const sg = ctx.createRadialGradient(-0.04, -0.2 - lift, 0.02, 0, -0.06 - lift, 0.34); sg.addColorStop(0, shade(col, 0.22)); sg.addColorStop(0.6, col); sg.addColorStop(1, mid);
+    ctx.fillStyle = 'rgba(20,2,8,0.35)'; ctx.beginPath(); ctx.ellipse(0, 0.0 - lift * 0.5, 0.31, 0.2, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = sg; ctx.beginPath(); ctx.ellipse(0, -0.08 - lift, 0.29, 0.21, 0, 0, TAU); ctx.fill();
+    // gills
+    ctx.strokeStyle = 'rgba(30,4,12,0.45)'; ctx.lineWidth = 0.012;
+    for (const sd of [1, -1]) for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(sd * (0.4 + i * 0.022), -0.04 + i * 0.01); ctx.quadraticCurveTo(sd * (0.44 + i * 0.022), 0.06, sd * (0.4 + i * 0.022), 0.15 + i * 0.01); ctx.stroke(); }
+    // the mouth: a dark cave lined with two rows of teeth
+    if (jaw > 0.02) {
+      const mw = 0.27 + jaw * 0.07, top = 0.12 - lift * 0.4, bot = top + jaw * 0.24, my = (top + bot) / 2;
+      const c0 = top + 0.07, m0 = top - 0.1 * jaw, arch = x => c0 + 0.5 * (1 - (x / mw) * (x / mw)) * (m0 - c0);
+      const cave = () => { ctx.beginPath(); ctx.moveTo(-mw, c0); ctx.quadraticCurveTo(0, m0, mw, c0); ctx.quadraticCurveTo(mw * 0.9, bot + 0.02, 0, bot + 0.03); ctx.quadraticCurveTo(-mw * 0.9, bot + 0.02, -mw, c0); ctx.closePath(); };
+      const cg = ctx.createRadialGradient(0, my, 0, 0, my, mw); cg.addColorStop(0, '#0a0103'); cg.addColorStop(0.7, '#2a0410'); cg.addColorStop(1, '#5a0c22');
+      ctx.fillStyle = cg; cave(); ctx.fill();
+      ctx.save(); cave(); ctx.clip();
+      for (const [row, size, c] of [[1, 0.6, '#b9ab98'], [0, 1, '#f6f1e6']]) {
+        ctx.fillStyle = c; const n = 11, tw = (mw * 2) / n, th = (0.055 + jaw * 0.03) * size, inset = row * 0.03;
+        for (let i = 0; i < n; i++) { const x0 = -mw + i * tw + (row ? tw * 0.5 : 0), cx = x0 + tw / 2, edge = 1 - Math.pow((cx / mw), 2) * 0.5; if (cx > mw) continue;
+          const ty = arch(cx) + 0.012 + inset; ctx.beginPath(); ctx.moveTo(x0, ty - 0.01); ctx.lineTo(cx, ty + th * edge); ctx.lineTo(x0 + tw, ty - 0.01); ctx.fill();
+          const by = bot + 0.02 - inset; ctx.beginPath(); ctx.moveTo(x0, by + 0.01); ctx.lineTo(cx, by - th * edge * 0.85); ctx.lineTo(x0 + tw, by + 0.01); ctx.fill(); }
+      }
+      ctx.restore();
+    } else { ctx.strokeStyle = 'rgba(30,4,12,0.6)'; ctx.lineWidth = 0.014; ctx.beginPath(); ctx.moveTo(-0.26, 0.15); ctx.quadraticCurveTo(0, 0.1, 0.26, 0.15); ctx.stroke(); }
+    ctx.restore();
+    // eyes on the sides of the head; they roll back white just before the bite
+    for (const sd of [1, -1]) { ctx.fillStyle = (o.eyeRoll || 0) > 0.5 ? '#e9ece6' : '#05090a'; ctx.beginPath(); ctx.ellipse(sd * 0.37, -0.05 - lift * 0.5, 0.03, 0.026, 0, 0, TAU); ctx.fill(); if ((o.eyeRoll || 0) <= 0.5) { ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.beginPath(); ctx.arc(sd * 0.37 - 0.009, -0.058 - lift * 0.5, 0.007, 0, TAU); ctx.fill(); } }
+    ctx.fillStyle = 'rgba(20,2,8,0.7)'; for (const sd of [1, -1]) { ctx.beginPath(); ctx.ellipse(sd * 0.11, -0.04 - lift, 0.026, 0.011, sd * 0.5, 0, TAU); ctx.fill(); }
+    ctx.restore();
+  }
+  // cracks spreading out from a point on the glass
+  function makeCrack(x, y, len, n) {
+    const out = [];
+    for (let i = 0; i < n; i++) { let a = rnd(0, TAU), px = x, py = y; const pts = [[px, py]], L = len * rnd(0.4, 1); let d = 0;
+      while (d < L) { const st = rnd(14, 34); a += rnd(-0.2, 0.2); px += Math.cos(a) * st; py += Math.sin(a) * st; d += st; pts.push([px, py]); if (Math.random() < 0.12 && out.length < n * 3) out.push(...makeCrack(px, py, (L - d) * 0.6, 1)); }
+      out.push(pts); }
+    return out;
+  }
+
+  // =====================================================================
+  // REX: the rival. He comes out of the murk straight at you, eyes roll back, jaws open, and he bites the screen.
+  // =====================================================================
+  SCENES.rex = {
+    dur: 5.2, card: 3.4,
+    setup(S, W, H, k, coach) {
+      S.color = (coach && coach.color) || '#A51D45';
+      S.snow = Array.from({ length: 160 }, () => ({ x: rnd(0, W), y: rnd(0, H), z: rnd(0.3, 1), ph: rnd(0, 6) }));
+      S.cracks = []; S.holes = []; S.flash = 0; S.red = 0;
+    },
+    draw(ctx, t, dt, S, W, H, k) {
+      const ts = warp(t, [[0, 0], [1.85, 1.85], [2.45, 2.1], [9, 8.65]]);
+      const M = Math.min(W, H);
+      // distance: far away, closing in faster and faster, then filling the screen for the bite
+      const z = ts < 2.1 ? lerp(10, 0.62, E.inC(seg(ts, 0, 2.1))) : lerp(0.62, 6, E.inOut(seg(ts, 2.25, 3.3)));
+      const sc = M * 1.05 / z;
+      const yaw = Math.sin(ts * (ts < 2.1 ? 5.5 : 3)) * (ts < 2.1 ? 0.55 : 0.8);
+      const sway = Math.sin(ts * 5.5 - 0.6) * W * 0.06 * Math.min(1, 3 / z);
+      const away = ts > 2.25 ? E.inQ(seg(ts, 2.25, 3.3)) : 0;
+      const cx = W / 2 + sway + away * W * 0.3, cy = H * 0.5 + (ts < 2.1 ? lerp(-H * 0.05, H * 0.06, seg(ts, 0, 2.1)) : H * 0.06 + away * H * 0.2);
+      const jaw = ts < 2.1 ? E.outQ(seg(ts, 1.35, 2.0)) : ts < 2.25 ? lerp(1, 0, E.inQ(seg(ts, 2.1, 2.22))) : 0.15 * (1 - away);
+      const eyeRoll = ts > 1.97 && ts < 2.7 ? 1 : 0;
+      // --- the bite ---
+      if (!S.bite && ts >= 2.2) {
+        S.bite = true; S.flash = 0.5; S.red = 0.55; S.shake = 26 + 10 * k;
+        const n = 9;
+        for (const [row, yy] of [[0, H * 0.34], [1, H * 0.7]]) for (let i = 0; i < n; i++) {
+          const u = (i + 0.5 + (row ? 0.5 : 0)) / (n + 0.5), x = lerp(W * 0.14, W * 0.86, u), y = yy + (row ? -1 : 1) * Math.pow((u - 0.5) * 2, 2) * H * 0.09;
+          const r = (row ? 7 : 9) * M / 540 * (1.1 - Math.abs(u - 0.5));
+          S.holes.push({ x, y, r, up: row === 1 });
+          if (Math.random() < 0.75) S.cracks.push(...makeCrack(x, y, M * rnd(0.12, 0.35), 2 + (Math.random() < 0.4 ? 1 : 0)));
+        }
+        const C0 = { x: W * 0.5, y: H * 0.52 }, nR = 9, rays = [];
+        for (let i = 0; i < nR; i++) { const a = i / nR * TAU + rnd(-0.2, 0.2), pts = [[C0.x, C0.y]]; let px = C0.x, py = C0.y, aa = a; for (let d = 0; d < M * 0.75; d += 30) { aa += rnd(-0.08, 0.08); px += Math.cos(aa) * 30; py += Math.sin(aa) * 30; pts.push([px, py]); } rays.push(pts); S.cracks.push(pts); }
+        for (const ring of [2, 4, 7]) for (let i = 0; i < nR; i++) { const a = rays[i][ring], b = rays[(i + 1) % nR][ring]; if (a && b && Math.random() < 0.85) S.cracks.push([a, [(a[0] + b[0]) / 2 + (C0.x - (a[0] + b[0]) / 2) * 0.08, (a[1] + b[1]) / 2 + (C0.y - (a[1] + b[1]) / 2) * 0.08], b]); }
+      }
+      // --- draw: murky water ---
+      const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#11402f'); bg.addColorStop(0.55, '#06221a'); bg.addColorStop(1, '#020907');
+      ctx.fillStyle = bg; ctx.fillRect(-40, -40, W + 80, H + 80);
+      for (let i = 0; i < 6; i++) { const rx = W * (0.08 + i * 0.17) + Math.sin(t * 0.4 + i) * 20, g = ctx.createLinearGradient(0, 0, 0, H * 0.9); g.addColorStop(0, 'rgba(190,240,215,0.07)'); g.addColorStop(1, 'rgba(190,240,215,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(rx, -10); ctx.lineTo(rx + 60, -10); ctx.lineTo(rx + 140, H); ctx.lineTo(rx + 40, H); ctx.fill(); }
+      // marine snow rushing past (we're closing on each other)
+      const rush = ts < 2.2 ? 0.3 + 2 * E.inQ(seg(ts, 0.5, 2.1)) : 0.2;
+      for (const p of S.snow) {
+        const dx = p.x - W / 2, dy = p.y - H / 2; p.x += dx * rush * dt * p.z; p.y += dy * rush * dt * p.z;
+        if (p.x < -20 || p.x > W + 20 || p.y < -20 || p.y > H + 20) { p.x = W / 2 + rnd(-W * 0.2, W * 0.2); p.y = H / 2 + rnd(-H * 0.2, H * 0.2); }
+        ctx.strokeStyle = `rgba(216,243,230,${(0.12 + 0.25 * p.z).toFixed(3)})`; ctx.lineWidth = 0.6 + 1.4 * p.z;
+        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - dx * rush * 0.05 * p.z, p.y - dy * rush * 0.05 * p.z); ctx.stroke();
+      }
+      // the shark, fading out of the murk as it closes in
+      const fog = clamp(1.25 - z / 11, 0.08, 1);
+      if (sc < M * 12) frontShark(ctx, cx, cy, sc, { color: S.color, jaw, yaw: yaw * (1 - away * 0.5), eyeRoll, alpha: fog * (1 - away * 0.6) });
+      // murk over the top when it's far
+      ctx.fillStyle = `rgba(4,20,15,${clamp(0.55 - (1.25 - z / 11) * 0.5, 0, 0.5).toFixed(3)})`; ctx.fillRect(-40, -40, W + 80, H + 80);
+      // --- the broken glass ---
+      if (S.bite) {
+        for (const h of S.holes) {
+          ctx.fillStyle = 'rgba(4,8,6,0.85)'; ctx.beginPath();
+          const d = h.up ? -1 : 1; ctx.moveTo(h.x - h.r, h.y - d * h.r * 0.4); ctx.lineTo(h.x, h.y + d * h.r * 1.3); ctx.lineTo(h.x + h.r, h.y - d * h.r * 0.4); ctx.closePath(); ctx.fill();
+          ctx.strokeStyle = 'rgba(240,248,244,0.8)'; ctx.lineWidth = 1.3; ctx.stroke();
+        }
+        const grow = clamp((ts - 2.2) / 0.25, 0, 1);
+        for (const c of S.cracks) {
+          if (c.length < 2) continue; const m = Math.min(c.length, Math.max(2, Math.ceil(c.length * grow)));
+          ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 2.4; ctx.beginPath(); for (let i = 0; i < m; i++) i ? ctx.lineTo(c[i][0] + 1.2, c[i][1] + 1.2) : ctx.moveTo(c[i][0] + 1.2, c[i][1] + 1.2); ctx.stroke();
+          ctx.strokeStyle = 'rgba(236,246,240,0.75)'; ctx.lineWidth = 1.1; ctx.beginPath(); for (let i = 0; i < m; i++) i ? ctx.lineTo(c[i][0], c[i][1]) : ctx.moveTo(c[i][0], c[i][1]); ctx.stroke();
+        }
+      }
+      if (S.red > 0.01) { ctx.fillStyle = `rgba(122,20,52,${S.red.toFixed(3)})`; ctx.fillRect(0, 0, W, H); S.red *= Math.pow(0.08, dt); }
+      if (S.flash > 0.01) { ctx.fillStyle = `rgba(255,248,250,${S.flash.toFixed(3)})`; ctx.fillRect(0, 0, W, H); S.flash *= Math.pow(0.001, dt); }
+      vignette(ctx, W, H, 0.7);
+    }
+  };
+
   // ---------- which scene for which coach ----------
-  const BY_COACH = { 'Great White': 'greatwhite', Tiger: 'tiger', Mako: 'mako', Hammerhead: 'hammer', Nurse: 'nurse' };
+  const BY_COACH = { 'Great White': 'greatwhite', Tiger: 'tiger', Mako: 'mako', Hammerhead: 'hammer', Nurse: 'nurse', Rex: 'rex' };
   const STAR = '<svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z" fill="currentColor"/></svg>';
 
   function play(key, level, stars, coach) {
@@ -894,5 +1029,5 @@
     }
     return out;
   };
-  RT.cutsceneKit = { sandFloor, topRay, SCENES, BY_COACH, sideShark, sideFish, sideToWorld, topShark, topFish, Trail, openWater, crown, spawn, stepParts, vignette, warp, shade, rgba, E, seg, lerp, clamp, rnd, TAU };
+  RT.cutsceneKit = { frontShark, makeCrack, sandFloor, topRay, SCENES, BY_COACH, sideShark, sideFish, sideToWorld, topShark, topFish, Trail, openWater, crown, spawn, stepParts, vignette, warp, shade, rgba, E, seg, lerp, clamp, rnd, TAU };
 })();
