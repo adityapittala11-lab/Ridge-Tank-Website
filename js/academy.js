@@ -151,21 +151,23 @@
   function sharkSvg(name) {
     const c = AVC[name], dk = shade(c, -0.5), lt = shade(c, 0.72);
     const body = 'M3 22L17 35C25 30 36 26 46 28C54 30 60 34 63 38C57 41 50 47 40 48.5C30 50 24 46 17 41L3 54L9 38Z';
-    let s = '<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="32" fill="' + shade(c, -0.72) + '"/><g transform="translate(0,-2)">';
-    s += '<path d="M33 29L40 11L47 29Z" fill="' + c + '"/><path d="' + body + '" fill="' + c + '"/>';
+    const slug = String(name).toLowerCase().replace(/[^a-z]+/g, '-');
+    let s = '<svg viewBox="0 0 64 64" aria-hidden="true" class="av-shark av-' + slug + '"><circle cx="32" cy="32" r="32" fill="' + shade(c, -0.72) + '"/><g class="av-swim"><g transform="translate(0,-2)">';
+    // the tail is its own group so it can swish; so is the dorsal fin
+    s += '<g class="av-tail"><path d="M30 46L22 59L39 49Z" fill="' + dk + '"/></g>';
+    s += '<g class="av-fin"><path d="M33 29L40 11L47 29Z" fill="' + c + '"/></g><path d="' + body + '" fill="' + c + '"/>';
     s += '<path d="M17 41C24 46 30 50 40 48.5C50 47 57 41 63 38C56 43 48 45 40 44.5C31 44 24 42 17 41Z" fill="' + lt + '"/>';
-    s += '<path d="M30 46L22 59L39 49Z" fill="' + dk + '"/>';
-    const eye = '<circle cx="53" cy="35" r="2.2" fill="#fff"/><circle cx="53.7" cy="35.2" r="1.1" fill="#111"/>';
+    const eye = '<g class="av-eye"><circle cx="53" cy="35" r="2.2" fill="#fff"/><circle cx="53.7" cy="35.2" r="1.1" fill="#111"/></g>';
     const gills = '<path d="M43 33q2 3 0 7M46 33q2 3 0 7" stroke="' + dk + '" stroke-width="1.4" fill="none" stroke-linecap="round"/>';
-    const teeth = '<path d="M63 38.5Q56 45 47 43Q54 41 63 38.5Z" fill="#7E1434"/><path d="M60 40l-1 3 2-1.5zM56 42l-1 3 2-1.5zM52 43l-1 3 2-1.5z" fill="#fff"/>';
-    if (name === 'Hammerhead') s += '<rect x="55" y="21" width="9" height="28" rx="4.5" fill="' + c + '"/><circle cx="60" cy="25" r="2.2" fill="#fff"/><circle cx="60.6" cy="25.2" r="1.1" fill="#111"/>' + gills;
+    const teeth = '<g class="av-jaw"><path d="M63 38.5Q56 45 47 43Q54 41 63 38.5Z" fill="#7E1434"/><path d="M60 40l-1 3 2-1.5zM56 42l-1 3 2-1.5zM52 43l-1 3 2-1.5z" fill="#fff"/></g>';
+    if (name === 'Hammerhead') s += '<rect x="55" y="21" width="9" height="28" rx="4.5" fill="' + c + '"/><g class="av-eye"><circle cx="60" cy="25" r="2.2" fill="#fff"/><circle cx="60.6" cy="25.2" r="1.1" fill="#111"/></g>' + gills;
     else if (name === 'Tiger') s += eye + gills + '<path d="M24 31q3 5 2 11M30 29q3 5 3 12M36 28q3 5 3 11" stroke="' + dk + '" stroke-width="2.4" fill="none" stroke-linecap="round"/>';
-    else if (name === 'Mako') s += '<circle cx="53" cy="35" r="2.8" fill="#07160F"/><circle cx="53.8" cy="34.4" r="0.9" fill="#fff"/>' + gills + '<path d="M63 38.5Q56 43 47 42" stroke="' + dk + '" stroke-width="1.6" fill="none"/>';
+    else if (name === 'Mako') s += '<g class="av-eye"><circle cx="53" cy="35" r="2.8" fill="#07160F"/><circle cx="53.8" cy="34.4" r="0.9" fill="#fff"/></g>' + gills + '<path d="M63 38.5Q56 43 47 42" stroke="' + dk + '" stroke-width="1.6" fill="none"/>';
     else if (name === 'Nurse') s += '<path d="M50 35q3 -2 5 0" stroke="#10131A" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M58 42q-3 2 -4 6M60 41q-1 3 0 6" stroke="' + dk + '" stroke-width="1.5" fill="none" stroke-linecap="round"/>' + gills + '<circle cx="28" cy="36" r="1.3" fill="' + dk + '"/><circle cx="34" cy="40" r="1.3" fill="' + dk + '"/><circle cx="37" cy="33" r="1.2" fill="' + dk + '"/>';
-    else if (name === 'Great White') s += '<circle cx="53" cy="35" r="2.2" fill="#10131A"/>' + gills + teeth;
+    else if (name === 'Great White') s += '<g class="av-eye"><circle cx="53" cy="35" r="2.2" fill="#10131A"/></g>' + gills + teeth;
     else if (name === 'Rex') s += '<rect x="48" y="31" width="11" height="5.5" rx="2.5" fill="#12141B"/>' + gills + teeth;
     else s += eye + gills;
-    return s + '</g></svg>';
+    return s + '</g></g></svg>';
   }
   function roleSvg(name) {
     const c = AVC[name];
@@ -173,11 +175,11 @@
     if (name === 'Cam') g = '<circle cx="32" cy="25" r="9" fill="#FFE4CF"/><path d="M13 55c2-12 10-17 19-17s17 5 19 17z" fill="#FFE4CF"/>';
     if (name === 'Sully') g = '<rect x="15" y="22" width="34" height="26" rx="3" fill="#E9E4DA"/><path d="M15 31h34M28 22v9h8v-9" stroke="' + shade(c, -0.4) + '" stroke-width="2.4" fill="none"/>';
     if (name === 'Dana') g = '<path d="M13 28l5-12h28l5 12z" fill="#FFF"/><path d="M18 16l-3 12M26 16l-1 12M34 16v12M42 16l1 12M46 16l3 12" stroke="' + c + '" stroke-width="3"/><rect x="16" y="28" width="32" height="20" rx="2" fill="#FBE9EE"/><rect x="27" y="34" width="10" height="14" fill="' + shade(c, -0.2) + '"/>';
-    return '<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="32" fill="' + shade(c, -0.45) + '"/>' + g + '</svg>';
+    return '<svg viewBox="0 0 64 64" aria-hidden="true" class="av-role av-' + String(name).toLowerCase() + '"><circle cx="32" cy="32" r="32" fill="' + shade(c, -0.45) + '"/><g class="av-bob">' + g + '</g></svg>';
   }
   function portrait(name, size) {
     const svg = (name === 'Cam' || name === 'Sully' || name === 'Dana') ? roleSvg(name) : sharkSvg(AVC[name] ? name : 'Great White');
-    return h('span', { class: 'ac-av', style: { width: size + 'px', height: size + 'px' }, html: svg });
+    return h('span', { class: 'ac-av av-' + String(name).toLowerCase().replace(/[^a-z]+/g, '-'), style: { width: size + 'px', height: size + 'px' }, html: svg });
   }
   RT.sharkPortrait = portrait; // the "Pitch the panel" tab (js/sharks.js) draws the same sharks
 
@@ -751,8 +753,8 @@
       if (redraw) redraw();
       if (e) toast('Your round could not be saved: ' + friendly(e), 'error', 6000);
       else if (v.firstPass) toast(sp.kind === 'level' ? `Level ${sp.item} passed. +${v.xp} XP` : 'Challenge done. +40 XP', 'success');
-      // A first pass of a level gets the big moment across the whole screen; it grows with the level.
-      if (v.firstPass && !v.held && sp.kind === 'level' && RT.levelCinematic && RT.levelCinematic(sp.item, v.stars)) mine.celebrated = true;
+      // Every pass gets the big moment across the whole screen; it grows with the level and stars the round's shark.
+      if (v.passed && !v.held && sp.kind === 'level' && RT.levelCinematic && RT.levelCinematic(sp.item, v.stars, { name: sp.ag, color: AVC[sp.ag] || '#6fe0a8' })) mine.celebrated = true;
       if (R !== mine) return;
       mine.busy = false; mine.verdict = v; mine.saved = !!j;
       drawRound();
