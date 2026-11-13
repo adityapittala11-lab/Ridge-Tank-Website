@@ -1121,6 +1121,104 @@
     }
   };
 
+  // ---------- the Megalodon from the side, built from the site's own silhouette (js/megalodon.js) ----------
+  const MEG_D = { rear: 'M124 27.5C108 30 96 34 88 38L80 31L82 40.5C72 44 64 47.5 56 50L56 60C66 62 76 65 86 68.5L83 77L94 71C102 74 108 76.5 112 78.5L106 92L122 82.5L124 83ZM91 48Q99 51.5 104 60Q97.5 53.1 91 48Z', tail: 'M60 49.5L6 5C12 17 16 25 19 30L15 32L23 37C27 43 31 49 34 54C28 68 21 86 16 103L60 60.5Z', front: 'M252 52C244 44 224 33 196 28C184 26 172 25 160 25L131 3C131 12 127 21 121 27L117 28L116 83C130 85 146 85.5 160 84L141 117C160 111 176 99 184 82C192 80 199 76 204 71L207 75.4L210 69.6L213.5 74.8L217 68.4L220.5 73.2L224 67L227.5 71.2L230.5 65L233 68.2L236 61.6C243 60 249 57 252 52ZM221.2 49a2.7 2.7 0 1 0 5.4 0a2.7 2.7 0 1 0 -5.4 0ZM173 46.0Q176.4 56 172.4 67.0Q174.1 55.9 173 46.0ZM179.5 46.6Q182.9 56 178.9 66.6Q180.6 55.9 179.5 46.6ZM186 47.2Q189.4 56 185.4 66.2Q187.1 55.9 186 47.2ZM192.5 47.8Q195.9 56 191.9 65.8Q193.6 55.9 192.5 47.8ZM199 48.4Q202.4 56 198.4 65.4Q200.1 55.9 199 48.4ZM139 38Q149 43 157 55Q147.4 44.7 139 38ZM146 34.5Q157 40.5 164 52Q155.2 42.4 146 34.5ZM154 33.5Q163 38 169 47Q161.5 39.6 154 33.5ZM123 60Q137 61 151 70Q136.3 63.1 123 60Z', jaw: 'M195 78.5L204.5 71.5L207.5 76.4L211 71.8L214.5 77.2L218 72.8L221.5 77.8L225 73.8L228 78.4C220 84.6 207 84.4 195 78.5Z' };
+  let MEG = null;
+  // o: { x, y, ang, len, jaw 0..1, beat, back, belly, rim }  (the pivot is local 130,55; the head points along +x)
+  function megSide(ctx, o) {
+    if (!MEG) MEG = { rear: new Path2D(MEG_D.rear), tail: new Path2D(MEG_D.tail), front: new Path2D(MEG_D.front), jaw: new Path2D(MEG_D.jaw) };
+    const k = o.len / 258, b = o.beat || 0;
+    ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(o.ang); ctx.scale(k, k); ctx.translate(-130, -55);
+    const g = ctx.createLinearGradient(0, 22, 0, 90); g.addColorStop(0, o.back); g.addColorStop(0.55, shade(o.back, 0.25)); g.addColorStop(1, o.belly);
+    const rl = o.light || { x: 0, y: -1 }, rx = rl.x * 1.6, ry = rl.y * 1.6;
+    const paint = (path) => { ctx.save(); ctx.translate(rx, ry); ctx.fillStyle = o.rim; ctx.fill(path, 'evenodd'); ctx.restore(); ctx.fillStyle = g; ctx.fill(path, 'evenodd'); };
+    // mouth: the dark inside shows when the jaw drops
+    const ja = (o.jaw || 0) * 0.75;
+    if (ja > 0.01) { ctx.fillStyle = '#12020a'; ctx.beginPath(); ctx.moveTo(186, 76); ctx.lineTo(236, 61.6); ctx.lineTo(197 + Math.cos(ja) * 33, 79 + Math.sin(ja) * 33); ctx.closePath(); ctx.fill(); ctx.fillStyle = 'rgba(122,20,52,0.6)'; ctx.beginPath(); ctx.moveTo(192, 77); ctx.lineTo(222, 70); ctx.lineTo(197 + Math.cos(ja) * 24, 79 + Math.sin(ja) * 24); ctx.closePath(); ctx.fill(); }
+    ctx.save(); ctx.translate(124, 55); ctx.rotate(Math.sin(b) * 0.07); ctx.translate(-124, -55);
+    ctx.save(); ctx.translate(60, 55); ctx.rotate(Math.sin(b - 1.1) * 0.2); ctx.translate(-60, -55); paint(MEG.tail); ctx.restore();
+    paint(MEG.rear); ctx.restore();
+    ctx.save(); ctx.translate(197, 79); ctx.rotate(ja); ctx.translate(-197, -79); paint(MEG.jaw); ctx.restore();
+    paint(MEG.front);
+    // the eye catches the light
+    if (o.eye) { ctx.fillStyle = rgba('#6fe0a8', o.eye * 0.12); ctx.beginPath(); ctx.arc(223.9, 49, 3.4, 0, TAU); ctx.fill(); ctx.fillStyle = rgba('#e8fff4', o.eye); ctx.beginPath(); ctx.arc(224.4, 48.6, 1.3, 0, TAU); ctx.fill(); }
+    ctx.restore();
+  }
+
+  // =====================================================================
+  // MEGALODON: the season boss. The five coaches cruise along with a big fish; the light dies, they bolt, and
+  // something the size of the sky rises out of the dark, swallows the fish whole and keeps going.
+  // =====================================================================
+  SCENES.megalodon = {
+    dur: 6.0, card: 4.0,
+    setup(S, W, H, k) {
+      S.k = k; S.L = H * (3.3 + 0.5 * k); S.flash = 0; S.dark = 0;
+      const M = Math.min(W, H), cols = ['#86DDB0', '#D2476E', '#8FA69B', '#3FBF7F', '#C9D2CD'];
+      S.pod = cols.map((c, i) => ({ c, x: W * (0.12 + i * 0.13) + rnd(-20, 20), y: H * (0.32 + (i % 3) * 0.1) + rnd(-15, 15), len: M * (0.15 + (i === 4 ? 0.04 : 0)), vx: W * 0.06, vy: 0, ang: 0, ph: rnd(0, 6), flee: { x: (i % 2 ? 1 : -1) * rnd(0.6, 1), y: -rnd(0.4, 1) } }));
+      S.prey = { x: W * 0.36, y: H * 0.5, len: M * 0.2 };
+      S.snow = Array.from({ length: 120 }, () => ({ x: rnd(0, W), y: rnd(0, H), z: rnd(0.3, 1), ph: rnd(0, 6) }));
+    },
+    draw(ctx, t, dt, S, W, H, k) {
+      const ts = warp(t, [[0, 0], [1.98, 1.98], [2.4, 2.16], [9, 8.76]]);
+      const sdt = dt * (t > 1.98 && t < 2.4 ? 0.43 : 1);
+      const L = S.L, M = Math.min(W, H);
+      // the rise: slow at first, then it just keeps coming
+      // the mouth's path: up out of the dark to the fish by the bite, then it just keeps going
+      const biteAt = 2.12, t0r = 1.2, D = biteAt - t0r, y0 = H * 1.2, fy = S.prey.y, vB = 2 * (y0 - fy) / D;
+      const mY = ts < biteAt ? lerp(y0, fy, E.inQ(seg(ts, t0r, biteAt))) : fy - vB * (ts - biteAt) - 0.8 * H * (ts - biteAt) * (ts - biteAt);
+      const rise = clamp((y0 - mY) / (y0 + L * 1.1), 0, 1);
+      const ang = -Math.PI / 2 + 0.14 - 0.08 * rise;
+      if (S.aimX == null && ts >= 1.6) S.aimX = S.prey.x;
+      const mo = sideToWorldMeg(0, 0, ang, L, 210, 80), px = (S.aimX == null ? S.prey.x : S.aimX) - mo.x, py = mY - mo.y;
+      const head = sideToWorldMeg(px, py, ang, L, 210, 80);
+      const jaw = ts < biteAt ? E.outQ(seg(ts, 1.5, 2.0)) : ts < biteAt + 0.1 ? lerp(1, 0, E.inQ(seg(ts, biteAt, biteAt + 0.08))) : 0.06;
+      // --- water ---
+      const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#1a5a44'); bg.addColorStop(0.5, '#0b3124'); bg.addColorStop(1, '#020806');
+      ctx.fillStyle = bg; ctx.fillRect(-40, -40, W + 80, H + 80);
+      for (let i = 0; i < 7; i++) { const rx = W * (i * 0.16) + Math.sin(t * 0.3 + i) * 20, g = ctx.createLinearGradient(0, 0, 0, H * 0.8); g.addColorStop(0, `rgba(200,245,222,${(0.09 * (1 - S.dark)).toFixed(3)})`); g.addColorStop(1, 'rgba(200,245,222,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(rx, -10); ctx.lineTo(rx + 70, -10); ctx.lineTo(rx + 170, H); ctx.lineTo(rx + 50, H); ctx.fill(); }
+      const tremor = ts > 0.9 && ts < 2.0 ? Math.sin(ts * 70) * 1.5 * seg(ts, 0.9, 1.4) : 0;
+      for (const p of S.snow) { p.y += (8 + 12 * p.z) * dt; if (p.y > H) p.y = -5; ctx.fillStyle = `rgba(216,243,230,${(0.15 + 0.3 * p.z).toFixed(3)})`; ctx.beginPath(); ctx.arc(p.x + tremor * p.z * 3, p.y, 0.7 + 1.3 * p.z, 0, TAU); ctx.fill(); }
+      // the light dies from the bottom up
+      S.dark = clamp(seg(ts, 0.9, 1.7) * 0.75, 0, 0.75);
+      const dg = ctx.createLinearGradient(0, H * (1 - S.dark * 1.2), 0, H); dg.addColorStop(0, 'rgba(1,6,4,0)'); dg.addColorStop(1, `rgba(1,6,4,${(S.dark + 0.2).toFixed(3)})`);
+      ctx.fillStyle = dg; ctx.fillRect(-40, -40, W + 80, H + 80);
+      // --- the coaches: cruising, then bolting ---
+      const bolt = ts > 1.15;
+      if (!S.bolted && bolt) { S.bolted = true; for (const s of S.pod) { s.vx = s.flee.x * W * 0.9; s.vy = s.flee.y * H * 0.9; } }
+      for (const s of S.pod) {
+        if (bolt) { s.vx *= Math.pow(0.7, sdt); s.vy *= Math.pow(0.7, sdt); }
+        s.x += s.vx * sdt; s.y += s.vy * sdt + (bolt ? 0 : Math.sin(ts * 1.5 + s.ph) * 6 * dt);
+        const ta = Math.atan2(s.vy, s.vx); s.ang = lerp(s.ang, ta, 1 - Math.pow(0.001, sdt));
+        const flip = Math.cos(s.ang) < 0;
+        sideShark(ctx, { x: s.x, y: s.y, ang: s.ang, flipY: flip, len: s.len, color: s.c, belly: shade(s.c, 0.45), beat: ts * (bolt ? 26 : 9) + s.ph, alpha: 1 - 0.4 * S.dark });
+      }
+      // --- the fish that doesn't get away ---
+      const pr = S.prey;
+      if (!S.ate) { if (ts < 1.6) { pr.x += W * 0.05 * sdt + (bolt ? W * 0.1 * sdt : 0); pr.y += Math.sin(ts * 2) * 4 * dt - (bolt ? H * 0.03 * sdt : 0); } if (ts > 1.9) { const q = seg(ts, 1.9, biteAt); pr.x = lerp(pr.x, head.x, q * 0.5); pr.y = lerp(pr.y, head.y, q * 0.5); } sideFish(ctx, pr.x, pr.y, Math.sin(ts * 9) * 0.06, pr.len, '#efe6d2', Math.sin(ts * (bolt ? 40 : 14)) * pr.len * 0.08); }
+      // --- the boss ---
+      if (ts > 1.1 && py - L * 0.6 < H + 40) {
+        const eye = ts < 1.75 ? E.outQ(seg(ts, 1.25, 1.6)) : 0.85;
+        megSide(ctx, { x: px, y: py, ang, len: L, jaw, beat: ts * 3.2, back: k > 0.9 ? '#2a0812' : '#07170f', belly: k > 0.9 ? '#7a1434' : '#2f4c3d', rim: rgba('#f2ece0', 0.55), light: { x: -Math.sin(ang), y: -Math.cos(ang) }, eye });
+        // bubbles shed along the flanks as it rises
+        for (let i = 0; i < 3 + 4 * k; i++) { const along = rnd(-0.4, 0.5) * L, side = (Math.random() < 0.5 ? -1 : 1) * L * 0.12; const bx = px + Math.cos(ang) * along - Math.sin(ang) * side, by = py + Math.sin(ang) * along + Math.cos(ang) * side; if (by > -20 && by < H + 20) spawn(S, { type: 'bubble', x: bx, y: by, vx: rnd(-40, 40), vy: -rnd(60, 200), r: rnd(2, 7), max: rnd(0.8, 1.6), ph: rnd(0, 6), a: 0.7 }); }
+      }
+      // --- the bite ---
+      if (!S.ate && ts >= biteAt) {
+        S.ate = true; S.flash = 0.3; S.shake = 22 + 14 * k;
+        spawn(S, { type: 'ring', x: head.x, y: head.y, r: M * 0.05, grow: M * 1.1, a: 0.8, w: 4, max: 0.8 });
+        spawn(S, { type: 'ring', x: head.x, y: head.y, r: M * 0.03, grow: M * 0.7, a: 0.5, w: 2, max: 0.6 });
+        for (let i = 0; i < 40 + 30 * k; i++) { const an = rnd(0, TAU), sp = rnd(120, 520); spawn(S, { type: 'scale', x: head.x, y: head.y, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, drag: 0.92, r: rnd(1.5, 3.5), spin: rnd(-14, 14), max: rnd(0.8, 1.6) }); }
+        spawn(S, { type: 'mist', x: head.x, y: head.y, r: M * 0.2, color: '#7a1434', a: 0.5, max: 2.0 });
+      }
+      // the tail goes by: a wall of bubbles
+      if (!S.wash && ts > biteAt + 1.2) { S.wash = true; S.shake = 10 + 8 * k; for (let i = 0; i < 90 + 60 * k; i++) spawn(S, { type: 'bubble', x: px + rnd(-W * 0.25, W * 0.25), y: H + rnd(0, 80), vx: rnd(-80, 80), vy: -rnd(200, 600), r: rnd(2, 10), max: rnd(1.2, 2.4), ph: rnd(0, 6), a: 0.8 }); }
+      stepParts(ctx, S, dt, 'over');
+      if (S.flash > 0.01) { ctx.fillStyle = `rgba(255,240,244,${S.flash.toFixed(3)})`; ctx.fillRect(0, 0, W, H); S.flash *= Math.pow(0.002, dt); }
+      vignette(ctx, W, H, 0.75);
+    }
+  };
+  function sideToWorldMeg(x, y, ang, len, lx, ly) { const k = len / 258, dx = (lx - 130) * k, dy = (ly - 55) * k; return { x: x + dx * Math.cos(ang) - dy * Math.sin(ang), y: y + dx * Math.sin(ang) + dy * Math.cos(ang) }; }
+
   // ---------- which scene for which coach ----------
   const BY_COACH = { 'Great White': 'greatwhite', Tiger: 'tiger', Mako: 'mako', Hammerhead: 'hammer', Nurse: 'nurse', Rex: 'rex', Cam: 'cam', Dana: 'dana' };
   const STAR = '<svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z" fill="currentColor"/></svg>';
@@ -1155,7 +1253,7 @@
       const t = (now - t0) / 1000, dt = Math.min(0.05, (now - last) / 1000); last = now;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
       if (S.shake > 0.2) { ctx.translate((Math.random() - 0.5) * S.shake, (Math.random() - 0.5) * S.shake); S.shake *= Math.pow(0.015, dt); }
-      scene.draw(ctx, t, dt, S, W, H, k);
+      try { scene.draw(ctx, t, dt, S, W, H, k); } catch (e) { console.warn('cutscene', key, e); end(); return; }
       if (!shown && t >= scene.card) { shown = true; wrap.classList.add('show-card'); }
       if (t < scene.dur) raf = requestAnimationFrame(frame); else end();
     }
@@ -1205,5 +1303,5 @@
     }
     return out;
   };
-  RT.cutsceneKit = { stamp, stage, frontShark, makeCrack, sandFloor, topRay, SCENES, BY_COACH, sideShark, sideFish, sideToWorld, topShark, topFish, Trail, openWater, crown, spawn, stepParts, vignette, warp, shade, rgba, E, seg, lerp, clamp, rnd, TAU };
+  RT.cutsceneKit = { megSide, stamp, stage, frontShark, makeCrack, sandFloor, topRay, SCENES, BY_COACH, sideShark, sideFish, sideToWorld, topShark, topFish, Trail, openWater, crown, spawn, stepParts, vignette, warp, shade, rgba, E, seg, lerp, clamp, rnd, TAU };
 })();
