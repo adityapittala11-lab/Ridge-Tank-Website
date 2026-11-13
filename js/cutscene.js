@@ -343,8 +343,8 @@
     dur: 5.6, card: 3.55,
     setup(S, W, H, k, coach) {
       S.color = (coach && coach.color) || '#C9D2CD';
-      S.surf = Math.round(H * 0.4);
-      S.len = Math.min(W * 0.48, H * 0.92) * (0.92 + 0.14 * k);
+      S.surf = Math.round(H * 0.48);
+      S.len = Math.min(W * 0.46, H * 0.86) * (0.92 + 0.14 * k);
       S.bx = W * 0.47;
       S.ripples = [];
       S.snow = Array.from({ length: 70 }, () => ({ x: Math.random() * W, y: S.surf + Math.random() * (H - S.surf), r: rnd(0.4, 1.8), a: rnd(0.08, 0.35), v: rnd(4, 12) }));
@@ -367,7 +367,7 @@
         alpha = clamp(1.25 - depth * 1.3, 0.22, 1); blur = clamp(depth * 12 - 1, 0, 9);
         jaw = E.outQ(seg(ts, 1.08, 1.42));
       } else if (ts < 3.0) {
-        const tau = ts - 1.45, g = L * 2.75, v0 = g * 0.7;
+        const tau = ts - 1.45, g = L * 2.75, v0 = g * 0.64;
         cx = S.bx + L * 0.2 * tau; cy = y0 - v0 * tau + 0.5 * g * tau * tau;
         ang = tau < 0.7 ? lerp(-Math.PI / 2 + 0.1, -0.62, E.outQ(tau / 0.7)) : lerp(-0.62, 0.8, E.inQ((tau - 0.7) / 0.8));
         jaw = ts < 1.5 ? 1 - E.outC(seg(ts, 1.45, 1.5)) * 0.85 : 0.15; beat = ts * 7;
@@ -378,6 +378,12 @@
       }
       const shark = { x: cx, y: cy, ang, len: L, color: S.color, belly: '#f1f3ee', jaw, beat, alpha, blur, teeth: 0.6 };
       const mouth = sideToWorld(shark, 185, 56);
+      const scr = p => ({ x: (p.x - S.bx) * zoom + S.bx, y: (p.y - S.surf) * zoom + S.surf });
+      // --- effects: smear on the rush up, held focus lines through the slow-mo, a hit on the bite and on the crash ---
+      S.bokeh = true;
+      S.blur = ts < 1.45 ? 0.55 * E.inQ(seg(ts, 0.5, 1.4)) : ts < 2.9 ? 0.32 : Math.max(0, 0.45 - (ts - 2.9) * 0.6);
+      if (ts > 0.9 && ts < 1.44) S.streak = { x: 0, y: -26 * E.inQ(seg(ts, 0.9, 1.44)) };
+      if (S.focus && S.focus.hold && ts > 1.8) S.focus.hold = false;
       // --- events ---
       if (!S.e1 && ts >= 1.43) {
         S.e1 = true; const nx = sideToWorld(shark, 198, 45).x;
@@ -385,10 +391,12 @@
         for (let i = 0; i < 12; i++) spawn(S, { type: 'foam', x: nx + rnd(-L * 0.18, L * 0.18), y: surf + rnd(-3, 3), r: rnd(8, 20), a: 0.55, max: rnd(1.2, 2.2), layer: 'over' });
         for (let i = 0; i < 34; i++) spawn(S, { type: 'bubble', x: nx + rnd(-L * 0.1, L * 0.1), y: surf + rnd(10, L * 0.5), vx: 0, vy: -rnd(70, 180), r: rnd(1.5, 5), max: rnd(1.2, 2.4), ph: rnd(0, 6), layer: 'under', ceil: surf + 3, a: 0.75 });
         S.ripples.push({ x: nx, t0: ts, amp: 9 + 5 * k }); S.shake = 7 + 4 * k;
+        const q = scr({ x: nx, y: surf }); S.zoom = { x: q.x, y: q.y, amt: 0.07 }; S.chroma = 6;
         S.crowns.push({ x: nx, t0: ts, w: L * 0.2, h: L * 0.34, life: 0.85 });
       }
       if (!S.e2 && ts >= 1.5) {
-        S.e2 = true; S.flash = 0.3;
+        S.e2 = true; S.flash = 0.18;
+        const q = scr(mouth); hit(S, q.x, q.y, 0.9 + 0.3 * k); S.focus.hold = true; S.focus.a = 0.6;
         for (let i = 0; i < 22; i++) { const an = rnd(0, TAU), sp = rnd(90, 260); spawn(S, { type: 'scale', x: mouth.x, y: mouth.y, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp - 120, g: 700, r: rnd(1.5, 3.2), spin: rnd(-14, 14), max: rnd(0.7, 1.3) }); }
       }
       if (!S.e3 && ts >= 2.88) {
@@ -398,6 +406,7 @@
         for (let i = 0; i < 80; i++) spawn(S, { type: 'bubble', x: ex + rnd(-L * 0.3, L * 0.3), y: surf + rnd(8, L * 0.7), vx: rnd(-20, 20), vy: -rnd(60, 200), r: rnd(1.5, 7), max: rnd(1.4, 2.8), ph: rnd(0, 6), layer: 'under', ceil: surf + 3, a: 0.8 });
         spawn(S, { type: 'mist', x: ex, y: surf + 40, r: L * 0.35, color: '#dff3ea', a: 0.22, max: 1.6, layer: 'under' });
         S.ripples.push({ x: ex, t0: ts, amp: 14 + 6 * k }); S.shake = 15 + 12 * k;
+        const q = scr({ x: ex, y: surf }); hit(S, q.x, q.y, 1 + 0.3 * k); S.focus.a = 0.5; S.streak = { x: 8, y: 26 };
         S.crowns.push({ x: ex, t0: ts, w: L * 0.42, h: L * 0.5, life: 1.1 });
       }
       // water pouring off the body while it is in the air
@@ -1301,6 +1310,132 @@
   };
   function sideToWorldMeg(x, y, ang, len, lx, ly) { const k = len / 258, dx = (lx - 130) * k, dy = (ly - 55) * k; return { x: x + dx * Math.cos(ang) - dy * Math.sin(ang), y: y + dx * Math.sin(ang) + dy * Math.cos(ang) }; }
 
+  // =====================================================================
+  // POST EFFECTS. A scene asks for them by setting fields on S (or calling hit()); they are applied after it draws.
+  //   S.blur    0..0.9   motion blur: how much of the last frame lingers
+  //   S.zoom    { x, y, amt }  radial zoom blur from a point (amt < 0 sucks inward)
+  //   S.streak  { x, y }  directional blur: the frame smears back along this vector (px)
+  //   S.chroma  px of red/cyan split
+  //   S.impact  seconds of black-and-white "impact frame" left
+  //   S.focus   { x, y, a }  manga focus lines aimed at a point
+  //   S.kick    { x, y }  a shove that springs back
+  //   S.bokeh   true: soft out-of-focus specks drifting close to the camera
+  // =====================================================================
+  function hit(S, x, y, p) {
+    p = p == null ? 1 : p;
+    S.impact = Math.max(S.impact || 0, 0.045 * p);
+    S.chroma = Math.max(S.chroma || 0, 10 * p);
+    S.zoom = { x, y, amt: 0.1 * p };
+    S.shake = Math.max(S.shake || 0, 16 * p);
+    S.focus = { x, y, a: Math.min(1, 0.95 * p) };
+    const a = rnd(0, TAU); S.kick = { x: Math.cos(a) * 12 * p, y: Math.abs(Math.sin(a)) * 12 * p };
+  }
+  const FX = {};
+  function buf(name, w, h) {
+    let c = FX[name]; if (!c) c = FX[name] = document.createElement('canvas');
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+    return c;
+  }
+  function grainTile() {
+    if (FX.grain) return FX.grain;
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const x = c.getContext('2d'), d = x.createImageData(128, 128);
+    for (let i = 0; i < d.data.length; i += 4) { const v = 128 + (Math.random() - 0.5) * 200; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; }
+    x.putImageData(d, 0, 0); FX.grain = c; return c;
+  }
+  function bokehSprite() {
+    if (FX.bok) return FX.bok;
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const x = c.getContext('2d'), g = x.createRadialGradient(64, 64, 0, 64, 64, 64);
+    g.addColorStop(0, 'rgba(225,248,236,0.55)'); g.addColorStop(0.55, 'rgba(225,248,236,0.35)'); g.addColorStop(0.8, 'rgba(225,248,236,0.12)'); g.addColorStop(1, 'rgba(225,248,236,0)');
+    x.fillStyle = g; x.fillRect(0, 0, 128, 128); FX.bok = c; return c;
+  }
+  function focusLines(ctx, x, y, w, h, a) {
+    const R = Math.hypot(w, h), n = 64, m = Math.min(w, h);
+    ctx.fillStyle = `rgba(242,248,244,${(0.32 * a).toFixed(3)})`;
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const an = (i + Math.random() * 0.8) / n * TAU, r0 = m * (0.36 + Math.random() * 0.26), wd = (0.003 + Math.random() * 0.009);
+      ctx.moveTo(x + Math.cos(an) * r0, y + Math.sin(an) * r0);
+      ctx.lineTo(x + Math.cos(an - wd) * R, y + Math.sin(an - wd) * R);
+      ctx.lineTo(x + Math.cos(an + wd) * R, y + Math.sin(an + wd) * R);
+    }
+    ctx.fill();
+  }
+  function post(cv, ctx, S, t, dt, W, H, dpr) {
+    const w = cv.width, h = cv.height, lo = !!S.lowfx;
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const copy = () => { const b = buf('b', w, h), x = b.getContext('2d'); x.globalCompositeOperation = 'copy'; x.globalAlpha = 1; x.drawImage(cv, 0, 0); return b; };
+    // directional smear
+    if (!lo && S.streak && Math.hypot(S.streak.x, S.streak.y) > 1.5) {
+      const b = copy(), n = 6;
+      for (let i = 1; i <= n; i++) { ctx.globalAlpha = 1 / (i + 1); ctx.drawImage(b, -S.streak.x * dpr * i / n, -S.streak.y * dpr * i / n); }
+      ctx.globalAlpha = 1; S.streak.x *= Math.pow(0.02, dt); S.streak.y *= Math.pow(0.02, dt);
+    }
+    // radial zoom blur
+    if (!lo && S.zoom && Math.abs(S.zoom.amt) > 0.004) {
+      const b = copy(), n = 6, zx = S.zoom.x * dpr, zy = S.zoom.y * dpr;
+      for (let i = 1; i <= n; i++) { const sc = 1 + S.zoom.amt * i / n; ctx.globalAlpha = 1 / (i + 1); ctx.setTransform(sc, 0, 0, sc, zx * (1 - sc), zy * (1 - sc)); ctx.drawImage(b, 0, 0); }
+      ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; S.zoom.amt *= Math.pow(0.006, dt);
+    }
+    // motion blur: blend this frame into a running average of the last few
+    const bl = lo ? 0 : clamp(S.blur || 0, 0, 0.9);
+    if (bl > 0.02) {
+      const a = buf('a', w, h), ax = a.getContext('2d');
+      if (!S._acc) { ax.globalCompositeOperation = 'copy'; ax.globalAlpha = 1; ax.drawImage(cv, 0, 0); S._acc = true; }
+      else { ax.globalCompositeOperation = 'source-over'; ax.globalAlpha = 1 - Math.pow(bl, dt * 60); ax.drawImage(cv, 0, 0); ax.globalAlpha = 1; ctx.globalCompositeOperation = 'copy'; ctx.drawImage(a, 0, 0); ctx.globalCompositeOperation = 'source-over'; }
+    } else S._acc = false;
+    // soft specks right in front of the lens
+    if (S.bokeh) {
+      if (!S._bok) S._bok = Array.from({ length: 6 }, () => ({ x: Math.random(), y: Math.random(), r: rnd(0.025, 0.07), v: rnd(0.01, 0.04), ph: rnd(0, 6), a: rnd(0.1, 0.26) }));
+      const sp = bokehSprite(), m = Math.min(w, h);
+      for (const b of S._bok) { b.y -= b.v * dt; if (b.y < -0.15) { b.y = 1.15; b.x = Math.random(); } const r = b.r * m; ctx.globalAlpha = b.a * (0.7 + 0.3 * Math.sin(t * 1.3 + b.ph)); ctx.drawImage(sp, b.x * w + Math.sin(t * 0.5 + b.ph) * m * 0.02 - r, b.y * h - r, r * 2, r * 2); }
+      ctx.globalAlpha = 1;
+    }
+    // red/cyan split
+    if (!lo && (S.chroma || 0) > 0.6) {
+      const d = S.chroma * dpr, r = buf('b', w, h), rx = r.getContext('2d'), c = buf('c', w, h), cx = c.getContext('2d');
+      rx.globalCompositeOperation = 'copy'; rx.drawImage(cv, 0, 0); rx.globalCompositeOperation = 'multiply'; rx.fillStyle = '#ff0000'; rx.fillRect(0, 0, w, h);
+      cx.globalCompositeOperation = 'copy'; cx.drawImage(cv, 0, 0); cx.globalCompositeOperation = 'multiply'; cx.fillStyle = '#00ffff'; cx.fillRect(0, 0, w, h);
+      ctx.globalCompositeOperation = 'copy'; ctx.drawImage(c, -d * 0.5, -d * 0.15);
+      ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(r, d * 0.5, d * 0.15);
+      ctx.globalCompositeOperation = 'source-over'; S.chroma *= Math.pow(0.012, dt);
+    }
+    // impact frame: a beat of high-contrast negative, tinted burgundy
+    if ((S.impact || 0) > 0) {
+      ctx.globalCompositeOperation = 'saturation'; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, w, h);
+      ctx.globalCompositeOperation = 'difference'; ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+      ctx.globalCompositeOperation = 'color'; ctx.globalAlpha = 0.4; ctx.fillStyle = '#7a1434'; ctx.fillRect(0, 0, w, h);
+      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; S.impact -= dt;
+    }
+    if (S.focus && S.focus.a > 0.03) { focusLines(ctx, S.focus.x * dpr, S.focus.y * dpr, w, h, S.focus.a); S.focus.a *= Math.pow(S.focus.hold ? 1 : 0.05, dt); }
+    // film grain, then letterbox bars
+    if (!lo) {
+      if (!FX.pat || FX.patCtx !== ctx) { FX.pat = ctx.createPattern(grainTile(), 'repeat'); FX.patCtx = ctx; }
+      ctx.globalCompositeOperation = 'overlay'; ctx.globalAlpha = 0.07; ctx.translate(Math.random() * 128 | 0, Math.random() * 128 | 0);
+      ctx.fillStyle = FX.pat; ctx.fillRect(-128, -128, w + 128, h + 128);
+      ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    }
+    const bars = h * 0.075 * E.outC(seg(t, 0, 0.45));
+    if (bars > 0.5) { ctx.fillStyle = '#010503'; ctx.fillRect(0, 0, w, bars); ctx.fillRect(0, h - bars, w, bars); }
+    ctx.restore();
+  }
+  // One frame: camera shake (a smooth wobble with a little roll, plus any kick), the scene, then post effects.
+  function renderFrame(cv, ctx, scene, S, t, dt, W, H, k, dpr) {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.clearRect(0, 0, W, H);
+    S.clock = (S.clock || 0) + dt;
+    const sh = S.shake || 0, c = S.clock;
+    let kx = 0, ky = 0;
+    if (S.kick) { S.kick.x *= Math.pow(0.003, dt); S.kick.y *= Math.pow(0.003, dt); kx = S.kick.x * Math.cos(c * 40); ky = S.kick.y * Math.cos(c * 40); }
+    if (sh > 0.2 || Math.abs(kx) + Math.abs(ky) > 0.3) {
+      const nx = Math.sin(c * 47.1) * 0.6 + Math.sin(c * 83.7 + 1.3) * 0.4, ny = Math.sin(c * 53.3 + 2.1) * 0.6 + Math.sin(c * 91.9 + 0.4) * 0.4, nr = Math.sin(c * 37.7 + 0.7);
+      ctx.translate(W / 2 + nx * sh * 0.6 + kx, H / 2 + ny * sh * 0.6 + ky); ctx.rotate(nr * sh * 0.0011); ctx.scale(1 + sh * 0.0012, 1 + sh * 0.0012); ctx.translate(-W / 2, -H / 2);
+      S.shake = sh * Math.pow(0.012, dt);
+    }
+    scene.draw(ctx, t, dt, S, W, H, k);
+    post(cv, ctx, S, t, dt, W, H, dpr);
+  }
+
   // ---------- which scene for which coach ----------
   const BY_COACH = { 'Great White': 'greatwhite', Tiger: 'tiger', Mako: 'mako', Hammerhead: 'hammer', Nurse: 'nurse', Rex: 'rex', Cam: 'cam', Dana: 'dana' };
   const STAR = '<svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z" fill="currentColor"/></svg>';
@@ -1324,18 +1459,20 @@
     wrap.append(canvas, card, skip);
     document.body.appendChild(wrap);
     let W = 0, H = 0, dpr = 1;
-    const size = () => { dpr = Math.min(window.devicePixelRatio || 1, 1.5); W = window.innerWidth; H = window.innerHeight; canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr); };
+    const lite = document.documentElement.classList.contains('tank-lite');
+    const size = () => { dpr = lite ? 1 : Math.min(window.devicePixelRatio || 1, 1.5); W = window.innerWidth; H = window.innerHeight; canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr); };
     size();
     const k = clamp(level / 40, 0, 1);
-    const S = { parts: [], shake: 0 };
+    const S = { parts: [], shake: 0, lowfx: lite };
+    let slowN = 0, frames = 0;
     scene.setup(S, W, H, k, coach || {});
     const t0 = performance.now();
     let last = t0, raf = 0, done = false, shown = false;
     function frame(now) {
       const t = (now - t0) / 1000, dt = Math.min(0.05, (now - last) / 1000); last = now;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
-      if (S.shake > 0.2) { ctx.translate((Math.random() - 0.5) * S.shake, (Math.random() - 0.5) * S.shake); S.shake *= Math.pow(0.015, dt); }
-      try { scene.draw(ctx, t, dt, S, W, H, k); } catch (e) { console.warn('cutscene', key, e); end(); return; }
+      // if this machine can't keep up, keep the scene but drop the heavy effects
+      if (frames++ > 3 && !S.lowfx) { if (dt > 0.036) slowN++; if (slowN > 8) S.lowfx = true; }
+      try { renderFrame(canvas, ctx, scene, S, t, dt, W, H, k, dpr); } catch (e) { console.warn('cutscene', key, e); end(); return; }
       if (!shown && t >= scene.card) { shown = true; wrap.classList.add('show-card'); }
       if (t < scene.dur) raf = requestAnimationFrame(frame); else end();
     }
@@ -1355,7 +1492,6 @@
   const older = RT.levelCinematic;
   RT.levelCinematic = function (level, stars, coach) {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
-    if (document.documentElement.classList.contains('tank-lite')) return false;
     const key = (([10, 20, 30, 40].includes(level) && SCENES.megalodon) ? 'megalodon' : BY_COACH[coach && coach.name]);
     if (key && SCENES[key]) return play(key, level, stars, coach);
     return older ? older(level, stars, coach) : false;
@@ -1366,13 +1502,11 @@
     const scene = SCENES[key]; if (!scene) return [];
     opt = opt || {}; const W = opt.W || 900, H = opt.H || 540, fps = opt.fps || 30, every = opt.every || 2;
     const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const ctx = cv.getContext('2d');
-    const k = clamp(level / 40, 0, 1), S = { parts: [], shake: 0 }; scene.setup(S, W, H, k, coach || {});
+    const k = clamp(level / 40, 0, 1), S = { parts: [], shake: 0, lowfx: !!opt.lowfx }; scene.setup(S, W, H, k, coach || {});
     const out = [], dt = 1 / fps, n = Math.ceil(scene.dur * fps);
     for (let i = 0; i <= n; i++) {
       const t = i * dt;
-      ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, W, H);
-      if (S.shake > 0.2) { ctx.translate((Math.random() - 0.5) * S.shake, (Math.random() - 0.5) * S.shake); S.shake *= Math.pow(0.015, dt); }
-      scene.draw(ctx, t, dt, S, W, H, k);
+      renderFrame(cv, ctx, scene, S, t, dt, W, H, k, 1);
       if (t >= scene.card) {
         const f = clamp((t - scene.card) / 0.5, 0, 1);
         ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = f; ctx.textAlign = 'center';
@@ -1385,5 +1519,5 @@
     }
     return out;
   };
-  RT.cutsceneKit = { megSide, stamp, stage, frontShark, makeCrack, sandFloor, topRay, SCENES, BY_COACH, sideShark, sideFish, sideToWorld, topShark, topFish, Trail, openWater, crown, spawn, stepParts, vignette, warp, shade, rgba, E, seg, lerp, clamp, rnd, TAU };
+  RT.cutsceneKit = { hit, post, renderFrame, megSide, stamp, stage, frontShark, makeCrack, sandFloor, topRay, SCENES, BY_COACH, sideShark, sideFish, sideToWorld, topShark, topFish, Trail, openWater, crown, spawn, stepParts, vignette, warp, shade, rgba, E, seg, lerp, clamp, rnd, TAU };
 })();
