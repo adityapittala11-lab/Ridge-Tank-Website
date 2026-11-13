@@ -38,7 +38,8 @@
   const earlyOn = () => !!S.isAdmin && store.get(LS.early, false) === true;
   // config.js academy.openNow opens the whole course for everyone (still one level at a time).
   const openForAll = () => !!(window.RT_CONFIG && RT_CONFIG.academy && RT_CONFIG.academy.openNow);
-  const opened = (n, t) => openForAll() || earlyOn() || t >= blockOf(n).opens;
+  // Officers (admins) always have every level open on their own account. Members still see the normal dates.
+  const opened = (n, t) => openForAll() || !!S.isAdmin || earlyOn() || t >= blockOf(n).opens;
 
   // ---------------- course rules ----------------
   const seasonOf = n => (n <= 10 ? 1 : n <= 20 ? 2 : n <= 30 ? 3 : 4);
