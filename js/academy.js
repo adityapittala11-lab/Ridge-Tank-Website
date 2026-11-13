@@ -162,7 +162,7 @@
     s += '<path d="M17 41C24 46 30 50 40 48.5C50 47 57 41 63 38C56 43 48 45 40 44.5C31 44 24 42 17 41Z" fill="' + lt + '"/>';
     const eye = '<g class="av-eye"><circle cx="53" cy="35" r="2.2" fill="#fff"/><circle cx="53.7" cy="35.2" r="1.1" fill="#111"/></g>';
     const gills = '<path d="M43 33q2 3 0 7M46 33q2 3 0 7" stroke="' + dk + '" stroke-width="1.4" fill="none" stroke-linecap="round"/>';
-    const teeth = '<g class="av-jaw"><path d="M63 38.5Q56 45 47 43Q54 41 63 38.5Z" fill="#7E1434"/><path d="M60 40l-1 3 2-1.5zM56 42l-1 3 2-1.5zM52 43l-1 3 2-1.5z" fill="#fff"/></g>';
+    const teeth = '<g class="av-jaw"><path d="M63 38Q55 47 45 44Q54 41 63 38Z" fill="#7E1434"/><path d="M60 39.5l-1.4 4 2.6-2zM55.5 41.6l-1.4 4 2.6-2zM51 43l-1.4 4 2.6-2zM46.6 43.6l-1.2 3.4 2.3-1.8z" fill="#fff"/></g>';
     if (name === 'Hammerhead') s += '<rect x="55" y="21" width="9" height="28" rx="4.5" fill="' + c + '"/><g class="av-eye"><circle cx="60" cy="25" r="2.2" fill="#fff"/><circle cx="60.6" cy="25.2" r="1.1" fill="#111"/></g>' + gills;
     else if (name === 'Tiger') s += eye + gills + '<path d="M24 31q3 5 2 11M30 29q3 5 3 12M36 28q3 5 3 11" stroke="' + dk + '" stroke-width="2.4" fill="none" stroke-linecap="round"/>';
     else if (name === 'Mako') s += '<g class="av-eye"><circle cx="53" cy="35" r="2.8" fill="#07160F"/><circle cx="53.8" cy="34.4" r="0.9" fill="#fff"/></g>' + gills + '<path d="M63 38.5Q56 43 47 42" stroke="' + dk + '" stroke-width="1.6" fill="none"/>';

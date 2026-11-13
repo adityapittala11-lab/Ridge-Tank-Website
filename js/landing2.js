@@ -49,10 +49,13 @@
     '</g>';
   const MARKS = {
     'tier-tiger': '<g fill="#000" opacity="0.26"><path d="M150 26L153 50"/><path d="M160 27L162 50" /><path d="M140 26L143 52"/><path d="M130 27L133 54"/><path d="M120 28L123 54"/></g>'.replace(/<path d="M(\d+) (\d+)L(\d+) (\d+)"\s*\/>/g, (m,x1,y1,x2,y2)=>`<path d="M${x1} ${y1}Q${(+x1+ +x2)/2-3} ${(+y1+ +y2)/2} ${x2} ${y2}L${+x2+3} ${y2}Q${(+x1+ +x2)/2} ${(+y1+ +y2)/2} ${+x1+3} ${y1}Z"/>`),
+    // Great white: pale belly, a wide blood-red gaping maw, two rows of big jagged teeth, a cold black eye and a scar.
     'tier-white': '<path fill="#fff" opacity="0.34" d="M97 52C120 61 150 61 191 51C176 58 150 62 130 61C118 60 108 57 98 55Z"/>'
-      + '<path fill="#000" opacity="0.5" d="M178 47C184 47 190 48 196 49C190 52 184 53 178 53C176 51 176 49 178 47Z"/>'
-      + '<g fill="#f4f7f5"><path d="M179 48l1.6 4 1.6-4z"/><path d="M184 48.4l1.6 4.2 1.6-4.2z"/><path d="M189 49l1.5 4 1.5-4z"/><path d="M181.5 53l1.5-3.4 1.5 3.4z" opacity="0.9"/><path d="M186.5 53.2l1.4-3.4 1.4 3.4z" opacity="0.9"/></g>'
-      + '<circle cx="176" cy="41.5" r="3.4" fill="#0a0f0c"/>'
+      + '<path fill="#7a1434" d="M171 46C180 45 190 46 198 48C192 54 183 56 173 55C169 52 168 49 171 46Z"/>'
+      + '<g fill="#f4f7f5"><path d="M172 48l2 5 2-5z"/><path d="M178 48l2.2 5.4 2.2-5.4z"/><path d="M184 48.4l2.2 5.6 2.2-5.6z"/><path d="M190 49l2 5.2 2-5.2z"/><path d="M195 49.6l1.8 4.6 1.8-4.6z"/></g>'
+      + '<g fill="#e6eef1"><path d="M174 55l2-4.4 2 4.4z"/><path d="M180 55.4l2-4.6 2 4.6z"/><path d="M186 55.2l2-4.6 2 4.6z"/><path d="M192 54.6l1.8-4.2 1.8 4.2z"/></g>'
+      + '<path fill="none" stroke="#8aa0a8" stroke-width="1.4" opacity="0.7" stroke-linecap="round" d="M150 30l10 6M158 29l8 6"/>'
+      + '<circle cx="168" cy="38" r="3.6" fill="#07100b"/>'
   };
   const shark = (cls, variant) => svg('shark ' + cls, '0 0 200 84', SHARK(MARKS[variant]));
   // Just the fin, for anything riding along a waterline.
