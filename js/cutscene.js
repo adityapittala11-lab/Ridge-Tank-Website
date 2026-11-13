@@ -1231,6 +1231,7 @@
       const MOUTH = [212, 80];
       const mo = sideToWorldMeg(0, 0, ang, L, MOUTH[0], MOUTH[1]), px = (S.aimX == null ? pr.x : S.aimX) - mo.x, py = mY - mo.y;
       const mouth = { x: px + mo.x, y: mY }, A = { x: Math.cos(ang), y: Math.sin(ang) }, N = { x: -A.y, y: A.x };
+      const megOnPre = ts > 1.1 && py - L * 0.62 < H + 60 && py + L * 0.62 > -60;
       // jaw: gapes on the way up, slams shut on the bite, opens a crack to gulp the fish down
       let jaw = ts < biteAt ? E.outQ(seg(ts, 1.5, 1.98)) : ts < biteAt + 0.07 ? lerp(1, 0.04, E.inQ(seg(ts, biteAt, biteAt + 0.07))) : 0.04;
       const gulpT = biteAt + 0.42;
@@ -1241,12 +1242,20 @@
       if (ts > 1.25 && ts < biteAt) S.shake = Math.max(S.shake, 1.5 + 6 * seg(ts, 1.25, 2.1) * (1 + k));
       ctx.save(); const fx = lerp(W / 2, mouth.x, 0.6), fyc = lerp(H / 2, clamp(mouth.y, 0, H), 0.6);
       ctx.translate(fx, fyc); ctx.scale(zoom, zoom); ctx.translate(-fx, -fyc);
+      const scr = p => ({ x: (p.x - fx) * zoom + fx, y: (p.y - fyc) * zoom + fyc });
+      // --- effects: the mass of it smears, the suction drags the frame into the mouth, the surge streaks upward ---
+      S.bokeh = true;
+      if (S.focus && S.focus.hold && t > 2.5) S.focus.hold = false;
+      if (ts > 1.3 && ts < biteAt) { S.blur = 0.35 * Math.min(1, speed); }
+      else if (ts >= biteAt + 0.1 && megOnPre) { S.blur = 0.45 * Math.min(1, speed); S.streak = { x: 0, y: -26 * Math.min(1, speed) }; }
+      else S.blur = 0;
+      if (ts > 1.8 && ts < biteAt) { const q = scr(mouth), pl = seg(ts, 1.8, biteAt); S.zoom = { x: q.x, y: q.y, amt: -0.1 * pl }; }
       // ---- water ----
       const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#1a5a44'); bg.addColorStop(0.5, '#0b3124'); bg.addColorStop(1, '#020806');
       ctx.fillStyle = bg; ctx.fillRect(-W, -H, W * 3, H * 3);
       for (let i = 0; i < 7; i++) { const rx = W * (i * 0.16) + Math.sin(t * 0.3 + i) * 20, g = ctx.createLinearGradient(0, 0, 0, H * 0.8); g.addColorStop(0, `rgba(200,245,222,${(0.09 * (1 - S.dark)).toFixed(3)})`); g.addColorStop(1, 'rgba(200,245,222,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(rx, -10); ctx.lineTo(rx + 70, -10); ctx.lineTo(rx + 170, H); ctx.lineTo(rx + 50, H); ctx.fill(); }
       // marine snow: drifting, until the Meg shoves the water aside and drags it along its flanks
-      const megOn = ts > 1.1 && py - L * 0.62 < H + 60 && py + L * 0.62 > -60;
+      const megOn = megOnPre;
       for (const p of S.snow) {
         if (megOn) {
           const rx = p.x - px, ry = p.y - py, al = rx * A.x + ry * A.y, ac = rx * N.x + ry * N.y, hw = Math.max(0, 0.13 * L * (1 - Math.pow(al / (0.5 * L), 2)));
@@ -1329,11 +1338,12 @@
         // caught: blood and scales leak from the jaw while the fish fights
         if (S.ate && !S.gone && ts < gulpT && Math.random() < 0.45) { const c = sideToWorldMeg(px, py, ang, L, rnd(200, 226), 84); spawn(S, { type: 'mist', x: c.x, y: c.y, vx: N.x * 60, vy: N.y * 60, r: M * rnd(0.03, 0.07), color: '#7a1434', a: 0.5, max: 1.4 }); if (Math.random() < 0.5) spawn(S, { type: 'scale', x: c.x, y: c.y, vx: N.x * rnd(60, 200) + rnd(-60, 60), vy: N.y * rnd(60, 200) + rnd(-60, 60), drag: 0.93, r: rnd(1.5, 3), spin: rnd(-12, 12), max: 1 }); }
         // the gulp: water flushes out of the gills
-        if (!S.flush && ts > gulpT + 0.12) { S.flush = true; S.shake = 8 + 6 * k; for (let i = 0; i < 40; i++) { const c = sideToWorldMeg(px, py, ang, L, rnd(172, 200), rnd(48, 66)); spawn(S, { type: 'bubble', x: c.x, y: c.y, vx: -N.x * rnd(80, 260) + rnd(-40, 40), vy: -N.y * rnd(80, 260) + rnd(-40, 40), r: rnd(2, 6), max: rnd(0.6, 1.2), ph: rnd(0, 6), a: 0.8 }); } }
+        if (!S.flush && ts > gulpT + 0.12) { S.flush = true; S.shake = 8 + 6 * k; { const q = scr(sideToWorldMeg(px, py, ang, L, 186, 58)); S.chroma = 6; S.zoom = { x: q.x, y: q.y, amt: 0.05 }; } for (let i = 0; i < 40; i++) { const c = sideToWorldMeg(px, py, ang, L, rnd(172, 200), rnd(48, 66)); spawn(S, { type: 'bubble', x: c.x, y: c.y, vx: -N.x * rnd(80, 260) + rnd(-40, 40), vy: -N.y * rnd(80, 260) + rnd(-40, 40), r: rnd(2, 6), max: rnd(0.6, 1.2), ph: rnd(0, 6), a: 0.8 }); } }
       }
       // ---- the bite ----
       if (!S.ate && ts >= biteAt) {
-        S.ate = true; S.flash = 0.2; S.shake = 26 + 14 * k;
+        S.ate = true; S.flash = 0.14; S.shake = 26 + 14 * k;
+        { const q = scr(mouth); hit(S, q.x, q.y, 1.3 + 0.3 * k); S.impact = 0.08; S.chroma = 16; S.focus.hold = true; S.focus.a = 0.65; S.kick = { x: 0, y: -20 }; }
         spawn(S, { type: 'ring', x: mouth.x, y: mouth.y, r: M * 0.05, grow: M * 1.2, a: 0.8, w: 4, max: 0.8 });
         spawn(S, { type: 'ring', x: mouth.x, y: mouth.y, r: M * 0.03, grow: M * 0.75, a: 0.5, w: 2, max: 0.6 });
         for (let i = 0; i < 30 + 20 * k; i++) { const an = rnd(0, TAU), sp = rnd(120, 520); spawn(S, { type: 'scale', x: mouth.x, y: mouth.y, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, drag: 0.92, r: rnd(1.5, 3.5), spin: rnd(-14, 14), max: rnd(0.8, 1.6) }); }
@@ -1343,7 +1353,7 @@
       // impact lines bursting out from the bite
       if (S.burst && ts < biteAt + 0.35) { const u = seg(ts, biteAt, biteAt + 0.35); ctx.strokeStyle = `rgba(240,250,245,${(0.55 * (1 - u)).toFixed(3)})`; ctx.lineWidth = 2; for (const b of S.burst) { const r1 = M * (b.r0 + u * b.v * 0.5), r2 = r1 + M * 0.12 * (1 - u); ctx.beginPath(); ctx.moveTo(mouth.x + Math.cos(b.a) * r1, mouth.y + Math.sin(b.a) * r1); ctx.lineTo(mouth.x + Math.cos(b.a) * r2, mouth.y + Math.sin(b.a) * r2); ctx.stroke(); } }
       // the tail goes by: a wall of bubbles
-      if (!S.wash && ts > biteAt + 1.15) { S.wash = true; S.shake = 12 + 8 * k; for (let i = 0; i < 90 + 60 * k; i++) spawn(S, { type: 'bubble', x: px + rnd(-W * 0.25, W * 0.25), y: H + rnd(0, 80), vx: rnd(-80, 80), vy: -rnd(200, 600), r: rnd(2, 10), max: rnd(1.2, 2.4), ph: rnd(0, 6), a: 0.8 }); }
+      if (!S.wash && ts > biteAt + 1.15) { S.wash = true; S.shake = 12 + 8 * k; S.chroma = 8; S.zoom = { x: W / 2, y: H, amt: 0.06 }; for (let i = 0; i < 90 + 60 * k; i++) spawn(S, { type: 'bubble', x: px + rnd(-W * 0.25, W * 0.25), y: H + rnd(0, 80), vx: rnd(-80, 80), vy: -rnd(200, 600), r: rnd(2, 10), max: rnd(1.2, 2.4), ph: rnd(0, 6), a: 0.8 }); }
       stepParts(ctx, S, dt, 'over');
       ctx.restore();
       // sheer mass going past: fast streaks down the whole frame while the body slides through
