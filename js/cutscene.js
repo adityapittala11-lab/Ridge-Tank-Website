@@ -788,9 +788,16 @@
       head.x += D.x * lunge; head.y += D.y * lunge;
       S.trail.push(head.x, head.y);
       const mouth = { x: head.x + D.x * L * 0.01, y: head.y + D.y * L * 0.01 };
+      const zN = 1 + 0.14 * E.inOut(seg(t, 1.3, 2.6)), fxN = lerp(W / 2, F.x, 0.55 * E.inOut(seg(t, 1.3, 2.6))), fyN = lerp(H / 2, F.y, 0.55 * E.inOut(seg(t, 1.3, 2.6)));
+      const scr = p => ({ x: (p.x - fxN) * zN + W / 2, y: (p.y - fyN) * zN + H / 2 });
+      S.bokeh = true;
+      if (S.focus && S.focus.hold && t > 2.7) S.focus.hold = false;
+      // the inhale pulls the whole picture into its mouth
+      if (ts > 2.15 && ts < 2.55) { const q = scr(mouth), p = Math.sin(Math.PI * seg(ts, 2.15, 2.55)); S.zoom = { x: q.x, y: q.y, amt: -0.16 * p }; }
       // --- the slurp ---
       if (!S.slurp && ts >= 2.15) {
-        S.slurp = true; S.flash = 0.1; S.shake = 6 + 4 * k;
+        S.slurp = true; S.flash = 0.06; S.shake = 6 + 4 * k;
+        { const q = scr(mouth); hit(S, q.x, q.y, 0.7 + 0.3 * k); S.zoom.amt = -0.12; S.focus.hold = true; S.focus.a = 0.5; }
         for (const f of S.fish) { const d = Math.hypot(f.x - mouth.x, f.y - mouth.y); if (d < L * 0.36) { f.suck = { x: f.x, y: f.y, t0: ts, a0: Math.atan2(f.y - mouth.y, f.x - mouth.x), d }; } else { const dd = d || 1; f.vx = (f.x - mouth.x) / dd * 600; f.vy = (f.y - mouth.y) / dd * 600; f.flee = true; } }
         const hd = Math.atan2(D.y, D.x); for (let i = 0; i < 130 + 60 * k; i++) { const a = hd + rnd(-1, 1) * rnd(0.3, 1.5), r = L * rnd(0.06, 0.5); S.grains.push({ a, r, r0: r, w: rnd(2.5, 4.5), c: Math.random() < 0.6 ? '#e6ecda' : '#9fb59f', z: rnd(0.8, 2.2) }); }
       }
@@ -834,7 +841,7 @@
         for (let i = S.grains.length - 1; i >= 0; i--) { const g = S.grains[i], pr = g.r; g.r -= (L * 1.2 + (g.r0 - g.r) * 6) * sdt * g.z; g.a += g.w * sdt * (1 + L * 0.05 / Math.max(g.r, 4)); if (g.r < L * 0.012) { S.grains.splice(i, 1); continue; } const x = mouth.x + Math.cos(g.a) * g.r, y = mouth.y + Math.sin(g.a) * g.r, x2 = mouth.x + Math.cos(g.a - 0.12) * pr, y2 = mouth.y + Math.sin(g.a - 0.12) * pr; ctx.strokeStyle = g.c; ctx.globalAlpha = 0.8; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(x, y); ctx.stroke(); }
         ctx.globalAlpha = 1;
         if (age < 0.4) { const q = E.inQ(age / 0.4); for (const [m, w] of [[1, 3], [0.7, 1.6]]) { ctx.strokeStyle = rgba('#e6f5ee', 0.7 * (1 - q)); ctx.lineWidth = w; ctx.beginPath(); ctx.arc(mouth.x, mouth.y, lerp(L * 0.5 * m, L * 0.02, q), 0, TAU); ctx.stroke(); } }
-        if (!S.settle && ts >= 2.7) { S.settle = true; const pts = S.trail.samples([0, L * 0.2, L * 0.4, L * 0.6, L * 0.8]); for (const q of pts) for (let i = 0; i < 4; i++) { const an = rnd(0, TAU), sp = rnd(30, 110); spawn(S, { type: 'mist', x: q.x, y: q.y, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, drag: 0.93, r: rnd(L * 0.07, L * 0.14), color: '#d4dcc6', a: 0.35, max: rnd(1.8, 2.6), layer: 'under' }); } }
+        if (!S.settle && ts >= 2.7) { S.settle = true; S.kick = { x: 0, y: 7 }; S.shake = Math.max(S.shake, 5); const pts = S.trail.samples([0, L * 0.2, L * 0.4, L * 0.6, L * 0.8]); for (const q of pts) for (let i = 0; i < 4; i++) { const an = rnd(0, TAU), sp = rnd(30, 110); spawn(S, { type: 'mist', x: q.x, y: q.y, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, drag: 0.93, r: rnd(L * 0.07, L * 0.14), color: '#d4dcc6', a: 0.35, max: rnd(1.8, 2.6), layer: 'under' }); } }
         if (ts > 2.7 && ts < 3.6 && Math.random() < 0.25) { const g = S.trail.samples([L * 0.22])[0]; spawn(S, { type: 'ring', x: g.x + rnd(-L * 0.06, L * 0.06), y: g.y + rnd(-L * 0.06, L * 0.06), r: 1.5, grow: L * 0.02, a: 0.7, w: 1.2, max: 0.9 }); }
       }
       stepParts(ctx, S, dt, 'over');
