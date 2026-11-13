@@ -106,6 +106,159 @@
     ctx.restore();
   }
 
+  // ---------- the top-down shark: a spine that follows the path it swam, with a travelling S-wave ----------
+  // The head leaves a trail; the body is laid along that trail, so it bends through turns like a real animal.
+  function Trail() { this.pts = []; }
+  Trail.prototype.push = function (x, y) {
+    const p = this.pts, l = p[p.length - 1];
+    if (l && Math.hypot(x - l.x, y - l.y) < 0.6) { l.x = x; l.y = y; return; }
+    p.push({ x, y }); if (p.length > 1400) p.shift();
+  };
+  // Points at increasing distances back from the head, in one walk down the trail.
+  Trail.prototype.samples = function (ds) {
+    const p = this.pts, out = []; let i = p.length - 1, acc = 0, j = 0;
+    while (j < ds.length && i > 0) {
+      const a = p[i], b = p[i - 1], sl = Math.hypot(a.x - b.x, a.y - b.y) || 1e-6;
+      if (acc + sl >= ds[j]) { const f = (ds[j] - acc) / sl; out.push({ x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f }); j++; }
+      else { acc += sl; i--; }
+    }
+    while (j < ds.length) { // past the end of the trail: carry on in a straight line
+      const a = p[0], b = p[Math.min(1, p.length - 1)], dx = a.x - b.x, dy = a.y - b.y, sl = Math.hypot(dx, dy) || 1, r = ds[j] - acc;
+      out.push({ x: a.x + dx / sl * r, y: a.y + dy / sl * r }); j++;
+    }
+    return out;
+  };
+  // Half-width of the body (as a share of length) along its length, per kind of shark.
+  const PROFILES = {
+    base: [[0, 0], [0.02, 0.028], [0.06, 0.052], [0.14, 0.072], [0.28, 0.082], [0.45, 0.07], [0.6, 0.048], [0.74, 0.028], [0.85, 0.014]],
+    tiger: [[0, 0], [0.012, 0.04], [0.05, 0.062], [0.14, 0.078], [0.28, 0.088], [0.45, 0.074], [0.6, 0.05], [0.74, 0.029], [0.85, 0.014]],
+    mako: [[0, 0], [0.04, 0.026], [0.1, 0.05], [0.25, 0.068], [0.42, 0.06], [0.6, 0.04], [0.74, 0.022], [0.85, 0.012]],
+    nurse: [[0, 0], [0.008, 0.05], [0.05, 0.072], [0.2, 0.09], [0.4, 0.082], [0.58, 0.058], [0.74, 0.036], [0.86, 0.018]],
+    hammer: [[0, 0], [0.02, 0.03], [0.07, 0.04], [0.16, 0.064], [0.3, 0.074], [0.46, 0.064], [0.6, 0.044], [0.74, 0.026], [0.85, 0.013]]
+  };
+  function widthAt(prof, u) {
+    for (let i = 1; i < prof.length; i++) if (u <= prof[i][0]) { const [a, b] = prof[i - 1], [c, d] = prof[i], f = (u - a) / (c - a), sm = f * f * (3 - 2 * f); return b + (d - b) * sm; }
+    return prof[prof.length - 1][1];
+  }
+  // o: { len, color, kind, phase, amp, alpha, stripes, shadow }
+  function topShark(ctx, trail, o) {
+    const L = o.len, N = 34, prof = PROFILES[o.kind] || PROFILES.base, uEnd = 0.85;
+    const ds = []; for (let i = 0; i <= N; i++) ds.push((i / N) * uEnd * L);
+    ds.push(uEnd * L + L * 0.04);
+    const sp = trail.samples(ds);
+    // tangent, normal and the S-wave offset at each spine point
+    const pts = [];
+    for (let i = 0; i <= N; i++) {
+      const a = sp[Math.max(0, i - 1)], b = sp[Math.min(sp.length - 1, i + 1)];
+      let tx = a.x - b.x, ty = a.y - b.y; const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
+      const u = (i / N) * uEnd, off = (o.amp || 0.06) * L * Math.pow(u, 1.6) * Math.sin(TAU * (u * 0.95) - (o.phase || 0));
+      pts.push({ x: sp[i].x - ty * off, y: sp[i].y + tx * off, nx: -ty, ny: tx, tx, ty, u, w: widthAt(prof, u) * L * (o.girth || 1) });
+    }
+    const al = o.alpha == null ? 1 : o.alpha;
+    ctx.save(); ctx.globalAlpha = al;
+    const outline = (scale, dx, dy) => {
+      ctx.beginPath();
+      for (let i = 0; i <= N; i++) { const p = pts[i]; const x = p.x + p.nx * p.w * scale + dx, y = p.y + p.ny * p.w * scale + dy; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+      for (let i = N; i >= 0; i--) { const p = pts[i]; ctx.lineTo(p.x - p.nx * p.w * scale + dx, p.y - p.ny * p.w * scale + dy); }
+      ctx.closePath();
+    };
+    const fin = (u, side, len, sweep, wid, flap) => { // a fin coming off the side of the body, swept back
+      const i = Math.round(u / uEnd * N), p = pts[i], bx = p.x + p.nx * p.w * side * 0.85, by = p.y + p.ny * p.w * side * 0.85;
+      const ang = Math.atan2(p.ny * side, p.nx * side) + side * (sweep + flap), tip = { x: bx + Math.cos(ang) * len, y: by + Math.sin(ang) * len };
+      const back = pts[Math.min(N, i + 3)], bx2 = back.x + back.nx * back.w * side * 0.8, by2 = back.y + back.ny * back.w * side * 0.8;
+      ctx.beginPath(); ctx.moveTo(p.x - p.tx * wid + p.nx * p.w * side * 0.7, p.y - p.ty * wid + p.ny * p.w * side * 0.7); ctx.quadraticCurveTo(tip.x + p.tx * wid, tip.y + p.ty * wid, tip.x, tip.y); ctx.lineTo(bx2, by2); ctx.closePath(); ctx.fill();
+    };
+    // the tail fin: a long blade off the end of the spine that flicks a beat behind the body
+    const tail = () => {
+      const e = pts[N], ang = Math.atan2(-e.ty, -e.tx) + Math.sin((o.phase || 0) - 1.2) * 0.42, tl = L * 0.27;
+      const tip = { x: e.x + Math.cos(ang) * tl, y: e.y + Math.sin(ang) * tl }, nx = -Math.sin(ang), ny = Math.cos(ang);
+      ctx.beginPath(); ctx.moveTo(e.x + nx * e.w, e.y + ny * e.w);
+      ctx.quadraticCurveTo(e.x + Math.cos(ang) * tl * 0.55 + nx * L * 0.03, e.y + Math.sin(ang) * tl * 0.55 + ny * L * 0.03, tip.x, tip.y);
+      ctx.quadraticCurveTo(e.x + Math.cos(ang) * tl * 0.5 - nx * L * 0.012, e.y + Math.sin(ang) * tl * 0.5 - ny * L * 0.012, e.x - nx * e.w, e.y - ny * e.w);
+      ctx.closePath(); ctx.fill();
+    };
+    const flap = Math.sin((o.phase || 0) * 0.5) * 0.08;
+    // shadow on the water below (soft, offset)
+    if (o.shadow) { ctx.fillStyle = `rgba(0,0,0,${o.shadow})`; outline(1.15, L * 0.05, L * 0.09); ctx.fill(); }
+    const dark = shade(o.color, -0.35), darker = shade(o.color, -0.55);
+    ctx.fillStyle = dark;
+    fin(0.27, 1, L * (o.kind === 'nurse' ? 0.2 : 0.17), 0.95, L * 0.03, flap); fin(0.27, -1, L * (o.kind === 'nurse' ? 0.2 : 0.17), 0.95, L * 0.03, flap);
+    fin(0.62, 1, L * 0.06, 1.0, L * 0.012, 0); fin(0.62, -1, L * 0.06, 1.0, L * 0.012, 0);
+    tail();
+    // the body, shaded round: dark edges, the lit back shifted toward the light (top-left), a soft highlight,
+    // and a thin dark ridge down the spine
+    const lx = -L * 0.009, ly = -L * 0.013;
+    ctx.fillStyle = shade(o.color, -0.32); outline(1, 0, 0); ctx.fill();
+    ctx.save(); outline(1, 0, 0); ctx.clip();
+    ctx.fillStyle = o.color; outline(0.74, lx, ly); ctx.fill();
+    ctx.fillStyle = rgba(shade(o.color, 0.28), 0.5); outline(0.34, lx * 1.8, ly * 1.8); ctx.fill();
+    if (o.stripes) {
+      ctx.strokeStyle = rgba(darker, 0.42); ctx.lineCap = 'round';
+      let j = 0;
+      for (let u = 0.2; u < 0.8; u += 0.05, j++) {
+        const i = Math.round(u / uEnd * N), p = pts[i], wv = (j % 3 ? 0.7 : 0.85), bend = L * 0.012 * (j % 2 ? 1 : -1);
+        ctx.lineWidth = L * (0.006 + (j % 3) * 0.002);
+        ctx.beginPath(); ctx.moveTo(p.x + p.nx * p.w * wv, p.y + p.ny * p.w * wv);
+        ctx.quadraticCurveTo(p.x + p.tx * bend, p.y + p.ty * bend, p.x - p.nx * p.w * wv * 0.9, p.y - p.ny * p.w * wv * 0.9); ctx.stroke();
+      }
+    }
+    ctx.fillStyle = rgba(darker, 0.4); outline(0.12, 0, 0); ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = Math.max(1, L * 0.004); outline(0.97, 0, 0); ctx.stroke();
+    // dorsal fins seen from above: thin dark blades on the back
+    ctx.fillStyle = darker;
+    for (const [u0, u1, ww] of [[0.3, 0.44, 0.014], [0.7, 0.76, 0.006]]) {
+      const a = pts[Math.round(u0 / uEnd * N)], b = pts[Math.round(u1 / uEnd * N)];
+      ctx.beginPath(); ctx.moveTo(a.x + a.nx * L * ww, a.y + a.ny * L * ww); ctx.lineTo(b.x - b.tx * L * 0.02, b.y - b.ty * L * 0.02); ctx.lineTo(a.x - a.nx * L * ww, a.y - a.ny * L * ww); ctx.closePath(); ctx.fill();
+    }
+    // hammerhead: the wide flat head, eyes at the very ends
+    if (o.kind === 'hammer') {
+      const h = pts[Math.round(0.035 / uEnd * N)], hw = L * 0.17, hd = L * 0.035;
+      ctx.fillStyle = o.color;
+      ctx.beginPath(); ctx.moveTo(h.x + h.nx * hw + h.tx * hd, h.y + h.ny * hw + h.ty * hd); ctx.quadraticCurveTo(h.x + h.tx * hd * 1.8, h.y + h.ty * hd * 1.8, h.x - h.nx * hw + h.tx * hd, h.y - h.ny * hw + h.ty * hd);
+      ctx.lineTo(h.x - h.nx * hw * 0.92 - h.tx * hd, h.y - h.ny * hw * 0.92 - h.ty * hd); ctx.quadraticCurveTo(h.x - h.tx * hd * 0.2, h.y - h.ty * hd * 0.2, h.x + h.nx * hw * 0.92 - h.tx * hd, h.y + h.ny * hw * 0.92 - h.ty * hd); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#05090a'; for (const sd of [1, -1]) { ctx.beginPath(); ctx.arc(h.x + h.nx * hw * 0.93 * sd + h.tx * hd * 0.2, h.y + h.ny * hw * 0.93 * sd + h.ty * hd * 0.2, Math.max(1.2, L * 0.008), 0, TAU); ctx.fill(); }
+    } else {
+      const e = pts[Math.round(0.075 / uEnd * N)]; ctx.fillStyle = '#05090a';
+      for (const sd of [1, -1]) { ctx.beginPath(); ctx.arc(e.x + e.nx * e.w * 0.86 * sd, e.y + e.ny * e.w * 0.86 * sd, Math.max(1.2, L * 0.0075), 0, TAU); ctx.fill(); }
+    }
+    ctx.restore();
+    return pts[0];
+  }
+  // Lots of small fish at once, drawn in one go. f: [{ x, y, a (heading), s (size), al }]
+  function topFish(ctx, fish, color, wagT) {
+    ctx.fillStyle = color;
+    for (const f of fish) {
+      if (f.dead) continue;
+      ctx.globalAlpha = f.al == null ? 1 : f.al;
+      const c = Math.cos(f.a), si = Math.sin(f.a), s = f.s, wag = Math.sin(wagT * 18 + f.ph) * 0.35;
+      const P = (fx, fy) => [f.x + fx * c - fy * si, f.y + fx * si + fy * c];
+      const t1 = P(-s * 0.5, 0), tc = Math.cos(f.a + Math.PI + wag), ts = Math.sin(f.a + Math.PI + wag);
+      ctx.beginPath(); ctx.ellipse(f.x, f.y, s * 0.5, s * 0.16, f.a, 0, TAU);
+      ctx.moveTo(t1[0], t1[1]); ctx.lineTo(t1[0] + tc * s * 0.32 - ts * s * 0.18, t1[1] + ts * s * 0.32 + tc * s * 0.18); ctx.lineTo(t1[0] + tc * s * 0.32 + ts * s * 0.18, t1[1] + ts * s * 0.32 - tc * s * 0.18); ctx.closePath();
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  // Open water seen from above: deep green, with sunlight shimmering across it.
+  function openWater(ctx, W, H, t, cx, cy) {
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * 0.8);
+    g.addColorStop(0, '#1d5d49'); g.addColorStop(0.55, '#0d3628'); g.addColorStop(1, '#041410');
+    ctx.fillStyle = g; ctx.fillRect(-40, -40, W + 80, H + 80);
+    ctx.lineWidth = 1.4;
+    for (let layer = 0; layer < 2; layer++) {
+      ctx.strokeStyle = `rgba(190,240,215,${layer ? 0.035 : 0.05})`;
+      for (let y = -20; y < H + 30; y += 26) {
+        ctx.beginPath();
+        for (let x = -20; x <= W + 30; x += 20) {
+          const yy = y + Math.sin(x * 0.018 + t * (layer ? -0.9 : 0.7) + y * 0.05) * 9 + Math.sin(x * 0.047 - t * 1.3 + y * 0.11) * 4;
+          layer ? ctx.lineTo(yy * 0.3 + x, yy) : ctx.lineTo(x, yy);
+        }
+        ctx.stroke();
+      }
+    }
+  }
+
   // ---------- particles ----------
   function spawn(S, p) { S.parts.push(Object.assign({ life: 0, max: 1, g: 0, drag: 1, layer: 'over', r: 2, a: 1, vx: 0, vy: 0 }, p)); }
   function stepParts(ctx, S, dt, layer) {
@@ -284,8 +437,82 @@
     }
   };
 
+  // =====================================================================
+  // TIGER: a bait ball from above. The tiger shark tears in, the school flash-explodes around it,
+  // it snatches one in slow motion and thrashes away while the ball closes up behind it.
+  // =====================================================================
+  SCENES.tiger = {
+    dur: 5.3, card: 3.45,
+    setup(S, W, H, k, coach) {
+      S.color = (coach && coach.color) || '#D2476E';
+      S.C = { x: W * 0.58, y: H * 0.47 }; S.R = Math.min(W, H) * 0.24;
+      S.len = Math.min(W, H) * 0.6 * (0.94 + 0.12 * k);
+      const n = Math.round(240 + 100 * k);
+      S.fish = Array.from({ length: n }, () => { const a = rnd(0, TAU), r = S.R * Math.pow(rnd(0.02, 1), 0.62), z = rnd(0.35, 1); return { home: a, r, w: rnd(0.85, 1.15) * (1.2 - r / S.R * 0.4), x: S.C.x + Math.cos(a) * r, y: S.C.y + Math.sin(a) * r, vx: 0, vy: 0, z, s: (9 + 9 * z) * Math.min(W, H) / 600, al: 0.45 + 0.5 * z, ph: rnd(0, 6), a: 0 }; });
+      S.fish.sort((a, b) => a.z - b.z);
+      S.trail = new Trail();
+      const A0 = { x: -W * 0.25, y: H * 1.05 }, cA = { x: W * 0.2, y: H * 0.78 };
+      S.path = { A0, cA, C: { x: S.C.x - W * 0.02, y: S.C.y + H * 0.02 }, cB: null, B1: { x: W * 1.4, y: H * 0.12 } };
+      S.path.cB = { x: S.path.C.x + (S.path.C.x - cA.x) * 0.75, y: S.path.C.y + (S.path.C.y - cA.y) * 0.75 };
+      // lay the body down behind the start point, so it arrives already whole
+      const dx = A0.x - cA.x, dy = A0.y - cA.y, dl = Math.hypot(dx, dy);
+      for (let i = 60; i >= 0; i--) S.trail.push(A0.x + dx / dl * i * S.len * 0.03, A0.y + dy / dl * i * S.len * 0.03);
+      S.flash = 0; S.victim = null;
+    },
+    draw(ctx, t, dt, S, W, H, k) {
+      const ts = warp(t, [[0, 0], [2.0, 2.0], [2.8, 2.3], [9, 8.5]]);
+      const sdt = dt * (t > 2.0 && t < 2.8 ? 0.38 : 1);
+      const P = S.path, q = (a, c, b, u) => ({ x: (1 - u) * (1 - u) * a.x + 2 * (1 - u) * u * c.x + u * u * b.x, y: (1 - u) * (1 - u) * a.y + 2 * (1 - u) * u * c.y + u * u * b.y });
+      let head;
+      if (ts < 2.2) head = q(P.A0, P.cA, P.C, E.inQ(seg(ts, 0.7, 2.2)));
+      else head = q(P.C, P.cB, P.B1, E.inOut(seg(ts, 2.2, 3.7)) * 0.98 + seg(ts, 2.2, 3.7) * 0.02);
+      // head-shake after the bite
+      if (ts > 2.22 && ts < 2.9) { const d = Math.exp(-(ts - 2.22) * 5), last = S.trail.pts[S.trail.pts.length - 1]; const ang = Math.atan2(head.y - last.y, head.x - last.x); head.x += -Math.sin(ang) * Math.sin(ts * 46) * S.len * 0.035 * d; head.y += Math.cos(ang) * Math.sin(ts * 46) * S.len * 0.035 * d; }
+      S.trail.push(head.x, head.y);
+      const zoom = 1 + 0.1 * Math.sin(Math.PI * seg(t, 1.7, 3.3));
+      ctx.save(); ctx.translate(S.C.x, S.C.y); ctx.scale(zoom, zoom); ctx.translate(-S.C.x, -S.C.y);
+      openWater(ctx, W, H, t, S.C.x, S.C.y);
+      // --- the school ---
+      const spin = 0.95;
+      for (const f of S.fish) {
+        if (f.dead) continue;
+        f.home += spin * f.w * sdt;
+        const hx = S.C.x + Math.cos(f.home) * f.r, hy = S.C.y + Math.sin(f.home) * f.r * 0.92;
+        f.vx += (hx - f.x) * 6 * sdt; f.vy += (hy - f.y) * 6 * sdt;
+        const dx = f.x - head.x, dy = f.y - head.y, d = Math.hypot(dx, dy) || 1, Rf = S.len * 0.42;
+        if (d < Rf && f !== S.victim) { const push = (1 - d / Rf) * 2600; f.vx += dx / d * push * sdt; f.vy += dy / d * push * sdt; }
+        const damp = Math.pow(0.06, sdt); f.vx *= damp; f.vy *= damp;
+        f.x += f.vx * sdt; f.y += f.vy * sdt;
+        const sp = Math.hypot(f.vx, f.vy);
+        f.a = sp > 25 ? Math.atan2(f.vy, f.vx) : f.home + Math.PI / 2;
+      }
+      // the one that does not get away
+      if (!S.victim && ts > 1.95) { let best = null, bd = 1e9; for (const f of S.fish) { const d = Math.hypot(f.x - head.x, f.y - head.y); if (d < bd && !f.dead) { bd = d; best = f; } } S.victim = best; }
+      if (S.victim && !S.victim.dead && ts < 2.22) { const v = S.victim, u = seg(ts, 1.95, 2.2); v.x = lerp(v.x, head.x, u * 0.35); v.y = lerp(v.y, head.y, u * 0.35); v.al = 1; v.s *= 1.0; }
+      if (!S.bit && ts >= 2.2) {
+        S.bit = true; S.flash = 0.22; S.shake = 9 + 6 * k;
+        if (S.victim) S.victim.dead = true;
+        for (let i = 0; i < 26; i++) { const an = rnd(0, TAU), sp = rnd(60, 240); spawn(S, { type: 'scale', x: head.x, y: head.y, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, drag: 0.93, r: rnd(1.4, 3), spin: rnd(-12, 12), max: rnd(0.8, 1.5) }); }
+        spawn(S, { type: 'mist', x: head.x, y: head.y, r: S.len * 0.16, color: '#7a1434', a: 0.45, max: 1.8 });
+        spawn(S, { type: 'ring', x: head.x, y: head.y, r: S.len * 0.05, grow: S.len * 0.5, a: 0.5, w: 2.5, max: 0.7 });
+      }
+      // fish under the shark first (the deeper half), then the shark, then the near half
+      const half = Math.floor(S.fish.length * 0.55);
+      topFish(ctx, S.fish.slice(0, half), '#9fd9c0', ts);
+      stepParts(ctx, S, dt, 'under');
+      const speed = ts < 2.2 ? lerp(0.5, 1.4, seg(ts, 0.7, 2.2)) : lerp(1.6, 0.9, seg(ts, 2.2, 3.7));
+      S.ph = (S.ph || 0) + sdt * 9 * speed;
+      if (ts > 0.6 && ts < 4.2) topShark(ctx, S.trail, { len: S.len, color: S.color, kind: 'tiger', stripes: true, phase: S.ph, amp: 0.05 + 0.03 * speed, shadow: 0.22 });
+      topFish(ctx, S.fish.slice(half), '#c9efdc', ts);
+      stepParts(ctx, S, dt, 'over');
+      ctx.restore();
+      if (S.flash > 0.01) { ctx.fillStyle = `rgba(255,240,244,${S.flash.toFixed(3)})`; ctx.fillRect(0, 0, W, H); S.flash *= Math.pow(0.003, dt); }
+      vignette(ctx, W, H, 0.65);
+    }
+  };
+
   // ---------- which scene for which coach ----------
-  const BY_COACH = { 'Great White': 'greatwhite' };
+  const BY_COACH = { 'Great White': 'greatwhite', Tiger: 'tiger' };
   const STAR = '<svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z" fill="currentColor"/></svg>';
 
   function play(key, level, stars, coach) {
@@ -368,5 +595,5 @@
     }
     return out;
   };
-  RT.cutsceneKit = { SCENES, BY_COACH, sideShark, sideFish, sideToWorld, spawn, stepParts, vignette, warp, shade, rgba, E, seg, lerp, clamp, rnd, TAU };
+  RT.cutsceneKit = { SCENES, BY_COACH, sideShark, sideFish, sideToWorld, topShark, topFish, Trail, openWater, crown, spawn, stepParts, vignette, warp, shade, rgba, E, seg, lerp, clamp, rnd, TAU };
 })();
