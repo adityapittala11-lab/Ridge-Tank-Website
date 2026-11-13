@@ -772,15 +772,15 @@ html[data-look="v3"] .ac-season.r-wait.in-view .ac-node { animation: acNodePop 0
 html[data-look="v3"] .megalodon { display: block; height: auto; overflow: visible; --beat: 3.4s; }
 html[data-look="v3"] .megalodon .mg-front, html[data-look="v3"] .megalodon .mg-rear, html[data-look="v3"] .megalodon .mg-tail, html[data-look="v3"] .megalodon .mg-jaw { transform-box: view-box; }
 /* a travelling wave: the head yaws a little one way, the rear follows, the tail follows the rear and whips */
-html[data-look="v3"] .megalodon .mg-front { transform-origin: 150px 48px; animation: mgHead calc(var(--beat) / 2) ease-in-out infinite alternate; animation-delay: calc(var(--beat) * -0.25); }
-html[data-look="v3"] .megalodon .mg-rear { transform-origin: 114px 50px; animation: mgRear calc(var(--beat) / 2) ease-in-out infinite alternate; }
-html[data-look="v3"] .megalodon .mg-tail { transform-origin: 57px 50px; animation: mgTail calc(var(--beat) / 2) cubic-bezier(0.45, 0, 0.4, 1) infinite alternate, mgTailTurn calc(var(--beat) / 4) ease-in-out infinite alternate; animation-delay: calc(var(--beat) * -0.82), 0s; }
+html[data-look="v3"] .megalodon .mg-front { transform-origin: 160px 54px; animation: mgHead calc(var(--beat) / 2) ease-in-out infinite alternate; animation-delay: calc(var(--beat) * -0.25); }
+html[data-look="v3"] .megalodon .mg-rear { transform-origin: 120px 55px; animation: mgRear calc(var(--beat) / 2) ease-in-out infinite alternate; }
+html[data-look="v3"] .megalodon .mg-tail { transform-origin: 58px 55px; animation: mgTail calc(var(--beat) / 2) cubic-bezier(0.45, 0, 0.4, 1) infinite alternate, mgTailTurn calc(var(--beat) / 4) ease-in-out infinite alternate; animation-delay: calc(var(--beat) * -0.82), 0s; }
 @keyframes mgHead { from { transform: rotate(0.7deg); } to { transform: rotate(-0.7deg); } }
 @keyframes mgRear { from { transform: rotate(-2.2deg); } to { transform: rotate(2.2deg); } }
 @keyframes mgTail { from { rotate: -6deg; } to { rotate: 6deg; } }
 @keyframes mgTailTurn { from { scale: 0.7 1; } to { scale: 1 1; } }
 /* the jaw hangs open, gapes slowly, then snaps shut */
-html[data-look="v3"] .megalodon .mg-jaw { transform-origin: 189px 67px; animation: mgJaw 9s infinite; }
+html[data-look="v3"] .megalodon .mg-jaw { transform-origin: 199px 76px; animation: mgJaw 9s infinite; }
 @keyframes mgJaw { 0%, 46% { transform: rotate(3deg); animation-timing-function: ease-in-out; } 66% { transform: rotate(13deg); animation-timing-function: cubic-bezier(0.7, 0, 1, 0.5); } 70% { transform: rotate(-2.5deg); animation-timing-function: ease-out; } 76% { transform: rotate(4.5deg); } 84%, 100% { transform: rotate(3deg); } }
 /* the whole animal: a slow heavy glide, and a short surge when the jaw snaps */
 html[data-look="v3"] .megalodon.tier-meg { width: 208px; margin-bottom: 14px; animation: mgGlide 9s ease-in-out infinite; }
