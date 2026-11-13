@@ -33,13 +33,25 @@
   }
   // A shark seen from the side, swimming right. It is cut into three overlapping pieces (front, rear, tail)
   // so the back half can sway and the tail can beat. It takes its colour from the text colour.
-  const SHARK =
+  // Simple countershading: a lighter wash along the back, a darker one along the belly, plus an eye. The washes are
+  // black/white with low opacity, so they read as light-from-above on any tier colour. markings adds tier detail
+  // (tiger stripes, a great white's pale belly). All of it rides inside the moving pieces so it swims with the body.
+  const SHARK = markings =>
     '<g fill="currentColor">' +
     '<g class="sk-rear"><path d="M106 23.6C94 25.6 83 28 74 30L63 23L66 32C58 34 52 36 46 38L46 46C60 49 72 53 84 55L80 64L95 57C98 57.6 101 58 104 58.4Z"/>' +
-    '<g class="sk-tail"><path d="M50 37L4 2C14 20 21 31 26 42C22 50 19 58 16 67L50 46.6Z"/></g></g>' +
-    '<path class="sk-front" d="M198 45C188 36 164 26 138 23L114 1C113 11 110 19 103 24L98 25L97 57.4C108 59.2 119 60 130 60L113 82C128 77 141 69 150 60C166 59 184 55 192 50Z"/>' +
+    '<path fill="#000" opacity="0.2" d="M46 44C64 50 86 54 104 52L104 58.4C86 56 66 52 48 48Z"/>' +
+    '<g class="sk-tail"><path d="M50 37L4 2C14 20 21 31 26 42C22 50 19 58 16 67L50 46.6Z"/><path fill="#000" opacity="0.16" d="M26 42C21 31 14 20 4 2C16 14 26 28 33 42Z"/></g></g>' +
+    '<g class="sk-front"><path d="M198 45C188 36 164 26 138 23L114 1C113 11 110 19 103 24L98 25L97 57.4C108 59.2 119 60 130 60L113 82C128 77 141 69 150 60C166 59 184 55 192 50Z"/>' +
+    '<path fill="#fff" opacity="0.16" d="M112 6C140 10 168 24 196 44C170 32 146 27 124 28C117 28 113 20 112 6Z"/>' +
+    '<path fill="#000" opacity="0.22" d="M98 51C120 60 150 60 192 50C176 57 150 61 130 60C118 59.4 108 57 98 55Z"/>' +
+    (markings || '') +
+    '<circle cx="180" cy="40" r="3.1" fill="#0b1a13"/><circle cx="181" cy="39" r="1" fill="#eaf5ee"/></g>' +
     '</g>';
-  const shark = cls => svg('shark ' + cls, '0 0 200 84', SHARK);
+  const MARKS = {
+    'tier-tiger': '<g fill="#000" opacity="0.26"><path d="M150 26L153 50"/><path d="M160 27L162 50" /><path d="M140 26L143 52"/><path d="M130 27L133 54"/><path d="M120 28L123 54"/></g>'.replace(/<path d="M(\d+) (\d+)L(\d+) (\d+)"\s*\/>/g, (m,x1,y1,x2,y2)=>`<path d="M${x1} ${y1}Q${(+x1+ +x2)/2-3} ${(+y1+ +y2)/2} ${x2} ${y2}L${+x2+3} ${y2}Q${(+x1+ +x2)/2} ${(+y1+ +y2)/2} ${+x1+3} ${y1}Z"/>`),
+    'tier-white': '<path fill="#fff" opacity="0.34" d="M97 52C120 61 150 61 191 51C176 58 150 62 130 61C118 60 108 57 98 55Z"/>'
+  };
+  const shark = (cls, variant) => svg('shark ' + cls, '0 0 200 84', SHARK(MARKS[variant]));
   // Just the fin, for anything riding along a waterline.
   const fin = cls => svg(cls, '0 0 64 44', '<path fill="currentColor" d="M2 44C18 40 30 26 34 0C44 12 54 28 62 44Z"/>');
 
@@ -316,7 +328,8 @@
         stop.classList.add('is-meg');
         return;
       }
-      const s = shark('tier-shark');
+      const variant = ['tier-reef', 'tier-tiger', 'tier-white', 'tier-mega'][i];
+      const s = shark('tier-shark', variant);
       s.style.width = (sizes[i] || 60) + 'px';
       s.style.setProperty('--beat', beats[i] || '1.4s');
       if (node) node.replaceWith(s); else stop.prepend(s);
@@ -458,7 +471,7 @@
       if (main && !main.querySelector('.my-shark')) {
         const chip = root.querySelector('.points-card .tier-chip');
         const tier = ['tier-reef', 'tier-tiger', 'tier-white', 'tier-mega'].findIndex(c => chip && chip.classList.contains(c));
-        const s = (tier >= 3 && RT.megalodon) ? RT.megalodon('my-shark t3 my-meg') : shark('my-shark t' + Math.max(0, tier));
+        const s = (tier >= 3 && RT.megalodon) ? RT.megalodon('my-shark t3 my-meg') : shark('my-shark t' + Math.max(0, tier), ['tier-reef','tier-tiger','tier-white'][Math.max(0, tier)]);
         if (!s.classList.contains('my-meg')) s.style.setProperty('--beat', ['0.9s', '1.2s', '1.6s', '2.2s'][Math.max(0, tier)]);
         main.appendChild(s);
         main.classList.add('has-shark');
