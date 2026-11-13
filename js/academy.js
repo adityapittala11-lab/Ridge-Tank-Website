@@ -230,18 +230,12 @@
     const input = h('input', { class: 'input', type: 'date', value: p.t, min: '2026-10-01', max: '2027-05-31', 'aria-label': 'Show the course as it looks on this date' });
     input.addEventListener('change', () => { if (input.value) { store.set(LS.date, input.value); draw(); } });
     const reset = h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => { store.set(LS.date, null); draw(); } }, 'Back to today');
-    // Jump straight to any level.
-    const jump = h('input', { class: 'input ac-jump', type: 'number', min: 1, max: 40, placeholder: '#', 'aria-label': 'Level number' });
-    const go = h('button', { class: 'btn btn-sm btn-ghost', type: 'button' }, 'Go to level');
-    const goTo = () => { const n = Math.max(1, Math.min(40, Math.floor(Number(jump.value) || 0))); if (!n) return; if (!earlyOn() && !openForAll()) store.set(LS.early, true); RT.go('academy/level/' + n); };
-    go.addEventListener('click', goTo);
-    jump.addEventListener('keydown', e => { if (e.key === 'Enter') goTo(); });
     // Turn the fair-play guards off for testing (paste/copy allowed, rounds never held). This account only.
     const safe = h('button', { class: 'btn btn-sm ' + (safetyOff() ? 'btn-primary' : 'btn-ghost'), type: 'button', onclick: () => { store.set(LS.nosafety, safetyOff() ? null : true); draw(); } },
       safetyOff() ? 'Safety features: OFF' : 'Disable safety features');
     return h('div', { class: 'ac-officer' },
       h('span', { class: 'ac-officer-tag' }, icon('shield', 14), 'Officer tools'),
-      h('span', { class: 'ac-officer-sep' }, 'Jump'), jump, go,
+      h('span', { class: 'muted small' }, 'Every level is open for you. Click any level on the map.'),
       safe, safetyOff() ? h('span', { class: 'muted small' }, 'Paste and copy are allowed and rounds are never held. Testing only, your account.') : null,
       h('span', { class: 'ac-officer-sep' }, 'Date'), input, store.get(LS.date, null) ? reset : null,
       AC.local ? h('span', { class: 'ac-officer-note' }, 'Progress is saved in this browser until the database has the course tables (db/030_course.sql).') : null);
