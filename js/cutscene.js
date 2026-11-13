@@ -1135,6 +1135,7 @@
     // mouth: the dark inside shows when the jaw drops
     const ja = (o.jaw || 0) * 0.75;
     if (ja > 0.01) { ctx.fillStyle = '#12020a'; ctx.beginPath(); ctx.moveTo(186, 76); ctx.lineTo(236, 61.6); ctx.lineTo(197 + Math.cos(ja) * 33, 79 + Math.sin(ja) * 33); ctx.closePath(); ctx.fill(); ctx.fillStyle = 'rgba(122,20,52,0.6)'; ctx.beginPath(); ctx.moveTo(192, 77); ctx.lineTo(222, 70); ctx.lineTo(197 + Math.cos(ja) * 24, 79 + Math.sin(ja) * 24); ctx.closePath(); ctx.fill(); }
+    if (o.inner) o.inner(ctx, k);
     ctx.save(); ctx.translate(124, 55); ctx.rotate(Math.sin(b) * 0.07); ctx.translate(-124, -55);
     ctx.save(); ctx.translate(60, 55); ctx.rotate(Math.sin(b - 1.1) * 0.2); ctx.translate(-60, -55); paint(MEG.tail); ctx.restore();
     paint(MEG.rear); ctx.restore();
@@ -1150,69 +1151,150 @@
   // something the size of the sky rises out of the dark, swallows the fish whole and keeps going.
   // =====================================================================
   SCENES.megalodon = {
-    dur: 6.0, card: 4.0,
+    dur: 6.2, card: 4.2,
     setup(S, W, H, k) {
-      S.k = k; S.L = H * (3.3 + 0.5 * k); S.flash = 0; S.dark = 0;
+      S.k = k; S.L = H * (3.3 + 0.5 * k); S.flash = 0; S.dark = 0; S.flow = []; S.lines = [];
       const M = Math.min(W, H), cols = ['#86DDB0', '#D2476E', '#8FA69B', '#3FBF7F', '#C9D2CD'];
       S.pod = cols.map((c, i) => ({ c, x: W * (0.12 + i * 0.13) + rnd(-20, 20), y: H * (0.32 + (i % 3) * 0.1) + rnd(-15, 15), len: M * (0.15 + (i === 4 ? 0.04 : 0)), vx: W * 0.06, vy: 0, ang: 0, ph: rnd(0, 6), flee: { x: (i % 2 ? 1 : -1) * rnd(0.6, 1), y: -rnd(0.4, 1) } }));
-      S.prey = { x: W * 0.36, y: H * 0.5, len: M * 0.2 };
-      S.snow = Array.from({ length: 120 }, () => ({ x: rnd(0, W), y: rnd(0, H), z: rnd(0.3, 1), ph: rnd(0, 6) }));
+      S.prey = { x: W * 0.36, y: H * 0.5, len: M * 0.2, ang: 0 };
+      S.snow = Array.from({ length: 170 }, () => ({ x: rnd(0, W), y: rnd(0, H), z: rnd(0.3, 1), vx: 0, vy: 0 }));
     },
     draw(ctx, t, dt, S, W, H, k) {
-      const ts = warp(t, [[0, 0], [1.98, 1.98], [2.4, 2.16], [9, 8.76]]);
-      const sdt = dt * (t > 1.98 && t < 2.4 ? 0.43 : 1);
-      const L = S.L, M = Math.min(W, H);
-      // the rise: slow at first, then it just keeps coming
-      // the mouth's path: up out of the dark to the fish by the bite, then it just keeps going
-      const biteAt = 2.12, t0r = 1.2, D = biteAt - t0r, y0 = H * 1.2, fy = S.prey.y, vB = 2 * (y0 - fy) / D;
-      const mY = ts < biteAt ? lerp(y0, fy, E.inQ(seg(ts, t0r, biteAt))) : fy - vB * (ts - biteAt) - 0.8 * H * (ts - biteAt) * (ts - biteAt);
-      const rise = clamp((y0 - mY) / (y0 + L * 1.1), 0, 1);
-      const ang = -Math.PI / 2 + 0.14 - 0.08 * rise;
-      if (S.aimX == null && ts >= 1.6) S.aimX = S.prey.x;
-      const mo = sideToWorldMeg(0, 0, ang, L, 210, 80), px = (S.aimX == null ? S.prey.x : S.aimX) - mo.x, py = mY - mo.y;
-      const head = sideToWorldMeg(px, py, ang, L, 210, 80);
-      const jaw = ts < biteAt ? E.outQ(seg(ts, 1.5, 2.0)) : ts < biteAt + 0.1 ? lerp(1, 0, E.inQ(seg(ts, biteAt, biteAt + 0.08))) : 0.06;
-      // --- water ---
+      const ts = warp(t, [[0, 0], [1.95, 1.95], [2.5, 2.2], [9, 8.7]]);
+      const sdt = dt * (t > 1.95 && t < 2.5 ? 0.45 : 1);
+      const L = S.L, M = Math.min(W, H), pr = S.prey;
+      // ---- where the mouth is: out of the dark, onto the fish, a hard stop on impact, then it surges on up ----
+      const biteAt = 2.12, t0r = 1.2, D = biteAt - t0r, y0 = H * 1.25, fy = pr.y0 == null ? pr.y : pr.y0;
+      let mY;
+      if (ts < biteAt) { const u = seg(ts, t0r, biteAt), f = 0.6 * u * u + 0.4 * u * u * (3 - 2 * u); mY = lerp(y0, fy, f); }
+      else { const d = ts - biteAt; mY = fy - H * (0.42 * d + 1.5 * Math.pow(Math.max(0, d - 0.5), 2)); }
+      const vRise = S.mYp == null ? 0 : (S.mYp - mY) / Math.max(sdt, 1e-3); S.mYp = mY;
+      const speed = clamp(Math.abs(vRise) / (H * 1.4), 0, 1.4);
+      const shakeA = ts > biteAt ? Math.sin((ts - biteAt) * 34) * 0.05 * Math.exp(-(ts - biteAt) * 4) : 0;
+      const rise = clamp((y0 - mY) / (y0 + L), 0, 1);
+      const ang = -Math.PI / 2 + 0.14 - 0.08 * rise + shakeA;
+      if (S.aimX == null && ts >= 1.55) { S.aimX = pr.x; pr.y0 = pr.y; }
+      const MOUTH = [212, 80];
+      const mo = sideToWorldMeg(0, 0, ang, L, MOUTH[0], MOUTH[1]), px = (S.aimX == null ? pr.x : S.aimX) - mo.x, py = mY - mo.y;
+      const mouth = { x: px + mo.x, y: mY }, A = { x: Math.cos(ang), y: Math.sin(ang) }, N = { x: -A.y, y: A.x };
+      // jaw: gapes on the way up, slams shut on the bite, opens a crack to gulp the fish down
+      let jaw = ts < biteAt ? E.outQ(seg(ts, 1.5, 1.98)) : ts < biteAt + 0.07 ? lerp(1, 0.04, E.inQ(seg(ts, biteAt, biteAt + 0.07))) : 0.04;
+      const gulpT = biteAt + 0.42;
+      if (ts > gulpT && ts < gulpT + 0.2) jaw = 0.04 + 0.32 * Math.sin(Math.PI * seg(ts, gulpT, gulpT + 0.2));
+      // ---- camera: a slow push in as it comes, a punch on the bite ----
+      const punch = Math.exp(-Math.pow((ts - biteAt - 0.02) / 0.12, 2));
+      const zoom = 1 + 0.06 * E.inOut(seg(ts, 1.3, 2.1)) + 0.1 * punch;
+      if (ts > 1.25 && ts < biteAt) S.shake = Math.max(S.shake, 1.5 + 6 * seg(ts, 1.25, 2.1) * (1 + k));
+      ctx.save(); const fx = lerp(W / 2, mouth.x, 0.6), fyc = lerp(H / 2, clamp(mouth.y, 0, H), 0.6);
+      ctx.translate(fx, fyc); ctx.scale(zoom, zoom); ctx.translate(-fx, -fyc);
+      // ---- water ----
       const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#1a5a44'); bg.addColorStop(0.5, '#0b3124'); bg.addColorStop(1, '#020806');
-      ctx.fillStyle = bg; ctx.fillRect(-40, -40, W + 80, H + 80);
+      ctx.fillStyle = bg; ctx.fillRect(-W, -H, W * 3, H * 3);
       for (let i = 0; i < 7; i++) { const rx = W * (i * 0.16) + Math.sin(t * 0.3 + i) * 20, g = ctx.createLinearGradient(0, 0, 0, H * 0.8); g.addColorStop(0, `rgba(200,245,222,${(0.09 * (1 - S.dark)).toFixed(3)})`); g.addColorStop(1, 'rgba(200,245,222,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(rx, -10); ctx.lineTo(rx + 70, -10); ctx.lineTo(rx + 170, H); ctx.lineTo(rx + 50, H); ctx.fill(); }
-      const tremor = ts > 0.9 && ts < 2.0 ? Math.sin(ts * 70) * 1.5 * seg(ts, 0.9, 1.4) : 0;
-      for (const p of S.snow) { p.y += (8 + 12 * p.z) * dt; if (p.y > H) p.y = -5; ctx.fillStyle = `rgba(216,243,230,${(0.15 + 0.3 * p.z).toFixed(3)})`; ctx.beginPath(); ctx.arc(p.x + tremor * p.z * 3, p.y, 0.7 + 1.3 * p.z, 0, TAU); ctx.fill(); }
+      // marine snow: drifting, until the Meg shoves the water aside and drags it along its flanks
+      const megOn = ts > 1.1 && py - L * 0.62 < H + 60 && py + L * 0.62 > -60;
+      for (const p of S.snow) {
+        if (megOn) {
+          const rx = p.x - px, ry = p.y - py, al = rx * A.x + ry * A.y, ac = rx * N.x + ry * N.y, hw = Math.max(0, 0.13 * L * (1 - Math.pow(al / (0.5 * L), 2)));
+          const reach = hw * 1.7 + 50;
+          if (al > -0.55 * L && al < 0.6 * L && Math.abs(ac) < reach) { const f = (1 - Math.abs(ac) / reach) * speed; const sg = ac < 0 ? -1 : 1; p.vx += (N.x * sg * 2600 - A.x * 1800) * f * sdt; p.vy += (N.y * sg * 2600 - A.y * 1800) * f * sdt; }
+        }
+        p.vx *= Math.pow(0.12, sdt); p.vy *= Math.pow(0.12, sdt);
+        p.x += p.vx * sdt; p.y += (p.vy + 8 + 12 * p.z) * sdt;
+        if (p.y > H + 20) { p.y = -10; p.x = rnd(0, W); } if (p.y < -30) { p.y = H + 10; p.x = rnd(0, W); } if (p.x < -30) p.x = W + 20; if (p.x > W + 30) p.x = -20;
+        const v = Math.hypot(p.vx, p.vy), al = 0.15 + 0.3 * p.z;
+        if (v > 60) { ctx.strokeStyle = `rgba(216,243,230,${al.toFixed(3)})`; ctx.lineWidth = 0.7 + 1.2 * p.z; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * 0.05, p.y - p.vy * 0.05); ctx.stroke(); }
+        else { ctx.fillStyle = `rgba(216,243,230,${al.toFixed(3)})`; ctx.beginPath(); ctx.arc(p.x, p.y, 0.7 + 1.3 * p.z, 0, TAU); ctx.fill(); }
+      }
       // the light dies from the bottom up
       S.dark = clamp(seg(ts, 0.9, 1.7) * 0.75, 0, 0.75);
       const dg = ctx.createLinearGradient(0, H * (1 - S.dark * 1.2), 0, H); dg.addColorStop(0, 'rgba(1,6,4,0)'); dg.addColorStop(1, `rgba(1,6,4,${(S.dark + 0.2).toFixed(3)})`);
-      ctx.fillStyle = dg; ctx.fillRect(-40, -40, W + 80, H + 80);
-      // --- the coaches: cruising, then bolting ---
+      ctx.fillStyle = dg; ctx.fillRect(-W, -H, W * 3, H * 3);
+      // ---- the coaches: cruising, then bolting with streaks behind them ----
       const bolt = ts > 1.15;
       if (!S.bolted && bolt) { S.bolted = true; for (const s of S.pod) { s.vx = s.flee.x * W * 0.9; s.vy = s.flee.y * H * 0.9; } }
       for (const s of S.pod) {
         if (bolt) { s.vx *= Math.pow(0.7, sdt); s.vy *= Math.pow(0.7, sdt); }
         s.x += s.vx * sdt; s.y += s.vy * sdt + (bolt ? 0 : Math.sin(ts * 1.5 + s.ph) * 6 * dt);
         const ta = Math.atan2(s.vy, s.vx); s.ang = lerp(s.ang, ta, 1 - Math.pow(0.001, sdt));
-        const flip = Math.cos(s.ang) < 0;
-        sideShark(ctx, { x: s.x, y: s.y, ang: s.ang, flipY: flip, len: s.len, color: s.c, belly: shade(s.c, 0.45), beat: ts * (bolt ? 26 : 9) + s.ph, alpha: 1 - 0.4 * S.dark });
+        const sp = Math.hypot(s.vx, s.vy);
+        if (bolt && sp > 120) { ctx.strokeStyle = 'rgba(220,245,235,0.22)'; ctx.lineWidth = 1.2; for (const o of [-0.08, 0, 0.08]) { const bx = s.x - Math.cos(s.ang) * s.len * 0.45 + N.x * 0 - Math.sin(s.ang) * o * s.len, by = s.y - Math.sin(s.ang) * s.len * 0.45 + Math.cos(s.ang) * o * s.len; ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx - s.vx * 0.12, by - s.vy * 0.12); ctx.stroke(); } }
+        sideShark(ctx, { x: s.x, y: s.y, ang: s.ang, flipY: Math.cos(s.ang) < 0, len: s.len, color: s.c, belly: shade(s.c, 0.45), beat: ts * (bolt ? 26 : 9) + s.ph, alpha: 1 - 0.4 * S.dark });
       }
-      // --- the fish that doesn't get away ---
-      const pr = S.prey;
-      if (!S.ate) { if (ts < 1.6) { pr.x += W * 0.05 * sdt + (bolt ? W * 0.1 * sdt : 0); pr.y += Math.sin(ts * 2) * 4 * dt - (bolt ? H * 0.03 * sdt : 0); } if (ts > 1.9) { const q = seg(ts, 1.9, biteAt); pr.x = lerp(pr.x, head.x, q * 0.5); pr.y = lerp(pr.y, head.y, q * 0.5); } sideFish(ctx, pr.x, pr.y, Math.sin(ts * 9) * 0.06, pr.len, '#efe6d2', Math.sin(ts * (bolt ? 40 : 14)) * pr.len * 0.08); }
-      // --- the boss ---
-      if (ts > 1.1 && py - L * 0.6 < H + 40) {
+      // ---- the fish: cruising, panicking, sucked in, caught, swallowed ----
+      const kM = L / 258, inA = Math.atan2(0.93, 0.36), IN = { x: 214, y: 84 }, tIn = 2.05;
+      const inWorld = sideToWorldMeg(px, py, ang, L, IN.x, IN.y), inAngW = ang + inA;
+      if (ts < tIn) {
+        if (ts < 1.55) { pr.x += W * 0.05 * sdt + (bolt ? W * 0.1 * sdt : 0); pr.y += Math.sin(ts * 2) * 4 * dt - (bolt ? H * 0.03 * sdt : 0); pr.ang = Math.sin(ts * 9) * 0.06; }
+        else if (ts < 1.8) { const away = Math.atan2(pr.y - mouth.y, pr.x - mouth.x), d = Math.atan2(Math.sin(away - pr.ang), Math.cos(away - pr.ang)); pr.ang += d * (1 - Math.pow(0.0005, sdt)); pr.x += Math.cos(pr.ang) * W * 0.08 * sdt; pr.y += Math.sin(pr.ang) * W * 0.08 * sdt; pr.p0 = null; }
+        else {
+          if (!pr.p0) pr.p0 = { x: pr.x, y: pr.y, a: pr.ang };
+          const q = E.inC(seg(ts, 1.8, tIn)), da = Math.atan2(Math.sin(inAngW - pr.p0.a), Math.cos(inAngW - pr.p0.a));
+          pr.x = lerp(pr.p0.x, inWorld.x, q); pr.y = lerp(pr.p0.y, inWorld.y, q); pr.ang = pr.p0.a + da * q + Math.sin(ts * 50) * 0.25 * (1 - q);
+        }
+        if (ts < 1.8) sideFish(ctx, pr.x, pr.y, pr.ang, pr.len, '#efe6d2', Math.sin(ts * (ts > 1.55 ? 55 : 14)) * pr.len * (ts > 1.55 ? 0.14 : 0.08));
+      }
+      // suction: water streaks pulled into the open mouth
+      if (ts > 1.72 && ts < biteAt) {
+        const pull = seg(ts, 1.72, 1.9);
+        if (S.lines.length < 46) for (let i = 0; i < 4; i++) S.lines.push({ a: rnd(-1.4, 1.4), r: M * rnd(0.35, 0.7), v: rnd(0.9, 1.6) });
+        ctx.lineCap = 'round';
+        for (let i = S.lines.length - 1; i >= 0; i--) {
+          const l = S.lines[i]; l.r -= M * 1.9 * l.v * sdt; if (l.r < M * 0.03) { S.lines.splice(i, 1); continue; }
+          const dir = Math.atan2(-N.y, -N.x) + l.a * 0.9, cx = mouth.x + Math.cos(dir) * l.r, cy = mouth.y + Math.sin(dir) * l.r, len = Math.min(l.r * 0.5, M * 0.12);
+          ctx.strokeStyle = `rgba(226,248,238,${(0.4 * pull).toFixed(3)})`; ctx.lineWidth = 1.6;
+          ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(dir) * len, cy + Math.sin(dir) * len); ctx.stroke();
+        }
+      } else if (ts >= biteAt) S.lines.length = 0;
+      // ---- the Meg ----
+      if (megOn) {
+        // slipstream: lines of water sliding down its flanks, longer the faster it goes
+        if (speed > 0.15) for (let i = 0; i < 8; i++) S.flow.push({ al: rnd(-0.35, 0.55) * L, sd: Math.random() < 0.5 ? -1 : 1, off: rnd(8, 60), life: 0, max: rnd(0.25, 0.5) });
+        for (let i = S.flow.length - 1; i >= 0; i--) {
+          const f = S.flow[i]; f.life += sdt; f.al -= Math.abs(vRise) * 0.9 * sdt; if (f.life > f.max || f.al < -0.6 * L) { S.flow.splice(i, 1); continue; }
+          const hw = Math.max(0, 0.13 * L * (1 - Math.pow(f.al / (0.5 * L), 2))), ac = f.sd * (hw + f.off), x0 = px + A.x * f.al + N.x * ac, y0b = py + A.y * f.al + N.y * ac, ln = Math.min(L * 0.25, 40 + Math.abs(vRise) * 0.12);
+          ctx.strokeStyle = `rgba(220,246,234,${(0.45 * Math.sin(Math.PI * f.life / f.max) * Math.min(1, speed)).toFixed(3)})`; ctx.lineWidth = 1.8;
+          ctx.beginPath(); ctx.moveTo(x0, y0b); ctx.lineTo(x0 - A.x * ln, y0b - A.y * ln); ctx.stroke();
+        }
+        // bow wave: a pressure front pushed ahead of the snout
+        const tip = sideToWorldMeg(px, py, ang, L, 258, 50);
+        if (speed > 0.1 && tip.y > -80) { const r = L * 0.06 + 30; for (const [sc, al] of [[1, 0.4], [1.45, 0.18]]) { const R = r * sc; ctx.strokeStyle = `rgba(230,250,240,${(al * Math.min(1, speed)).toFixed(3)})`; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.ellipse(tip.x - A.x * R * 0.3, tip.y - A.y * R * 0.3, R * 0.5, R, ang, -1.25, 1.25); ctx.stroke(); } }
         const eye = ts < 1.75 ? E.outQ(seg(ts, 1.25, 1.6)) : 0.85;
-        megSide(ctx, { x: px, y: py, ang, len: L, jaw, beat: ts * 3.2, back: k > 0.9 ? '#2a0812' : '#07170f', belly: k > 0.9 ? '#7a1434' : '#2f4c3d', rim: rgba('#f2ece0', 0.55), light: { x: -Math.sin(ang), y: -Math.cos(ang) }, eye });
-        // bubbles shed along the flanks as it rises
-        for (let i = 0; i < 3 + 4 * k; i++) { const along = rnd(-0.4, 0.5) * L, side = (Math.random() < 0.5 ? -1 : 1) * L * 0.12; const bx = px + Math.cos(ang) * along - Math.sin(ang) * side, by = py + Math.sin(ang) * along + Math.cos(ang) * side; if (by > -20 && by < H + 20) spawn(S, { type: 'bubble', x: bx, y: by, vx: rnd(-40, 40), vy: -rnd(60, 200), r: rnd(2, 7), max: rnd(0.8, 1.6), ph: rnd(0, 6), a: 0.7 }); }
+        // the fish inside the mouth, drawn in the Meg's own space so it moves with it and the jaw closes over it
+        const inner = (c) => {
+          if (ts < tIn || S.gone) return;
+          const g = seg(ts, gulpT, gulpT + 0.16), ins = E.inC(g);
+          if (g >= 1) { S.gone = true; return; }
+          const lx = lerp(IN.x, 200, ins), ly = lerp(IN.y, 72, ins), thrash = ts < gulpT ? Math.sin(ts * 44) * 0.28 : 0;
+          sideFish(c, lx, ly, inA + thrash, pr.len / kM, '#efe6d2', Math.sin(ts * 60) * pr.len / kM * 0.16);
+        };
+        megSide(ctx, { x: px, y: py, ang, len: L, jaw, beat: ts * 3.2, back: k > 0.9 ? '#2a0812' : '#07170f', belly: k > 0.9 ? '#7a1434' : '#2f4c3d', rim: rgba('#f2ece0', 0.55), light: { x: -Math.sin(ang), y: -Math.cos(ang) }, eye, inner });
+        if (ts >= 1.8 && ts < tIn) sideFish(ctx, pr.x, pr.y, pr.ang, pr.len, '#efe6d2', Math.sin(ts * 55) * pr.len * 0.14);
+        // bubbles streaming off the flanks
+        for (let i = 0; i < 3 + 4 * k + 6 * speed; i++) { const along = rnd(-0.4, 0.5) * L, side = (Math.random() < 0.5 ? -1 : 1) * L * 0.12; const bx = px + A.x * along + N.x * side, by = py + A.y * along + N.y * side; if (by > -20 && by < H + 20) spawn(S, { type: 'bubble', x: bx, y: by, vx: rnd(-40, 40) - A.x * 200 * speed, vy: -rnd(60, 200) - A.y * 200 * speed, r: rnd(2, 7), max: rnd(0.6, 1.4), ph: rnd(0, 6), a: 0.7 }); }
+        // caught: blood and scales leak from the jaw while the fish fights
+        if (S.ate && !S.gone && ts < gulpT && Math.random() < 0.45) { const c = sideToWorldMeg(px, py, ang, L, rnd(200, 226), 84); spawn(S, { type: 'mist', x: c.x, y: c.y, vx: N.x * 60, vy: N.y * 60, r: M * rnd(0.03, 0.07), color: '#7a1434', a: 0.5, max: 1.4 }); if (Math.random() < 0.5) spawn(S, { type: 'scale', x: c.x, y: c.y, vx: N.x * rnd(60, 200) + rnd(-60, 60), vy: N.y * rnd(60, 200) + rnd(-60, 60), drag: 0.93, r: rnd(1.5, 3), spin: rnd(-12, 12), max: 1 }); }
+        // the gulp: water flushes out of the gills
+        if (!S.flush && ts > gulpT + 0.12) { S.flush = true; S.shake = 8 + 6 * k; for (let i = 0; i < 40; i++) { const c = sideToWorldMeg(px, py, ang, L, rnd(172, 200), rnd(48, 66)); spawn(S, { type: 'bubble', x: c.x, y: c.y, vx: -N.x * rnd(80, 260) + rnd(-40, 40), vy: -N.y * rnd(80, 260) + rnd(-40, 40), r: rnd(2, 6), max: rnd(0.6, 1.2), ph: rnd(0, 6), a: 0.8 }); } }
       }
-      // --- the bite ---
+      // ---- the bite ----
       if (!S.ate && ts >= biteAt) {
-        S.ate = true; S.flash = 0.3; S.shake = 22 + 14 * k;
-        spawn(S, { type: 'ring', x: head.x, y: head.y, r: M * 0.05, grow: M * 1.1, a: 0.8, w: 4, max: 0.8 });
-        spawn(S, { type: 'ring', x: head.x, y: head.y, r: M * 0.03, grow: M * 0.7, a: 0.5, w: 2, max: 0.6 });
-        for (let i = 0; i < 40 + 30 * k; i++) { const an = rnd(0, TAU), sp = rnd(120, 520); spawn(S, { type: 'scale', x: head.x, y: head.y, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, drag: 0.92, r: rnd(1.5, 3.5), spin: rnd(-14, 14), max: rnd(0.8, 1.6) }); }
-        spawn(S, { type: 'mist', x: head.x, y: head.y, r: M * 0.2, color: '#7a1434', a: 0.5, max: 2.0 });
+        S.ate = true; S.flash = 0.2; S.shake = 26 + 14 * k;
+        spawn(S, { type: 'ring', x: mouth.x, y: mouth.y, r: M * 0.05, grow: M * 1.2, a: 0.8, w: 4, max: 0.8 });
+        spawn(S, { type: 'ring', x: mouth.x, y: mouth.y, r: M * 0.03, grow: M * 0.75, a: 0.5, w: 2, max: 0.6 });
+        for (let i = 0; i < 30 + 20 * k; i++) { const an = rnd(0, TAU), sp = rnd(120, 520); spawn(S, { type: 'scale', x: mouth.x, y: mouth.y, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, drag: 0.92, r: rnd(1.5, 3.5), spin: rnd(-14, 14), max: rnd(0.8, 1.6) }); }
+        spawn(S, { type: 'mist', x: mouth.x, y: mouth.y, r: M * 0.16, color: '#7a1434', a: 0.45, max: 2.0 });
+        S.burst = Array.from({ length: 26 }, () => ({ a: rnd(0, TAU), r0: rnd(0.08, 0.2), v: rnd(1.4, 2.6) }));
       }
+      // impact lines bursting out from the bite
+      if (S.burst && ts < biteAt + 0.35) { const u = seg(ts, biteAt, biteAt + 0.35); ctx.strokeStyle = `rgba(240,250,245,${(0.55 * (1 - u)).toFixed(3)})`; ctx.lineWidth = 2; for (const b of S.burst) { const r1 = M * (b.r0 + u * b.v * 0.5), r2 = r1 + M * 0.12 * (1 - u); ctx.beginPath(); ctx.moveTo(mouth.x + Math.cos(b.a) * r1, mouth.y + Math.sin(b.a) * r1); ctx.lineTo(mouth.x + Math.cos(b.a) * r2, mouth.y + Math.sin(b.a) * r2); ctx.stroke(); } }
       // the tail goes by: a wall of bubbles
-      if (!S.wash && ts > biteAt + 1.2) { S.wash = true; S.shake = 10 + 8 * k; for (let i = 0; i < 90 + 60 * k; i++) spawn(S, { type: 'bubble', x: px + rnd(-W * 0.25, W * 0.25), y: H + rnd(0, 80), vx: rnd(-80, 80), vy: -rnd(200, 600), r: rnd(2, 10), max: rnd(1.2, 2.4), ph: rnd(0, 6), a: 0.8 }); }
+      if (!S.wash && ts > biteAt + 1.15) { S.wash = true; S.shake = 12 + 8 * k; for (let i = 0; i < 90 + 60 * k; i++) spawn(S, { type: 'bubble', x: px + rnd(-W * 0.25, W * 0.25), y: H + rnd(0, 80), vx: rnd(-80, 80), vy: -rnd(200, 600), r: rnd(2, 10), max: rnd(1.2, 2.4), ph: rnd(0, 6), a: 0.8 }); }
       stepParts(ctx, S, dt, 'over');
+      ctx.restore();
+      // sheer mass going past: fast streaks down the whole frame while the body slides through
+      const mass = ts > biteAt + 0.15 && megOn ? Math.min(1, speed) : 0;
+      if (mass > 0.05) { ctx.strokeStyle = `rgba(220,245,235,${(0.12 * mass).toFixed(3)})`; ctx.lineWidth = 1.2; for (let i = 0; i < 18; i++) { const x = (i * 137 + 41) % W, y = ((t * 2400 + i * 233) % (H + 300)) - 150, ln = 80 + (i * 57 % 160); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + ln); ctx.stroke(); } }
       if (S.flash > 0.01) { ctx.fillStyle = `rgba(255,240,244,${S.flash.toFixed(3)})`; ctx.fillRect(0, 0, W, H); S.flash *= Math.pow(0.002, dt); }
       vignette(ctx, W, H, 0.75);
     }
