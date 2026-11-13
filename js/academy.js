@@ -230,9 +230,7 @@
     const input = h('input', { class: 'input', type: 'date', value: p.t, min: '2026-10-01', max: '2027-05-31', 'aria-label': 'Show the course as it looks on this date' });
     input.addEventListener('change', () => { if (input.value) { store.set(LS.date, input.value); draw(); } });
     const reset = h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => { store.set(LS.date, null); draw(); } }, 'Back to today');
-    const early = h('button', { class: 'btn btn-sm ' + (earlyOn() ? 'btn-ghost' : 'btn-primary'), type: 'button', onclick: () => { store.set(LS.early, earlyOn() ? null : true); draw(); } },
-      earlyOn() ? 'Back to normal dates' : 'Open all levels for me');
-    // Jump straight to any level (opens all levels first so it is playable).
+    // Jump straight to any level.
     const jump = h('input', { class: 'input ac-jump', type: 'number', min: 1, max: 40, placeholder: '#', 'aria-label': 'Level number' });
     const go = h('button', { class: 'btn btn-sm btn-ghost', type: 'button' }, 'Go to level');
     const goTo = () => { const n = Math.max(1, Math.min(40, Math.floor(Number(jump.value) || 0))); if (!n) return; if (!earlyOn() && !openForAll()) store.set(LS.early, true); RT.go('academy/level/' + n); };
@@ -242,7 +240,7 @@
     const safe = h('button', { class: 'btn btn-sm ' + (safetyOff() ? 'btn-primary' : 'btn-ghost'), type: 'button', onclick: () => { store.set(LS.nosafety, safetyOff() ? null : true); draw(); } },
       safetyOff() ? 'Safety features: OFF' : 'Disable safety features');
     return h('div', { class: 'ac-officer' },
-      openForAll() ? h('span', { class: 'muted small' }, 'The course is open to everyone (academy.openNow in config.js).') : early, openForAll() ? null : h('span', { class: 'muted small' }, earlyOn() ? 'Every level is open on your account. Members still see the normal dates.' : 'Officers only. Members still see the normal dates.'),
+      h('span', { class: 'ac-officer-tag' }, icon('shield', 14), 'Officer tools'),
       h('span', { class: 'ac-officer-sep' }, 'Jump'), jump, go,
       safe, safetyOff() ? h('span', { class: 'muted small' }, 'Paste and copy are allowed and rounds are never held. Testing only, your account.') : null,
       h('span', { class: 'ac-officer-sep' }, 'Date'), input, store.get(LS.date, null) ? reset : null,
@@ -463,7 +461,7 @@
       const k = p.best[n].stars;
       state = h('p', { class: 'ac-state' }, icon('check', 15), `Passed with ${k} star${k > 1 ? 's' : ''} `, starRow(k, 13));
     } else if (st === 'locked') state = h('p', { class: 'ac-state off' }, icon('lock', 14), 'Opens ' + longDate(b.opens));
-    else if (st === 'ahead') state = h('p', { class: 'ac-state off' }, icon('lock', 14), `Pass level ${p.cur} first`);
+    else if (st === 'ahead') state = S.isAdmin ? h('p', { class: 'ac-state' }, icon('shield', 14), 'Open (officer)') : h('p', { class: 'ac-state off' }, icon('lock', 14), `Pass level ${p.cur} first`);
 
     const draftKey = LS.draft + S.me.id + '_' + n;
     const draft = h('textarea', { class: 'input textarea', rows: 5, 'aria-label': 'Your build', placeholder: 'Write your piece here, in your own words. It goes straight to the shark.' }, store.get(draftKey, ''));
@@ -477,17 +475,24 @@
     updWc();
     const example = h('div', { class: 'ac-example no-copy', hidden: true }, h('p', { class: 'card-label' }, 'Example (read only)'), h('p', null, C.samples[n]));
 
-    const canPlay = (st === 'current' || st === 'done') && left > 0;
+    const canPlay = (st === 'current' || st === 'done' || (st === 'ahead' && S.isAdmin)) && left > 0;
     const start = h('button', { class: 'btn btn-primary btn-block', type: 'button', disabled: !canPlay, onclick: () => openRound(levelSpec(n, draft.value, draftStats)) },
       st === 'done' ? 'Play it again for more stars' : 'Start the shark round');
-    const why = st === 'locked' ? 'This level opens ' + longDate(b.opens) + '.'
-      : st === 'ahead' ? `Pass level ${p.cur} first.`
+    const why = (st === 'locked' && !S.isAdmin) ? 'This level opens ' + longDate(b.opens) + '.'
+      : (st === 'ahead' && !S.isAdmin) ? `Pass level ${p.cur} first.`
       : left <= 0 ? 'No tries left today. Come back tomorrow.' : `${left} of ${TRIES_PER_DAY} tries left today.`;
 
     body.append(
-      h('div', { class: 'ac-crumbs' },
-        h('a', { class: 'ac-back', href: '#/academy' }, icon('chevronLeft', 16), 'Your year'),
-        h('span', { class: 'muted' }, `Season ${s}: ${se.name} / Block ${b.id}: ${b.name}`)),
+      (function levelNav() {
+        const can = m => m >= 1 && m <= 40 && (S.isAdmin || lstate(m, p) !== 'locked');
+        const link = (m, label, ic) => can(m)
+          ? h('a', { class: 'ac-nav-btn', href: '#/academy/level/' + m, 'aria-label': label + ' level ' + m }, ic === 'l' ? icon('chevronLeft', 16) : null, ic === 'l' ? 'Prev' : 'Next', ic === 'r' ? icon('chevronRight', 16) : null)
+          : h('span', { class: 'ac-nav-btn is-off', 'aria-hidden': 'true' }, ic === 'l' ? icon('chevronLeft', 16) : null, ic === 'l' ? 'Prev' : 'Next', ic === 'r' ? icon('chevronRight', 16) : null);
+        return h('div', { class: 'ac-crumbs' },
+          h('a', { class: 'ac-back', href: '#/academy' }, icon('chevronLeft', 16), 'Your year'),
+          h('span', { class: 'muted ac-crumb-sea' }, `Season ${s}: ${se.name} / Block ${b.id}`),
+          h('div', { class: 'ac-nav' }, link(n - 1, 'Prev', 'l'), h('span', { class: 'ac-nav-now mono' }, n + ' / 40'), link(n + 1, 'Next', 'r')));
+      })(),
       h('header', { class: 'ac-head' },
         h('span', { class: 'big-num' }, String(n)),
         h('div', { class: 'min0' }, h('h1', null, L.t),
@@ -813,7 +818,7 @@
     const order = CATS.map(k => k[0]).sort((a, b) => v.c[b] - v.c[a]), best = order[0], worst = order.slice(-2).reverse();
     const p = prog();
     const nextN = sp.kind === 'level' ? sp.item + 1 : null;
-    const nextOpen = v.passed && nextN && nextN <= 40 && lstate(nextN, p) === 'current';
+    const nextOpen = v.passed && nextN && nextN <= 40 && (S.isAdmin || lstate(nextN, p) === 'current');
     const leftNow = sp.kind === 'level' ? TRIES_PER_DAY - triesToday('level', sp.item) : TRIES_PER_DAY - triesToday('weekly', sp.item);
     const el = h('div', { class: 'ac-verdict' },
       h('div', { class: 'ac-vtop' },
