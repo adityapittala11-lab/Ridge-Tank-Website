@@ -824,16 +824,30 @@ html[data-look="v3"] .ac-av .av-bob { transform-box: view-box; transform-origin:
 @keyframes avBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.6px); } }
 html[data-look="v3"] .ac-av .av-jaw { transform-origin: left center; animation: avChomp 4.5s ease-in-out infinite; }
 @keyframes avChomp { 0%, 70%, 100% { transform: translateY(0); } 80% { transform: translateY(2.2px); } 86% { transform: translateY(0); } }
-/* each coach its own tempo: Mako quick, Nurse calm, Tiger brisk, Great White slow and heavy, Hammerhead sways, Rex chompy */
-html[data-look="v3"] .ac-av.av-mako { --av-beat: 0.7s; --av-blink: 5s; }
-html[data-look="v3"] .ac-av.av-nurse { --av-beat: 2.1s; --av-blink: 7s; }
-html[data-look="v3"] .ac-av.av-tiger { --av-beat: 1.05s; --av-blink: 4.5s; }
-html[data-look="v3"] .ac-av.av-great-white { --av-beat: 2.4s; --av-blink: 8s; }
+/* Each coach moves in character; the harder the shark, the more menacing it reads. */
+/* Nurse — the gentle starter: slow, easy, barely a sway. */
+html[data-look="v3"] .ac-av.av-nurse { --av-beat: 2.3s; --av-blink: 7s; }
+/* Mako — agile and fast: a quick tail, and it darts forward and back. */
+html[data-look="v3"] .ac-av.av-mako { --av-beat: 0.5s; --av-blink: 5s; }
+html[data-look="v3"] .ac-av.av-mako .av-swim { animation: avDart 1.6s cubic-bezier(0.5, 0, 0.3, 1) infinite; }
+@keyframes avDart { 0%, 100% { transform: translateX(-2px) rotate(-1deg); } 18% { transform: translateX(3px) rotate(1.4deg); } 40% { transform: translateX(1px); } }
+/* Tiger — brisk and aggressive: fast tail with a body shimmy. */
+html[data-look="v3"] .ac-av.av-tiger { --av-beat: 0.85s; --av-blink: 4s; }
+html[data-look="v3"] .ac-av.av-tiger .av-swim { animation: avShimmy 1.1s ease-in-out infinite; }
+@keyframes avShimmy { 0%, 100% { transform: translateY(0) rotate(-1.6deg); } 50% { transform: translateY(-1px) rotate(1.6deg); } }
+/* Hammerhead — odd, surveying: a slow side-to-side sweep. */
 html[data-look="v3"] .ac-av.av-hammerhead { --av-beat: 1.6s; }
 html[data-look="v3"] .ac-av.av-hammerhead .av-swim { animation: avSway 3.2s ease-in-out infinite; }
-@keyframes avSway { 0%, 100% { transform: translateX(-1px) rotate(-1.4deg); } 50% { transform: translateX(1px) rotate(1.4deg); } }
-html[data-look="v3"] .ac-av.av-rex .av-jaw { animation-duration: 2.6s; }
-html[data-look="v3"] .ac-av.av-rex { --av-beat: 1.2s; }
+@keyframes avSway { 0%, 100% { transform: translateX(-1.5px) rotate(-1.6deg); } 50% { transform: translateX(1.5px) rotate(1.6deg); } }
+/* Rex — the rival: heavy, chompy, biting often. */
+html[data-look="v3"] .ac-av.av-rex { --av-beat: 1.1s; }
+html[data-look="v3"] .ac-av.av-rex .av-jaw { animation-duration: 2.2s; }
+/* Great White — the boss of the panel: big, slow, powerful, a wide deliberate chomp. */
+html[data-look="v3"] .ac-av.av-great-white { --av-beat: 2.6s; --av-blink: 9s; }
+html[data-look="v3"] .ac-av.av-great-white .av-swim { animation: avLoom 7s ease-in-out infinite; transform-origin: 46px 36px; }
+@keyframes avLoom { 0%, 100% { transform: scale(1) translateY(0); } 50% { transform: scale(1.07) translateY(-1px); } }
+html[data-look="v3"] .ac-av.av-great-white .av-jaw { transform-origin: left center; animation: avGape 5s ease-in-out infinite; }
+@keyframes avGape { 0%, 55%, 100% { transform: translateY(0) scaleY(1); } 72% { transform: translateY(3px) scaleY(1.5); } 82% { transform: translateY(0) scaleY(1); } }
 html.tank-lite[data-look="v3"] .ac-av .av-tail, html.tank-lite[data-look="v3"] .ac-av .av-fin, html.tank-lite[data-look="v3"] .ac-av .av-swim, html.tank-lite[data-look="v3"] .ac-av .av-eye, html.tank-lite[data-look="v3"] .ac-av .av-jaw, html.tank-lite[data-look="v3"] .ac-av .av-bob { animation: none !important; }
 @media (prefers-reduced-motion: reduce) { html[data-look="v3"] .ac-av * { animation: none !important; } }
 
