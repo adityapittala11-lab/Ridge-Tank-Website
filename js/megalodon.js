@@ -1,41 +1,31 @@
-// The Megalodon: the boss shark. A head-on lunging maw, one slate color with tonal shading,
-// scarred and battle-worn. Reused by the Tiers section and the high-level Academy cinematic.
-// RT.megalodon('extra classes') -> a <div class="megalodon"> wrapping the SVG.
+// The Megalodon: the boss shark. Same flat one-colour silhouette style as the other sharks (it takes its colour
+// from the text colour), but heavier, with an open jaw of jagged teeth, a slit eye, gill cuts, battle scars,
+// a notched dorsal fin and a torn tail. Scars, eye and gills are holes, so the page shows through them.
+// It is cut into four pieces (front, jaw, rear, tail) so the body can swim as a travelling wave and the jaw can work.
+// RT.megalodon('extra classes') -> an <svg class="megalodon">.
 (function () {
   const RT = window.RT;
   if (!RT) return;
-  let uid = 0;
+  const BODY =
+    '<g fill="currentColor" fill-rule="evenodd">' +
+    '<g class="mg-rear"><path d="M117 29C102 31.5 92 34.5 84 37L72 28L76 40C66 42.5 60 44 54 46L54 55C68 58.5 82 63 96 66L91 78L108 69C111 69.6 114 70 117 70.3Z' +
+    'M87 45L90 44.4L98 56L95.4 56.8Z"/>' +
+    '<g class="mg-tail"><path d="M58 45L4 2C9 12 12 18 14 21L9 22L18 28C22 36 27 44 30 50C25 60 21 70 18 82L58 56Z"/></g></g>' +
+    '<g class="mg-front">' +
+    '<path d="M236 46C224 34 196 24 164 21L132 2C131 9 130 14 128 18L121 16L125 24C122 27 119 28.5 116 29L110 30L109 70C122 72.5 136 74 150 74L130 103C148 97 164 87 174 74C180 73.6 185 72.4 188 70L196 60' +
+    'L200 65L204 59.4L208 65L212 58.6L216 64.4L220 57.6L224 63L228 56.2L231 60.4L233.4 52.6Z' +
+    'M204 43L217 39.4L214.6 44.2Z' +
+    'M184 43.4L186.2 43.4L184 59L181.8 59Z M176.6 42.8L178.8 42.8L176.6 59.6L174.4 59.6Z M169.2 42.6L171.4 42.6L169.2 60L167 60Z' +
+    'M138 34L142.4 33L156 53.4L152.4 54.6Z M150 32L153.4 31.4L164 48L161 49Z M120 40L123 39.4L131 52L128.4 52.8Z"/>' +
+    '<path class="mg-jaw" d="M186 70.6L195 62.4L198.6 67L202 62L206 67.8L210 62.6L214 68.6L218 63.6L222 69.4L225.4 65.4L229 70.4C221 77 204 78 186 70.6Z"/>' +
+    '</g></g>';
   RT.megalodon = function (cls) {
-    const id = 'mg' + (uid++);
-    const wrap = document.createElement('div');
-    wrap.className = 'megalodon ' + (cls || '');
-    wrap.innerHTML =
-      '<svg viewBox="0 0 320 300" role="img" aria-label="Megalodon" preserveAspectRatio="xMidYMid meet">' +
-      '<defs>' +
-      '<radialGradient id="' + id + 't" cx="50%" cy="48%" r="62%"><stop offset="0%" stop-color="#3a1320"/><stop offset="55%" stop-color="#160810"/><stop offset="100%" stop-color="#040103"/></radialGradient>' +
-      '<linearGradient id="' + id + 's" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#637884"/><stop offset="12%" stop-color="#5d7280"/><stop offset="60%" stop-color="#3a4c57"/><stop offset="100%" stop-color="#222f38"/></linearGradient>' +
-      '<linearGradient id="' + id + 'j" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3a4c57"/><stop offset="100%" stop-color="#1b2830"/></linearGradient>' +
-      '</defs>' +
-      // broad flat head
-      '<path d="M160 24 C96 24 34 52 30 116 C28 140 40 160 64 176 L256 176 C280 160 292 140 290 116 C286 52 224 24 160 24 Z" fill="url(#' + id + 's)"/>' +
-      '<path d="M160 26 C104 26 48 50 40 104 C66 74 108 60 160 60 C212 60 254 74 280 104 C272 50 216 26 160 26 Z" fill="#6f8794" opacity="0.5"/>' +
-      '<path d="M44 112 C70 96 110 90 160 90 C210 90 250 96 276 112 C250 120 212 122 160 122 C108 122 70 120 44 112 Z" fill="#1f2c34" opacity="0.7"/>' +
-      '<g fill="#1a252c"><path d="M132 70 q4 4 0 8"/><path d="M188 70 q-4 4 0 8"/></g>' +
-      '<path d="M66 108 L104 96 L112 112 Z" fill="#26343d"/><path d="M254 108 L216 96 L208 112 Z" fill="#26343d"/>' +
-      '<g class="meg-eyes"><circle cx="94" cy="112" r="7.5" fill="#050b0e"/><circle cx="96.5" cy="109" r="2.2" fill="#9fc4cf"/>' +
-      '<circle cx="226" cy="112" r="7.5" fill="#050b0e"/><circle cx="223.5" cy="109" r="2.2" fill="#9fc4cf"/></g>' +
-      '<g stroke="#8aa4b0" stroke-width="2.6" fill="none" stroke-linecap="round" opacity="0.9"><path d="M140 44 l22 13"/><path d="M176 40 l18 12"/></g>' +
-      '<g stroke="#7a95a1" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7"><path d="M58 138 l18 5"/></g>' +
-      // maw
-      '<ellipse cx="160" cy="196" rx="116" ry="82" fill="#7c1b36"/>' +
-      '<ellipse cx="160" cy="190" rx="116" ry="78" fill="#9c2745" opacity="0.5"/>' +
-      '<ellipse cx="160" cy="200" rx="86" ry="62" fill="url(#' + id + 't)"/>' +
-      '<path d="M46 196 C72 268 126 296 160 296 C194 296 248 268 274 196 C248 236 206 254 160 254 C114 254 72 236 46 196 Z" fill="url(#' + id + 'j)"/>' +
-      // teeth
-      '<g class="meg-teeth" fill="#eef4f5"><path d="M58 150 l11 40 8 -40 z"/><path d="M84 170 l9 34 8 -34 z"/><path d="M110 184 l9 30 8 -30 z"/><path d="M138 192 l9 28 8 -28 z"/><path d="M166 192 l8 28 9 -28 z"/><path d="M194 184 l8 30 9 -30 z"/><path d="M222 170 l8 34 9 -34 z"/><path d="M248 150 l8 40 11 -40 z"/></g>' +
-      '<g fill="#cfdbe0"><path d="M74 164 l7 24 6 -24 z"/><path d="M100 178 l7 22 6 -22 z"/><path d="M127 186 l7 22 6 -22 z"/><path d="M181 186 l6 22 7 -22 z"/><path d="M208 178 l6 22 7 -22 z"/><path d="M235 164 l6 24 7 -24 z"/></g>' +
-      '<g class="meg-teeth lo" fill="#e6eef1"><path d="M80 254 l10 -28 8 28 z"/><path d="M110 266 l9 -26 8 26 z"/><path d="M140 271 l9 -25 8 25 z"/><path d="M170 271 l8 -25 9 25 z"/><path d="M200 266 l8 -26 9 26 z"/><path d="M230 254 l8 -28 10 28 z"/></g>' +
-      '</svg>';
-    return wrap;
+    const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    el.setAttribute('viewBox', '0 0 240 106');
+    el.setAttribute('class', 'megalodon ' + (cls || ''));
+    el.setAttribute('aria-hidden', 'true');
+    el.setAttribute('focusable', 'false');
+    el.innerHTML = BODY;
+    return el;
   };
 })();
