@@ -40,7 +40,7 @@
   const PIV = { x: 120, y: 42 };
   // Where a point on the shark's drawing (0..200 by 0..84) lands on screen.
   function sideToWorld(o, lx, ly) {
-    const k = o.len / 200, dx = (lx - PIV.x) * k, dy = (ly - PIV.y) * k * (o.flipY ? -1 : 1);
+    const k = o.len / 200, dx = (lx - PIV.x) * k, dy = (ly - PIV.y) * k * (o.flipY ? -1 : 1) * (o.slim || 1);
     return { x: o.x + dx * Math.cos(o.ang) - dy * Math.sin(o.ang), y: o.y + dx * Math.sin(o.ang) + dy * Math.cos(o.ang) };
   }
   // o: { x, y, ang, len, color, belly, jaw 0..1, beat (tail phase), squeeze, alpha, blur, flipY, stripes, teeth }
@@ -48,7 +48,7 @@
     const P = sidePaths(), k = o.len / 200;
     ctx.save();
     if (o.alpha != null) ctx.globalAlpha = o.alpha;
-    ctx.translate(o.x, o.y); ctx.rotate(o.ang); ctx.scale(k, o.flipY ? -k : k); ctx.translate(-PIV.x, -PIV.y);
+    ctx.translate(o.x, o.y); ctx.rotate(o.ang); ctx.scale(k, (o.flipY ? -k : k) * (o.slim || 1)); ctx.translate(-PIV.x, -PIV.y);
     const top = shade(o.color, -0.5), belly = o.belly || '#eef1ec';
     const g = ctx.createLinearGradient(0, 2, 0, 66);
     g.addColorStop(0, top); g.addColorStop(0.42, o.color); g.addColorStop(0.53, shade(o.color, 0.1)); g.addColorStop(0.585, belly); g.addColorStop(1, belly);
@@ -511,8 +511,91 @@
     }
   };
 
+  // =====================================================================
+  // MAKO: speed. A tracking shot at full pace: a fish jukes just under the surface, the Mako matches every cut,
+  // then both burst out of the water and the Mako takes it at the top of a long leap.
+  // =====================================================================
+  SCENES.mako = {
+    dur: 5.3, card: 3.55,
+    setup(S, W, H, k, coach) {
+      S.color = (coach && coach.color) || '#3FBF7F';
+      S.surf = Math.round(H * 0.38); S.L = Math.min(W * 0.42, H * 0.8) * (0.92 + 0.12 * k);
+      S.v = W * 1.05; S.cam = 0; S.camV = 0; S.ripples = []; S.crowns = []; S.flash = 0;
+      S.snow = Array.from({ length: 140 }, () => ({ x: rnd(-W, W * 7), y: rnd(S.surf + 10, H), a: rnd(0.08, 0.35), r: rnd(0.6, 1.8), z: rnd(0.4, 1) }));
+      S.ghosts = [];
+      S.zig = Array.from({ length: 12 }, (_, i) => (i % 2 ? 1 : -1) * rnd(0.5, 1));
+    },
+    draw(ctx, t, dt, S, W, H, k) {
+      const ts = warp(t, [[0, 0], [2.25, 2.25], [3.0, 2.56], [9, 8.56]]);
+      const L = S.L, surf = S.surf, v = S.v;
+      // the fish's jukes: snap to a new depth every 0.32s
+      const jig = tt => { const i = Math.floor(tt / 0.32), f = E.inOut(clamp((tt - i * 0.32) / 0.16, 0, 1)), a = S.zig[clamp(i, 0, 11)], b = S.zig[clamp(i + 1, 0, 11)]; return lerp(a, b, f) * H * 0.075; };
+      const depth = surf + H * 0.2;
+      let fx = W * 0.32 + v * ts, fy = depth + jig(ts), fAng = 0;
+      if (ts >= 1.95) { const u = seg(ts, 1.95, 2.45); fy = lerp(depth + jig(1.95), surf - H * 0.27, Math.sin(u * Math.PI / 2)); fAng = -0.5 * (1 - u); }
+      // the Mako closes the gap, copying each cut a beat later
+      const gap = lerp(W * 0.42, W * 0.16, E.inQ(seg(ts, 0, 1.95)));
+      let mx = fx - gap - L * 0.39, my = depth + jig(ts - 0.13), ang = clamp(Math.atan2(jig(ts - 0.1) - jig(ts - 0.16), v * 0.06) * 0.6, -0.28, 0.28), jaw = 0;
+      if (ts >= 1.95) {
+        const u = seg(ts, 2.03, 3.0);
+        mx = lerp(fx - W * 0.2 - L * 0.39, fx - L * 0.4, seg(ts, 1.95, 2.45)); if (ts > 2.45) mx = W * 0.32 + v * ts - L * 0.4;
+        my = ts < 2.03 ? lerp(depth + jig(1.82), surf + H * 0.06, seg(ts, 1.95, 2.03)) : surf + H * 0.06 - H * 0.36 * Math.sin(Math.PI * u);
+        ang = ts < 2.03 ? -0.45 : Math.atan2(-H * 0.36 * Math.PI * Math.cos(Math.PI * u) / 0.97, v);
+        jaw = ts < 2.45 ? E.outQ(seg(ts, 2.2, 2.43)) : 0.12;
+        if (ts > 3.0) { my = surf + H * 0.08 + (ts - 3) * H * 0.1; ang = 0.12; }
+      }
+      // the camera rides with the shark until it lands, then lets it go
+      const mid = (mx + L * 0.4 + fx) / 2;
+      const want = (ts < 3.05 ? mid : S.camHold) - W * 0.5;
+      if (ts < 3.05) S.camHold = mid;
+      const prev = S.cam; S.cam = ts < 0.02 ? want : lerp(S.cam, want, 1 - Math.pow(0.0005, dt)); S.camV = (S.cam - prev) / Math.max(dt, 1e-3);
+      const shark = { x: mx, y: my, ang, len: L, color: S.color, belly: '#eef2ee', jaw, beat: ts * 22, slim: 0.84, teeth: 0.3 };
+      const mouth = sideToWorld(shark, 186, 56);
+      if (ts >= 2.45 && ts < 3.0) { fx = mouth.x; fy = mouth.y; fAng = ang + 0.35 + Math.sin(ts * 40) * 0.3; }
+      // --- events ---
+      const surfYw = wx => { let y = surf + Math.sin(wx * 0.01 + t * 1.4) * 3 + Math.sin(wx * 0.027 - t * 2) * 1.3; for (const r of S.ripples) { const age = ts - r.t0, d = Math.abs(wx - r.x); y += r.amp * Math.exp(-age * 2) * Math.sin(d * 0.05 - age * 11) * Math.exp(-d / (200 + age * 300)); } return y; };
+      if (!S.e1 && ts >= 2.0) { S.e1 = true; const x = fx; for (let i = 0; i < 40; i++) spawn(S, { type: 'drop', x: x + rnd(-20, 20), y: surf, vx: v * rnd(0.2, 0.5) + rnd(-120, 120), vy: -rnd(200, 520), g: 1100, r: rnd(1.2, 3), max: 1.2, floor: surf + 4 }); S.ripples.push({ x, t0: ts, amp: 6 }); S.crowns.push({ x, t0: ts, w: L * 0.08, h: L * 0.15, life: 0.6 }); }
+      if (!S.e2 && ts >= 2.07) { S.e2 = true; const x = sideToWorld(shark, 198, 45).x; for (let i = 0; i < 60 + 40 * k; i++) spawn(S, { type: 'drop', x: x + rnd(-L * 0.1, L * 0.1), y: surf, vx: v * rnd(0.25, 0.6) + rnd(-160, 160), vy: -rnd(260, 700), g: 1150, r: rnd(1.4, 3.8), max: 1.4, floor: surf + 4 }); S.ripples.push({ x, t0: ts, amp: 10 }); S.crowns.push({ x, t0: ts, w: L * 0.16, h: L * 0.3, life: 0.75 }); S.shake = 6 + 3 * k; }
+      if (!S.e3 && ts >= 2.45) { S.e3 = true; S.flash = 0.25; S.shake = 8 + 4 * k; for (let i = 0; i < 22; i++) { const an = rnd(0, TAU), sp = rnd(100, 280); spawn(S, { type: 'scale', x: mouth.x, y: mouth.y, vx: Math.cos(an) * sp + v * 0.3, vy: Math.sin(an) * sp - 100, g: 700, r: rnd(1.5, 3), spin: rnd(-14, 14), max: 1.1 }); } }
+      if (!S.e4 && ts >= 2.97) { S.e4 = true; const x = mx; for (let i = 0; i < 110 + 70 * k; i++) spawn(S, { type: 'drop', x: x + rnd(-L * 0.4, L * 0.25), y: surf, vx: v * rnd(0.15, 0.7) + rnd(-200, 120), vy: -rnd(180, 640), g: 1150, r: rnd(1.4, 4.4), max: 1.5, floor: surf + 4 }); for (let i = 0; i < 14; i++) spawn(S, { type: 'foam', x: x + rnd(-L * 0.5, L * 0.3), y: surf + rnd(-2, 3), r: rnd(10, 24), a: 0.55, max: rnd(1.4, 2.2) }); for (let i = 0; i < 50; i++) spawn(S, { type: 'bubble', x: x + rnd(-L * 0.4, L * 0.3), y: surf + rnd(8, L * 0.4), vx: v * 0.1, vy: -rnd(60, 180), r: rnd(1.5, 6), max: rnd(1.2, 2.4), ph: rnd(0, 6), layer: 'under', ceil: surf + 3, a: 0.8 }); S.ripples.push({ x, t0: ts, amp: 13 }); S.crowns.push({ x: x - L * 0.1, t0: ts, w: L * 0.4, h: L * 0.34, life: 0.95 }); S.shake = 12 + 8 * k; }
+      if (ts < 3.0 && ts > 0.1 && Math.random() < 0.6) spawn(S, { type: 'bubble', x: sideToWorld(shark, 30, 42).x, y: sideToWorld(shark, 30, 42).y, vx: -rnd(20, 60), vy: -rnd(30, 90), r: rnd(1, 3), max: 1.2, ph: rnd(0, 6), layer: 'under', ceil: surf + 3, a: 0.6 });
+      // --- draw (world space, the camera tracks) ---
+      ctx.save(); ctx.translate(-S.cam, 0);
+      const x0 = S.cam - 30, x1 = S.cam + W + 30;
+      const sky = ctx.createLinearGradient(0, 0, 0, surf); sky.addColorStop(0, '#040d09'); sky.addColorStop(1, '#143f2e');
+      ctx.fillStyle = sky; ctx.fillRect(x0, 0, W + 60, surf + 12);
+      const surfPath = () => { ctx.beginPath(); ctx.moveTo(x0, H + 10); for (let x = x0; x <= x1; x += 12) ctx.lineTo(x, surfYw(x)); ctx.lineTo(x1, H + 10); ctx.closePath(); };
+      const sea = ctx.createLinearGradient(0, surf, 0, H); sea.addColorStop(0, '#1d5d48'); sea.addColorStop(0.5, '#0b3125'); sea.addColorStop(1, '#030e09');
+      ctx.fillStyle = sea; surfPath(); ctx.fill();
+      ctx.save(); surfPath(); ctx.clip();
+      // light shafts drift slower than the camera (they're far away)
+      for (let i = -2; i < 9; i++) { const rx = S.cam * 0.7 + (i * 0.23 + 0.1) * W - ((S.cam * 0.3) % (W * 0.23)); const g = ctx.createLinearGradient(0, surf, 0, H); g.addColorStop(0, 'rgba(190,240,215,0.07)'); g.addColorStop(1, 'rgba(190,240,215,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(rx, surf); ctx.lineTo(rx + 70, surf); ctx.lineTo(rx + 40 - H * 0.25, H); ctx.lineTo(rx - 30 - H * 0.25, H); ctx.fill(); }
+      // marine snow streaks: at this speed they smear into lines
+      const smear = clamp(Math.abs(S.camV) * 0.035, 0, 90);
+      for (const p of S.snow) { if (p.x < x0 - 100 || p.x > x1 + 100) continue; ctx.strokeStyle = `rgba(216,243,230,${p.a})`; ctx.lineWidth = p.r * p.z; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + smear * p.z, p.y); ctx.stroke(); }
+      stepParts(ctx, S, dt, 'under');
+      ctx.restore();
+      // the fish
+      if (ts < 3.0) sideFish(ctx, fx, fy, fAng + Math.sin(ts * 26) * 0.08, L * 0.25, '#eadfc8', Math.sin(ts * 46) * L * 0.025);
+      // afterimages: the Mako is so fast it leaves ghosts
+      S.ghosts.unshift({ x: mx, y: my, ang, beat: ts * 22 }); if (S.ghosts.length > 9) S.ghosts.pop();
+      if (ts < 3.0) for (let i = 8; i >= 3; i -= 2) { const g = S.ghosts[i]; if (g) sideShark(ctx, { x: g.x, y: g.y, ang: g.ang, len: L, color: S.color, belly: '#eef2ee', beat: g.beat, slim: 0.84, alpha: 0.09 * (1 - i / 10) }); }
+      sideShark(ctx, shark);
+      ctx.fillStyle = 'rgba(8,40,30,0.3)'; surfPath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(205,240,225,0.55)'; ctx.lineWidth = 1.6; ctx.beginPath(); for (let x = x0; x <= x1; x += 12) { const y = surfYw(x); x === x0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); } ctx.stroke();
+      stepParts(ctx, S, dt, 'over');
+      for (const c of S.crowns) crown(ctx, c, ts, surfYw);
+      ctx.restore();
+      if (S.flash > 0.01) { ctx.fillStyle = `rgba(255,255,255,${S.flash.toFixed(3)})`; ctx.fillRect(0, 0, W, H); S.flash *= Math.pow(0.002, dt); }
+      // speed lines at the edges while it's flat out
+      const sl = clamp(Math.abs(S.camV) / (W * 1.0), 0, 1) * (ts < 3 ? 1 : 0);
+      if (sl > 0.05) { ctx.strokeStyle = `rgba(220,245,235,${(0.16 * sl).toFixed(3)})`; ctx.lineWidth = 1.2; for (let i = 0; i < 16; i++) { const yy = ((i * 97 + Math.floor(t * 40) * 31) % H), len = 60 + (i * 53 % 140); const xx = W - ((t * 2600 + i * 211) % (W + 300)); ctx.beginPath(); ctx.moveTo(xx, yy); ctx.lineTo(xx + len, yy); ctx.stroke(); } }
+      vignette(ctx, W, H, 0.6);
+    }
+  };
+
   // ---------- which scene for which coach ----------
-  const BY_COACH = { 'Great White': 'greatwhite', Tiger: 'tiger' };
+  const BY_COACH = { 'Great White': 'greatwhite', Tiger: 'tiger', Mako: 'mako' };
   const STAR = '<svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z" fill="currentColor"/></svg>';
 
   function play(key, level, stars, coach) {
