@@ -386,6 +386,14 @@ html[data-look="v3"] .tier-stop:nth-child(2) .tier-shark { animation-delay: -1.2
 html[data-look="v3"] .tier-stop:nth-child(3) .tier-shark { animation-delay: -2.6s; animation-duration: 6.4s; }
 html[data-look="v3"] .tier-stop:nth-child(4) .tier-shark { animation-delay: -3.7s; animation-duration: 7.4s; }
 @keyframes idle { 0%, 100% { transform: translate(0, 0) rotate(0deg); } 50% { transform: translate(8px, -3px) rotate(-1.6deg); } }
+/* shading depth + a soft contact shadow under every tier shark */
+html[data-look="v3"] .tier-shark { filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.35)); }
+/* each tier swims its own way: reef easy, tiger quick and nervous, great white slow and heavy with a lunge */
+html[data-look="v3"] .tier-stop.tier-reef .tier-shark { --beat: 1.5s; }
+html[data-look="v3"] .tier-stop.tier-tiger .tier-shark { --beat: 0.95s; animation-name: dart; }
+html[data-look="v3"] .tier-stop.tier-white .tier-shark { --beat: 2.1s; animation-name: prowl; animation-duration: 8s; }
+@keyframes dart { 0%, 100% { transform: translate(0, 0) rotate(0deg); } 20% { transform: translate(10px, -2px) rotate(-2deg); } 24% { transform: translate(10px, -2px) rotate(-2deg); } 55% { transform: translate(-3px, 2px) rotate(1.4deg); } }
+@keyframes prowl { 0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); } 46% { transform: translate(10px, -4px) rotate(-1.4deg) scale(1.015); } 62% { transform: translate(14px, -3px) rotate(-2deg) scale(1.03); } 78% { transform: translate(6px, -1px) rotate(-0.6deg) scale(1.01); } }
 html[data-look="v3"] .tiers-sharks .tier-pts { border-top: 2px solid currentColor; padding-top: 12px; }
 
 /* ---------- a bite out of the corner ---------- */
