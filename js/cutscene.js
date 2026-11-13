@@ -1003,9 +1003,9 @@
     ctx.restore();
   }
   // the stage the human coaches stand on: dark, one spotlight
-  function stage(ctx, W, H, t, cx, on) {
+  function stage(ctx, W, H, t, cx, on, floor) {
     ctx.fillStyle = '#04120d'; ctx.fillRect(-40, -40, W + 80, H + 80);
-    const fl = H * 0.86;
+    const fl = floor || H * 0.86;
     const g = ctx.createRadialGradient(cx, fl, 0, cx, fl, W * 0.5); g.addColorStop(0, `rgba(30,90,66,${0.9 * on})`); g.addColorStop(1, 'rgba(4,18,13,0)');
     ctx.fillStyle = g; ctx.fillRect(-40, -40, W + 80, H + 80);
     ctx.fillStyle = `rgba(242,236,224,${0.06 * on})`; ctx.beginPath(); ctx.moveTo(cx - W * 0.06, -10); ctx.lineTo(cx + W * 0.06, -10); ctx.lineTo(cx + W * 0.24, fl); ctx.lineTo(cx - W * 0.24, fl); ctx.closePath(); ctx.fill();
@@ -1020,12 +1020,12 @@
     setup(S, W, H, k, coach) { S.color = (coach && coach.color) || '#F09AB2'; S.conf = []; S.flash = 0; },
     draw(ctx, t, dt, S, W, H, k) {
       const ts = warp(t, [[0, 0], [1.75, 1.75], [2.25, 1.95], [9, 8.7]]);
-      const cx = W * 0.6, fl = H * 0.86, u = H / 540;
+      const port = W < H, cx = W * (port ? 0.5 : 0.6), fl = H * (port ? 0.72 : 0.86), u = Math.min(H / 540, W / 520);
       const hits = [0.95, 1.4, 1.92];
       let bounce = 0; for (const h of hits) if (ts > h) bounce += Math.exp(-(ts - h) * 9) * Math.sin((ts - h) * 30) * (h === 1.92 ? 1.6 : 1);
       const won = E.outQ(seg(ts, 1.92, 2.15)), jump = ts > 2.0 ? Math.max(0, Math.sin(Math.PI * seg(ts, 2.0, 2.45))) * 26 * u : 0;
       const on = E.outQ(seg(t, 0, 0.5));
-      stage(ctx, W, H, t, cx, on);
+      stage(ctx, W, H, t, cx, on, fl);
       ctx.save(); ctx.translate(0, -jump);
       // Cam: shoulders, head, arms
       const by = fl - 6 * u, sh = by - 175 * u, hy = sh - 52 * u + bounce * 3 * u, skin = '#FFE4CF', shirt = S.color, sd = shade(shirt, -0.2);
@@ -1101,7 +1101,7 @@
     setup(S, W, H, k, coach) { S.color = (coach && coach.color) || '#D2476E'; S.flash = 0; S.stars = Array.from({ length: 50 }, () => [rnd(0, W), rnd(0, H * 0.4), rnd(0.5, 1.6), rnd(0, 6)]); },
     draw(ctx, t, dt, S, W, H, k) {
       const ts = warp(t, [[0, 0], [1.95, 1.95], [2.45, 2.15], [9, 8.7]]);
-      const u = H / 540, gy = H * 0.86, sx = W * 0.6, sw = 330 * u, top = gy - 300 * u;
+      const port = W < H, u = Math.min(H / 540, W / 520), gy = H * (port ? 0.7 : 0.86), sx = W * (port ? 0.5 : 0.6), sw = 330 * u, top = gy - 300 * u;
       const doorX = sx, doorW = 66 * u, doorTop = gy - 132 * u, slotY = doorTop + 70 * u;
       const lit = E.outQ(seg(ts, 2.15, 2.4));
       // night street
@@ -1109,7 +1109,7 @@
       ctx.fillStyle = sky; ctx.fillRect(-40, -40, W + 80, H + 80);
       for (const [x, y, r, ph] of S.stars) { ctx.fillStyle = `rgba(242,236,224,${(0.3 + 0.3 * Math.sin(t * 2 + ph)).toFixed(3)})`; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); }
       const zb = 1.32 + 0.3 * E.inOut(seg(t, 1.75, 2.7));
-      ctx.save(); ctx.translate(W * 0.56, H * 0.66); ctx.scale(zb, zb); ctx.translate(-sx, -(gy - 110 * u));
+      ctx.save(); ctx.translate(W * (port ? 0.5 : 0.56), H * (port ? 0.55 : 0.66)); ctx.scale(zb, zb); ctx.translate(-sx, -(gy - 110 * u));
       ctx.fillStyle = '#06170f'; ctx.fillRect(-W, gy, W * 3, H * 2);
       // warm light spilling onto the pavement once it's open
       if (lit > 0) { const g = ctx.createRadialGradient(sx, gy, 0, sx, gy, sw); g.addColorStop(0, `rgba(255,214,160,${(0.35 * lit).toFixed(3)})`); g.addColorStop(1, 'rgba(255,214,160,0)'); ctx.fillStyle = g; ctx.fillRect(sx - sw, gy - 10, sw * 2, H - gy + 10); }
@@ -1152,7 +1152,7 @@
         const f = tt - 1.1; let y = doorTop + 60 * u + f * f * 380 * u, a = 1.2 + f * 9; if (y > gy - 6 * u) { y = gy - 6 * u; a = 0.2; } return { x: doorX - 30 * u - f * 70 * u, y, a };
       };
       if (ts > 0.3 && ts < 1.9) { for (const [d, al] of [[0.06, 0.15], [0.03, 0.3]]) { if (ts - d > 0.3 && ts < 1.1) { const p = plane1(ts - d); ctx.globalAlpha = al; paperPlane(ctx, p.x, p.y, p.a, 20 * u); ctx.globalAlpha = 1; } } const p = plane1(ts); paperPlane(ctx, p.x, p.y, p.a, 20 * u); }
-      const scr = (x, y) => ({ x: (x - sx) * zb + W * 0.56, y: (y - (gy - 110 * u)) * zb + H * 0.66 });
+      const scr = (x, y) => ({ x: (x - sx) * zb + W * (port ? 0.5 : 0.56), y: (y - (gy - 110 * u)) * zb + H * (port ? 0.55 : 0.66) });
       if (!S.bonk && ts >= 1.1) { S.bonk = true; S.shake = 4; { const q = scr(doorX - 30 * u, doorTop + 60 * u); S.chroma = 5; S.zoom = { x: q.x, y: q.y, amt: 0.04 }; S.kick = { x: -8, y: 3 }; } for (let i = 0; i < 6; i++) spawn(S, { type: 'scale', x: doorX - 30 * u, y: doorTop + 60 * u, vx: rnd(-200, -40), vy: rnd(-200, 40), g: 500, r: 2, spin: 8, max: 0.6 }); }
       if (ts > 1.15 && ts < 1.85) { const a = Math.min(1, (ts - 1.15) * 6) * Math.min(1, (1.85 - ts) * 5); ctx.globalAlpha = a; ctx.fillStyle = '#f2ece0'; ctx.beginPath(); ctx.roundRect(sx + 40 * u, top - 54 * u, 120 * u, 40 * u, 12 * u); ctx.fill(); ctx.fillStyle = '#7a1434'; ctx.font = `${Math.round(20 * u)}px Anton, Impact, sans-serif`; ctx.fillText('NOT NOW.', sx + 100 * u, top - 33 * u); ctx.globalAlpha = 1; }
       // plane two: the follow-up. It loops and slides into the mail slot.
