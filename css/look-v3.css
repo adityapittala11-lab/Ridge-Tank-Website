@@ -865,3 +865,31 @@ html[data-look="v3"] .ac-nav-btn.is-off { opacity: 0.32; }
 html[data-look="v3"] .ac-nav-now { font-size: 13px; opacity: 0.7; padding: 0 4px; min-width: 48px; text-align: center; }
 html[data-look="v3"] .ac-officer { display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap; }
 html[data-look="v3"] .ac-officer-tag { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--g-300); }
+
+/* ---------- Home: next level + next meeting side by side ---------- */
+.home-hero-row { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 18px; align-items: stretch; margin: 0 0 34px; }
+.home-hero-row.solo { grid-template-columns: 1fr; }
+.home-hero-row > .card, .home-hero-row > .countdown-banner { margin: 0 !important; }
+.ac-home { display: grid !important; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 22px; padding: 26px 28px; }
+.ac-home > .ac-av { flex: none; }
+.ac-home .card-label { margin: 0; }
+.ac-home h3 { margin: 6px 0 4px; line-height: 1.1; }
+.ach-n { display: inline-block; min-width: 1.6em; margin-right: 10px; padding: 2px 8px; border-radius: 4px; background: var(--g-300, #6fe0a8); color: #08261b; font: 400 0.8em/1.2 var(--font-poster, Anton, sans-serif); text-align: center; vertical-align: 2px; }
+.ach-prog { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.ach-track { flex: 1; max-width: 260px; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.ach-fill { display: block; height: 100%; border-radius: 3px; background: var(--g-300, #6fe0a8); }
+@media (max-width: 860px) {
+  .home-hero-row { grid-template-columns: 1fr; }
+  .ac-home { grid-template-columns: auto minmax(0, 1fr); }
+  .ac-home > .btn { grid-column: 1 / -1; width: 100%; }
+}
+/* the ticket stands up in its column: days on top, the details below, punched where they meet */
+@media (min-width: 861px) {
+  html[data-look="v3"] .home-hero-row .countdown-banner { flex-direction: column;
+    -webkit-mask-image: radial-gradient(circle 10px at 0 96px, transparent 96%, #000), radial-gradient(circle 10px at 100% 96px, transparent 96%, #000);
+    mask-image: radial-gradient(circle 10px at 0 96px, transparent 96%, #000), radial-gradient(circle 10px at 100% 96px, transparent 96%, #000); }
+  html[data-look="v3"] .home-hero-row .cd-num { width: auto; min-width: 0; height: 96px; flex-direction: row; align-items: baseline; justify-content: flex-start; gap: 12px; padding: 22px 24px 0; box-sizing: border-box; border-right: 0 !important; border-bottom: 2px dashed rgba(255, 255, 255, 0.25); }
+  html[data-look="v3"] .home-hero-row .cd-sub { margin: 0; }
+  html[data-look="v3"] .home-hero-row .cd-info { padding: 16px 24px 20px; }
+  html[data-look="v3"] .home-hero-row .cd-what { font-size: 24px; }
+}

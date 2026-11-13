@@ -847,9 +847,15 @@
     load().then(() => {
       const p = prog(), n = p.cur || 40, L = C.levels[n];
       const line = !p.cur ? 'All 40 levels done.' : p.curOpen ? `With ${agentText(n)} · ${C.seasons[seasonOf(n)].xp} XP` : 'Opens ' + longDate(blockOf(n).opens);
+      const done = Object.keys(p.best || {}).length, pct = Math.round(done / 40 * 100);
       clear(el).append(
-        h('div', { class: 'min0' }, h('p', { class: 'card-label' }, 'Academy · level ' + n), h('h3', null, p.cur ? L.t : 'Course finished'), h('p', { class: 'muted small' }, line)),
-        h('a', { class: 'btn ' + (p.curOpen ? 'btn-primary' : 'btn-ghost'), href: p.curOpen ? '#/academy/level/' + n : '#/academy' }, p.curOpen ? 'Continue level ' + n : 'Open the Academy'));
+        portrait(p.cur ? mainAgent(n) : 'Great White', 76),
+        h('div', { class: 'ach-body min0' },
+          h('p', { class: 'card-label' }, p.cur ? 'Your next level' : 'Academy'),
+          h('h3', null, p.cur ? h('span', null, h('span', { class: 'ach-n' }, String(n)), L.t) : 'Course finished'),
+          h('p', { class: 'muted small' }, line),
+          h('div', { class: 'ach-prog' }, h('span', { class: 'ach-track' }, h('span', { class: 'ach-fill', style: { width: pct + '%' } })), h('span', { class: 'small muted' }, done + ' of 40 done'))),
+        h('a', { class: 'btn btn-lg ' + (p.curOpen ? 'btn-primary' : 'btn-ghost'), href: p.curOpen ? '#/academy/level/' + n : '#/academy' }, p.curOpen ? 'Continue' : 'Open the Academy'));
     }).catch(() => { clear(el).appendChild(h('p', { class: 'muted' }, 'The Academy could not load. Try again in a moment.')); });
     return el;
   };
