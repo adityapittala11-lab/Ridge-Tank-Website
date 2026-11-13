@@ -749,6 +749,8 @@
       if (redraw) redraw();
       if (e) toast('Your round could not be saved: ' + friendly(e), 'error', 6000);
       else if (v.firstPass) toast(sp.kind === 'level' ? `Level ${sp.item} passed. +${v.xp} XP` : 'Challenge done. +40 XP', 'success');
+      // A first pass of a level gets the big moment across the whole screen; it grows with the level.
+      if (v.firstPass && !v.held && sp.kind === 'level' && RT.levelCinematic && RT.levelCinematic(sp.item, v.stars)) mine.celebrated = true;
       if (R !== mine) return;
       mine.busy = false; mine.verdict = v; mine.saved = !!j;
       drawRound();

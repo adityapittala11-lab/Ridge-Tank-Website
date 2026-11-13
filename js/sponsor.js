@@ -213,6 +213,15 @@
     root.append(hero, perks, card,
       h('p', { class: 'muted small center sp-foot' }, 'Questions? Email ', h('a', { href: 'mailto:' + cfg.contact }, cfg.contact), '. Payments are handled securely by Stripe, and our students never handle cash.'));
 
+    // Back from Stripe after the pay-first sign-up (not logged in yet): confirm the payment with Stripe now,
+    // so the dashboard already says PAID the first time they open it.
+    (function confirmOnReturn() {
+      const cs = (location.hash.match(/[?&]cs=(cs_[A-Za-z0-9_]+)/) || [])[1];
+      if (!cs || !/[?&]paid=1/.test(location.hash)) return;
+      call('confirmPay', { session: cs }).then(out => {
+        if (out && out.recorded) toast('Paid. Thank you! Confirm your email and your dashboard will already show it as paid.', 'success', 9000);
+      }).catch(() => {});
+    })();
     if (t.confirmed === '1') toast('Email confirmed. Log in to open your dashboard.', 'success', 5000);
     if (t.confirmed === 'expired') toast('That link expired. Log in and we’ll help you send a new one.', 'error', 5000);
     show(seg.getValue());
@@ -555,14 +564,16 @@
       }
       if (/[?&]paid=1/.test(location.hash) && !pane.dataset.thanked) {
         pane.dataset.thanked = '1';
-        toast('Thank you! Your payment can take a few seconds to show up.', 'success', 5000);
-        setTimeout(() => { if (pane.isConnected) load(); }, 4000);
+        if (pay.payments.length) toast('Paid. Thank you for backing Ridge Tank!', 'success', 6000);
+        else { toast('Thanks! Checking with Stripe for your payment…', 'success', 5000); setTimeout(() => { if (pane.isConnected) load(); }, 4000); }
       }
     }
 
     async function load() {
       try {
-        acct = await call('me');
+        // Back from Stripe? The address carries the session id; the server confirms it with Stripe right away.
+        const cs = (location.hash.match(/[?&]cs=(cs_[A-Za-z0-9_]+)/) || [])[1];
+        acct = await call('me', cs ? { session: cs } : {});
         if (RT.sponsorAutoLogin) { RT.sponsorAutoLogin = false; toast('Email confirmed. Welcome, ' + (acct.contact_name || '').split(' ')[0] + '!', 'success', 5000); }
         drawHead();
         show(tab);
@@ -658,6 +669,8 @@
         const m = modal({ title: x.business, subtitle: 'Notes', body: h('div', { class: 'stack' }, RT.field('Message the sponsor sees on their dashboard', msg), RT.field('Officer note (private)', note)), actions: [save] });
         save.addEventListener('click', async () => { await set(x.status, msg.value, note.value)(save); m.close(); });
       });
+      const payBtn = h('button', { class: 'btn btn-ghost btn-sm', type: 'button', hidden: x.level === 'inkind' }, icon('card', 14), 'Payments');
+      payBtn.addEventListener('click', () => paymentsModal(x));
       const del = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Delete sponsor', title: 'Delete' }, icon('trash', 15));
       del.addEventListener('click', async () => {
         if (!await confirmDialog({ title: 'Delete ' + x.business + '?', message: 'Their account and logo are removed for good.', confirmText: 'Delete', danger: true })) return;
@@ -678,7 +691,53 @@
           x.pitch_note ? h('p', { class: 'small sp-quote' }, '“' + x.pitch_note + '”') : null,
           x.message ? h('p', { class: 'small muted' }, 'They see: ' + x.message) : null,
           x.officer_note ? h('p', { class: 'small muted' }, 'Officer note: ' + x.officer_note) : null),
-        h('div', { class: 'sp-admin-actions' }, approve, decline, notes, del));
+        h('div', { class: 'sp-admin-actions' }, approve, decline, notes, payBtn, del));
+    }
+
+    // Every payment on one sponsor's record, plus "record a payment" for a check through the school or a Stripe
+    // payment the webhook missed, and "remove" for a line that should not be there (a refund, a mistake).
+    async function paymentsModal(x) {
+      const lvl = levelOf(x.level);
+      const planKind = lvl.monthly ? 'monthly' : x.level;
+      const planCents = lvl.cents || 0;
+      const list = h('div', { class: 'stack-sm' }, RT.skeleton(2));
+      const kind = h('select', { class: 'input' }, ['meeting', 'hoodie', 'event', 'deposit', 'balance', 'monthly', 'manual'].map(k => h('option', { value: k, selected: k === planKind }, k)));
+      const amount = h('input', { class: 'input', type: 'number', min: 1, step: '0.01', value: (planCents / 100).toFixed(2) });
+      const ref = h('input', { class: 'input', type: 'text', maxlength: 120, placeholder: 'Stripe id (cs_… or ch_…) or check number. Leave empty to auto-make one.' });
+      const add = h('button', { class: 'btn btn-primary', type: 'button' }, icon('plus', 14), 'Record payment');
+      const m = modal({ title: x.business, subtitle: 'Payments on record',
+        body: h('div', { class: 'stack' }, list, h('hr'), h('p', { class: 'card-label' }, 'Record a payment by hand'),
+          h('p', { class: 'muted small' }, 'Use this for a check through the school, or a Stripe payment that didn’t show up. Check Stripe first so nothing is counted twice.'),
+          RT.field('Kind', kind), RT.field('Amount (USD)', amount), RT.field('Reference', ref)),
+        actions: [add] });
+      async function refresh() {
+        const r = await sb.rpc('sponsor_admin_payment_lines', { p_id: x.id });
+        if (r.error) { clear(list).appendChild(h('p', { class: 'form-error' }, friendly(r.error))); return; }
+        const rows = r.data || [];
+        clear(list);
+        if (!rows.length) { list.appendChild(h('p', { class: 'muted' }, 'Nothing on record yet.')); return; }
+        rows.forEach(l => {
+          const rm = h('button', { class: 'link-btn', type: 'button' }, 'Remove');
+          rm.addEventListener('click', async () => {
+            if (!await confirmDialog({ title: 'Remove this payment line?', message: 'This only changes our record. It does not refund anything in Stripe. Use it after a refund, or for a mistake.', confirmText: 'Remove', danger: true })) return;
+            const d = await sb.rpc('sponsor_admin_remove_payment', { p_ref: l.ref });
+            if (d.error) { toast(friendly(d.error), 'error'); return; }
+            toast('Removed.', 'success'); refresh(); load();
+          });
+          list.appendChild(h('div', { class: 'row between wrap small' },
+            h('span', null, h('strong', null, '$' + (l.amount_cents / 100).toFixed(2)), ' · ' + l.kind + ' · ' + fmtDate(l.created_at, { month: 'short', day: 'numeric', year: 'numeric' })),
+            h('span', { class: 'row gap-sm' }, h('code', { class: 'muted', title: l.ref }, String(l.ref).slice(0, 22) + (String(l.ref).length > 22 ? '…' : '')), rm)));
+        });
+      }
+      add.addEventListener('click', () => busy(add, async () => {
+        const cents = Math.round(parseFloat(amount.value || '0') * 100);
+        if (!(cents > 0)) { toast('Enter an amount.', 'error'); return; }
+        const r = await sb.rpc('sponsor_admin_record_payment', { p_id: x.id, p_kind: kind.value, p_cents: cents, p_ref: ref.value.trim() || null });
+        if (r.error) { toast(friendly(r.error), 'error'); return; }
+        toast('Recorded.', 'success'); ref.value = ''; refresh(); load();
+      }));
+      refresh();
+      return m;
     }
 
     function payLine(x) {

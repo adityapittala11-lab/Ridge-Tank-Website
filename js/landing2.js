@@ -309,10 +309,16 @@
     const sizes = [46, 68, 96, 138];
     const beats = ['0.85s', '1.15s', '1.6s', '2.3s']; // bigger sharks beat their tails slower
     tiers.querySelectorAll('.tier-stop').forEach((stop, i) => {
+      const node = stop.querySelector('.tier-node');
+      if (i === 3 && RT.megalodon) {               // the top tier IS the Megalodon: show the boss, not a swimmer
+        const m = RT.megalodon('tier-meg');
+        if (node) node.replaceWith(m); else stop.prepend(m);
+        stop.classList.add('is-meg');
+        return;
+      }
       const s = shark('tier-shark');
       s.style.width = (sizes[i] || 60) + 'px';
       s.style.setProperty('--beat', beats[i] || '1.4s');
-      const node = stop.querySelector('.tier-node');
       if (node) node.replaceWith(s); else stop.prepend(s);
     });
   }
@@ -445,14 +451,15 @@
         first.parentNode.insertBefore(label('Up next'), first);
         if (grid) grid.parentNode.insertBefore(label('Your numbers'), grid);
         const head = root.querySelector('.page-head');
-        if (head) head.after(h('div', { class: 'dash-water', 'aria-hidden': 'true' }, h('div', { class: 'wl-wave wl-wave-back' }), h('div', { class: 'wl-wave' }), h('div', { class: 'dash-swimmer' }, fin('wl-fin'))));
+        // Back wave, then the fin, then the front water: the surface passes in front of the fin's base, so it cuts through the water.
+        if (head) head.after(h('div', { class: 'dash-water', 'aria-hidden': 'true' }, h('div', { class: 'dw-back' }), h('div', { class: 'dash-swimmer' }, fin('dw-fin')), h('div', { class: 'dw-front' })));
       }
       const main = root.querySelector('.points-card .stand-main');
       if (main && !main.querySelector('.my-shark')) {
         const chip = root.querySelector('.points-card .tier-chip');
         const tier = ['tier-reef', 'tier-tiger', 'tier-white', 'tier-mega'].findIndex(c => chip && chip.classList.contains(c));
-        const s = shark('my-shark t' + Math.max(0, tier));
-        s.style.setProperty('--beat', ['0.9s', '1.2s', '1.6s', '2.2s'][Math.max(0, tier)]);
+        const s = (tier >= 3 && RT.megalodon) ? RT.megalodon('my-shark t3 my-meg') : shark('my-shark t' + Math.max(0, tier));
+        if (!s.classList.contains('my-meg')) s.style.setProperty('--beat', ['0.9s', '1.2s', '1.6s', '2.2s'][Math.max(0, tier)]);
         main.appendChild(s);
         main.classList.add('has-shark');
         const num = main.querySelector('.big-num'), fill = main.querySelector('.bar-fill');

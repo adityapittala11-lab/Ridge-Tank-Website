@@ -767,3 +767,36 @@ html[data-look="v3"] .ac-season.r-wait .ac-node { opacity: 0; transform: transla
 html[data-look="v3"] .ac-season.r-wait.in-view .ac-node { animation: acNodePop 0.5s cubic-bezier(0.18,1.2,0.4,1) forwards; animation-delay: calc(var(--n, 0) * 55ms); }
 @keyframes acNodePop { from { opacity: 0; transform: translateY(14px) scale(0.9); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .ac-cel { display: none; } html[data-look="v3"] .ac-season.r-wait .ac-node { opacity: 1; transform: none; } }
+
+/* ---------- Megalodon: the boss shark (flat silhouette, js/megalodon.js) ---------- */
+html[data-look="v3"] .megalodon { display: block; height: auto; overflow: visible; --beat: 3.4s; }
+html[data-look="v3"] .megalodon .mg-front, html[data-look="v3"] .megalodon .mg-rear, html[data-look="v3"] .megalodon .mg-tail, html[data-look="v3"] .megalodon .mg-jaw { transform-box: view-box; }
+/* a travelling wave: the head yaws a little one way, the rear follows, the tail follows the rear and whips */
+html[data-look="v3"] .megalodon .mg-front { transform-origin: 160px 54px; animation: mgHead calc(var(--beat) / 2) ease-in-out infinite alternate; animation-delay: calc(var(--beat) * -0.25); }
+html[data-look="v3"] .megalodon .mg-rear { transform-origin: 120px 55px; animation: mgRear calc(var(--beat) / 2) ease-in-out infinite alternate; }
+html[data-look="v3"] .megalodon .mg-tail { transform-origin: 58px 55px; animation: mgTail calc(var(--beat) / 2) cubic-bezier(0.45, 0, 0.4, 1) infinite alternate, mgTailTurn calc(var(--beat) / 4) ease-in-out infinite alternate; animation-delay: calc(var(--beat) * -0.82), 0s; }
+@keyframes mgHead { from { transform: rotate(0.7deg); } to { transform: rotate(-0.7deg); } }
+@keyframes mgRear { from { transform: rotate(-2.2deg); } to { transform: rotate(2.2deg); } }
+@keyframes mgTail { from { rotate: -6deg; } to { rotate: 6deg; } }
+@keyframes mgTailTurn { from { scale: 0.7 1; } to { scale: 1 1; } }
+/* the jaw hangs open, gapes slowly, then snaps shut */
+html[data-look="v3"] .megalodon .mg-jaw { transform-origin: 199px 76px; animation: mgJaw 9s infinite; }
+@keyframes mgJaw { 0%, 46% { transform: rotate(3deg); animation-timing-function: ease-in-out; } 66% { transform: rotate(13deg); animation-timing-function: cubic-bezier(0.7, 0, 1, 0.5); } 70% { transform: rotate(-2.5deg); animation-timing-function: ease-out; } 76% { transform: rotate(4.5deg); } 84%, 100% { transform: rotate(3deg); } }
+/* the whole animal: a slow heavy glide, and a short surge when the jaw snaps */
+html[data-look="v3"] .megalodon.tier-meg { width: 208px; margin-bottom: 14px; animation: mgGlide 9s ease-in-out infinite; }
+@keyframes mgGlide { 0%, 100% { transform: translate(0, 0) rotate(0deg); } 30% { transform: translate(5px, -3px) rotate(-1.2deg); } 62% { transform: translate(-3px, 1px) rotate(0.6deg); } 70% { transform: translate(12px, 0) rotate(-0.4deg); } 82% { transform: translate(4px, 1px) rotate(0.3deg); } }
+html[data-look="v3"] .tier-stop.tier-mega .megalodon { color: var(--b-300); }
+html[data-look="v3"] .my-meg.my-shark { width: 230px; top: -6px; color: var(--b-300); animation: sharkIn 1.8s 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both, mgGlide 9s 2.3s ease-in-out infinite; }
+html.tank-lite[data-look="v3"] .megalodon, html.tank-lite[data-look="v3"] .megalodon * { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { html[data-look="v3"] .megalodon, html[data-look="v3"] .megalodon * { animation: none !important; } }
+
+/* ---------- Waterline fin, rebuilt: one band of water, and a fin that cuts through its surface ---------- */
+html[data-look="v3"] .dash-water { position: relative; height: 58px; margin: 0 calc(50% - 50vw) 34px; overflow: hidden; pointer-events: none; }
+html[data-look="v3"] .dw-back { position: absolute; left: 0; right: 0; bottom: 5px; height: 14px; background: var(--wave-line) repeat-x 0 0 / 172px 14px; opacity: 0.3; animation: waveSlideBack 15s linear infinite; }
+/* the fin lives in a window whose bottom edge is the waterline, so its base is cut off at the surface (no floating) */
+html[data-look="v3"] .dash-swimmer { position: absolute; left: 0; bottom: 7px; width: 46px; height: 30px; overflow: hidden; z-index: 1; color: var(--ink); animation: cruise 30s linear infinite; }
+html[data-look="v3"] .dw-fin { display: block; width: 100%; height: 36px; transform-origin: 50% 100%; animation: dwLean 3.6s ease-in-out infinite; }
+@keyframes dwLean { 0%, 100% { transform: rotate(-3deg) translateY(2px); } 50% { transform: rotate(2deg) translateY(0); } }
+/* the surface line is drawn over the cut */
+html[data-look="v3"] .dw-front { position: absolute; left: 0; right: 0; bottom: 0; height: 14px; z-index: 2; background: var(--wave-line) repeat-x 0 0 / 120px 14px; animation: waveSlide 7s linear infinite; }
+html.tank-lite[data-look="v3"] .dw-front, html.tank-lite[data-look="v3"] .dw-back, html.tank-lite[data-look="v3"] .dw-fin { animation: none !important; }

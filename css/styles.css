@@ -2191,3 +2191,109 @@ body.lb-open { overflow: hidden; }
 .reveal.r-wait { animation: none !important; opacity: 0; transform: translateY(22px); transition: opacity 0.6s var(--ease), transform 0.6s var(--ease); }
 .reveal.r-wait.in-view { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) { .reveal.r-wait { opacity: 1 !important; transform: none !important; transition: none; } }
+
+/* ---------- bounty wanted poster (js/bounties.js claimModal) ---------- */
+.wp-wrap { position: fixed; inset: 0; z-index: 90; display: grid; place-items: start center; overflow-y: auto; padding: 42px 16px 40px; perspective: 1400px; }
+.wp-dark { position: fixed; inset: 0; background: radial-gradient(ellipse at 50% 30%, rgba(4, 22, 15, 0.72), rgba(2, 8, 6, 0.94) 70%); animation: wpDark 0.45s ease both; }
+@keyframes wpDark { from { opacity: 0; } }
+.wp-bubbles { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+.wp-bubbles i { position: absolute; bottom: -30px; width: var(--s); height: var(--s); border-radius: 50%; border: 1px solid rgba(200, 242, 223, 0.4); animation: wpBubble var(--t) linear var(--d) infinite; }
+@keyframes wpBubble { 0% { transform: translate(0, 0); opacity: 0; } 10% { opacity: 1; } 50% { transform: translate(14px, -52vh); } 100% { transform: translate(-8px, -108vh); opacity: 0.2; } }
+/* the poster hangs from one nail: it drops in, swings, and settles a little crooked */
+.wp-hang { position: relative; width: min(440px, 100%); transform-origin: 50% 8px; filter: drop-shadow(0 30px 34px rgba(0, 0, 0, 0.6)) drop-shadow(0 3px 2px rgba(0, 0, 0, 0.5)); animation: wpDrop 1.25s cubic-bezier(0.3, 0.9, 0.3, 1) both; }
+@keyframes wpDrop { 0% { transform: translateY(-115%) rotateX(38deg) rotate(-9deg); opacity: 0; } 12% { opacity: 1; } 46% { transform: translateY(0) rotateX(0) rotate(4.6deg); } 64% { transform: rotate(-2.8deg); } 80% { transform: rotate(1.2deg); } 100% { transform: rotate(-0.9deg); } }
+.wp-nail { position: absolute; z-index: 3; left: 50%; top: 2px; width: 15px; height: 15px; margin-left: -7px; border-radius: 50%; background: radial-gradient(circle at 34% 30%, #d9dedb, #6c7570 46%, #252b28 80%); box-shadow: 0 3px 4px rgba(0, 0, 0, 0.55); }
+.wp-close { position: absolute; z-index: 3; right: 10px; top: 12px; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; border: 0; background: rgba(14, 64, 44, 0.12); color: #0e402c; cursor: pointer; }
+.wp-close:hover { background: rgba(14, 64, 44, 0.22); } .wp-close:focus-visible { outline: 2px solid #7a1434; outline-offset: 2px; }
+.wp-paper { position: relative; padding: 34px 34px 30px; text-align: center; color: #1c2a23; overflow: hidden;
+  background:
+    radial-gradient(ellipse 60% 26% at 82% 8%, rgba(122, 20, 52, 0.07), transparent 70%),
+    radial-gradient(ellipse 46% 30% at 10% 92%, rgba(88, 62, 28, 0.2), transparent 70%),
+    radial-gradient(ellipse 30% 18% at 92% 70%, rgba(88, 62, 28, 0.13), transparent 70%),
+    radial-gradient(ellipse at 50% 46%, transparent 52%, rgba(72, 50, 22, 0.3) 100%),
+    repeating-linear-gradient(92deg, rgba(60, 44, 20, 0.035) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(1deg, rgba(60, 44, 20, 0.03) 0 1px, transparent 1px 6px),
+    linear-gradient(178deg, #f2ece0, #e6dcc6 60%, #d9ccb0); }
+/* two fold lines and a bite out of the corner */
+.wp-paper::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, transparent 49.7%, rgba(60, 44, 20, 0.16) 49.9%, rgba(255, 255, 255, 0.35) 50.2%, transparent 50.5%), linear-gradient(90deg, transparent 49.7%, rgba(60, 44, 20, 0.1) 49.9%, rgba(255, 255, 255, 0.25) 50.2%, transparent 50.5%); }
+.wp-paper { -webkit-mask: radial-gradient(circle 15px at calc(100% - 4px) calc(100% - 46px), transparent 97%, #000), radial-gradient(circle 19px at calc(100% - 24px) calc(100% - 18px), transparent 97%, #000), radial-gradient(circle 13px at calc(100% - 54px) calc(100% - 2px), transparent 97%, #000); -webkit-mask-composite: source-in; mask: radial-gradient(circle 15px at calc(100% - 4px) calc(100% - 46px), transparent 97%, #000), radial-gradient(circle 19px at calc(100% - 24px) calc(100% - 18px), transparent 97%, #000), radial-gradient(circle 13px at calc(100% - 54px) calc(100% - 2px), transparent 97%, #000); mask-composite: intersect; }
+.wp-over { margin: 0; font-size: 12.5px; font-weight: 700; color: #5a4a2e; }
+.wp-wanted { margin: 2px 0 0; font: 400 clamp(64px, 19vw, 92px)/0.92 var(--font-poster, Anton, Impact, sans-serif); letter-spacing: 0.05em; text-transform: uppercase; color: #7a1434; }
+.wp-rule { height: 6px; margin: 10px 8px 0; border-top: 3px solid #1c2a23; border-bottom: 1px solid #1c2a23; }
+.wp-mark { position: relative; margin: 16px auto 0; width: 86%; padding: 18px 16px 14px; border: 2px solid #1c2a23; background: linear-gradient(180deg, rgba(14, 64, 44, 0.16), rgba(14, 64, 44, 0.05)); color: #0e402c; overflow: hidden; }
+.wp-mark::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 9px; background: repeating-linear-gradient(90deg, rgba(14, 64, 44, 0.35) 0 14px, transparent 14px 22px); opacity: 0.5; }
+.wp-shark { display: block; width: 100%; height: auto; }
+.wp-job { margin: 16px 0 0; font: 400 clamp(26px, 7vw, 34px)/1.05 var(--font-poster, Anton, Impact, sans-serif); letter-spacing: 0.02em; text-transform: uppercase; color: #1c2a23; text-wrap: balance; }
+.wp-reward { display: inline-flex; align-items: baseline; gap: 9px; margin: 14px 0 0; padding: 6px 16px 4px; border: 3px solid #7a1434; border-radius: 4px; color: #7a1434; rotate: -3deg; }
+.wp-reward-l { font: 400 17px/1 var(--font-poster, Anton, Impact, sans-serif); letter-spacing: 0.1em; text-transform: uppercase; }
+.wp-reward-n { font: 400 40px/1 var(--font-poster, Anton, Impact, sans-serif); }
+.wp-text { margin: 16px 0 0; font-size: 15.5px; line-height: 1.5; color: #2a382f; text-wrap: pretty; }
+.wp-meta { margin: 8px 0 0; font-size: 13px; font-weight: 600; color: #5a4a2e; }
+.wp-form { margin-top: 18px; padding-top: 16px; border-top: 2px dashed rgba(28, 42, 35, 0.4); display: grid; gap: 12px; text-align: left; }
+.wp-label { display: grid; gap: 6px; font-size: 13px; font-weight: 700; color: #1c2a23; }
+.wp-paper .wp-input { background: rgba(255, 255, 255, 0.55); border: 1.5px solid rgba(28, 42, 35, 0.55); color: #14201a; border-radius: 3px; }
+.wp-paper .wp-input::placeholder { color: rgba(28, 42, 35, 0.55); }
+.wp-paper .wp-input:focus { outline: 2px solid #0e402c; outline-offset: 1px; background: rgba(255, 255, 255, 0.8); }
+.wp-send { width: 100%; padding: 14px 18px; border: 0; border-radius: 3px; background: #0e402c; color: #f2ece0; font: 400 21px/1 var(--font-poster, Anton, Impact, sans-serif); letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: transform 0.15s ease, background 0.15s ease; }
+.wp-send:hover { background: #14573c; transform: translateY(-1px); } .wp-send:active { transform: translateY(1px) scale(0.99); } .wp-send:focus-visible { outline: 2px solid #7a1434; outline-offset: 2px; }
+.wp-fine { margin: 0; font-size: 12.5px; color: #5a4a2e; text-align: center; }
+/* the parts arrive in order once the poster has settled */
+.wp-s1, .wp-s2, .wp-s3, .wp-s5, .wp-s6 { animation: wpIn 0.5s ease both; }
+.wp-s1 { animation-delay: 0.62s; } .wp-s2 { animation-delay: 0.9s; } .wp-s3 { animation-delay: 1.12s; } .wp-s5 { animation-delay: 1.62s; } .wp-s6 { animation-delay: 1.8s; }
+@keyframes wpIn { from { opacity: 0; transform: translateY(8px); } }
+.wp-s2 .wp-shark { animation: wpSwimIn 1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.9s both; }
+@keyframes wpSwimIn { from { transform: translateX(-110%); } }
+.wp-s4 { animation: wpStamp 0.42s cubic-bezier(0.3, 1.5, 0.5, 1) 1.36s both; }
+@keyframes wpStamp { from { opacity: 0; scale: 2.6; rotate: 9deg; } 60% { opacity: 1; } }
+.wp-stamp { position: absolute; left: 50%; top: 44%; translate: -50% -50%; rotate: -14deg; padding: 8px 22px 4px; border: 6px double #7a1434; color: #7a1434; font: 400 62px/1 var(--font-poster, Anton, Impact, sans-serif); letter-spacing: 0.08em; text-transform: uppercase; opacity: 0; pointer-events: none; mix-blend-mode: multiply; }
+.wp-paper.claimed .wp-stamp { animation: wpClaimed 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) both; }
+@keyframes wpClaimed { from { opacity: 0; scale: 3; } 55% { opacity: 0.92; scale: 0.94; } to { opacity: 0.88; scale: 1; } }
+.wp-wrap.out .wp-hang { animation: wpOut 0.36s ease-in both; } .wp-wrap.out .wp-dark, .wp-wrap.out .wp-bubbles { animation: wpDarkOut 0.36s ease both; }
+@keyframes wpOut { to { transform: translateY(70vh) rotate(11deg); opacity: 0; } } @keyframes wpDarkOut { to { opacity: 0; } }
+@media (max-width: 520px) { .wp-paper { padding: 30px 22px 26px; } .wp-wrap { padding-top: 24px; } }
+@media (prefers-reduced-motion: reduce) { .wp-hang, .wp-dark, .wp-s1, .wp-s2, .wp-s3, .wp-s4, .wp-s5, .wp-s6, .wp-s2 .wp-shark, .wp-bubbles i, .wp-paper.claimed .wp-stamp { animation: none !important; } .wp-paper.claimed .wp-stamp { opacity: 0.88; } .wp-bubbles { display: none; } }
+.wp-bubbles i, .wp-nail, .wp-close { border-radius: 50% !important; }
+
+/* ---------- level-passed cinematic (js/cinematic.js) ---------- */
+.cine { position: fixed; inset: 0; z-index: 300; overflow: hidden; cursor: pointer; transition: opacity 0.45s ease; }
+.cine.out { opacity: 0; pointer-events: none; }
+.cine-dark { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 45%, rgba(6, 40, 27, 0.78), rgba(2, 10, 7, 0.95) 75%); animation: cineFade 0.5s ease both; }
+.cine-t3 .cine-dark { background: radial-gradient(ellipse at 50% 40%, rgba(60, 10, 26, 0.72), rgba(4, 3, 4, 0.97) 72%); animation-duration: 0.9s; }
+@keyframes cineFade { from { opacity: 0; } }
+.cine-fish { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cine-light { position: absolute; inset: -20% -40%; background: linear-gradient(105deg, transparent 38%, rgba(190, 240, 215, 0.13) 47%, rgba(190, 240, 215, 0.22) 50%, rgba(190, 240, 215, 0.1) 54%, transparent 62%); animation: cineSweep 2.4s ease-in-out 0.5s both; }
+.cine-t3 .cine-light { background: linear-gradient(100deg, transparent 36%, rgba(241, 154, 178, 0.1) 46%, rgba(255, 220, 228, 0.2) 50%, transparent 60%); animation: cineSweep 3.6s ease-in-out 1.2s both; }
+@keyframes cineSweep { from { transform: translateX(-60%); } to { transform: translateX(60%); } }
+/* tier 2: two sharks at two depths */
+.cine-shark { position: absolute; left: 0; color: #6fe0a8; }
+.cine-shark svg { display: block; width: 100%; height: auto; overflow: visible; }
+.cine-shark.far { width: 22vw; opacity: 0.35; filter: blur(1.5px); animation: cineCross 3.4s linear 0.3s both; }
+.cine-shark.near { width: 56vw; color: #f2ece0; filter: drop-shadow(0 30px 30px rgba(0, 0, 0, 0.55)); animation: cineCrossNear 1.9s cubic-bezier(0.5, 0, 0.6, 1) 1.1s both; }
+@keyframes cineCross { from { transform: translateX(-30vw); } to { transform: translateX(110vw); } }
+@keyframes cineCrossNear { from { transform: translateX(-70vw) rotate(4deg); } 50% { transform: translateX(20vw) rotate(-2deg); } to { transform: translateX(120vw) rotate(-5deg); } }
+/* tier 3: the Megalodon. First far away and going the other way, then across the whole screen. */
+.cine-meg-far { position: absolute; top: 24%; right: 0; width: 20vw; color: #7a1434; opacity: 0.55; filter: blur(2px); transform: scaleX(-1); animation: cineMegFar 3s linear 0.2s both; }
+.cine-meg-far .megalodon, .cine-meg .megalodon { display: block; width: 100%; height: auto; overflow: visible; }
+@keyframes cineMegFar { from { right: -24vw; } to { right: 110vw; } }
+.cine-meg { position: absolute; left: 0; top: var(--y, 4vh); width: var(--w, 130vw); color: #f19ab2; filter: drop-shadow(0 50px 60px rgba(0, 0, 0, 0.7)); animation: cineMeg 3.3s cubic-bezier(0.55, 0, 0.5, 1) 1.9s both; }
+.cine-meg .megalodon { --beat: 2.2s; }
+.cine-meg .megalodon .mg-jaw { animation: cineJaw 3.3s 1.9s both !important; }
+@keyframes cineJaw { 0% { transform: rotate(4deg); } 46% { transform: rotate(16deg); animation-timing-function: cubic-bezier(0.8, 0, 1, 0.4); } 54% { transform: rotate(-3deg); } 64%, 100% { transform: rotate(5deg); } }
+@keyframes cineMeg { 0% { transform: translateX(-112%) scale(0.72) rotate(3deg); } 48% { transform: translateX(-28%) scale(1) rotate(-1deg); } 100% { transform: translateX(104vw) scale(1.16) rotate(-3deg); } }
+.cine-shadow { position: absolute; inset: 0; background: #020504; opacity: 0; animation: cineShadow 3.3s ease-in-out 1.9s both; }
+@keyframes cineShadow { 40%, 56% { opacity: 0.4; } }
+.cine-bub { position: absolute; bottom: -24px; width: var(--s); height: var(--s); border-radius: 50% !important; border: 1px solid rgba(255, 226, 233, 0.55); opacity: 0; animation: cineBub var(--t) ease-out var(--d) both; }
+@keyframes cineBub { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-105vh) translateX(18px); opacity: 0; } }
+body.cine-quake #app { animation: cineQuake 0.5s linear 3.45s both; }
+@keyframes cineQuake { 0%, 100% { transform: none; } 20% { transform: translate(-5px, 3px); } 40% { transform: translate(4px, -3px); } 60% { transform: translate(-3px, -2px); } 80% { transform: translate(2px, 2px); } }
+/* the words */
+.cine-card { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 6px; text-align: center; color: #f1f4f1; pointer-events: none; }
+.cine-level { font: 400 clamp(64px, 15vw, 190px)/0.92 var(--font-poster, Anton, Impact, sans-serif); letter-spacing: 0.02em; text-transform: uppercase; clip-path: inset(0 100% 0 0); animation: cineWipe 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 1.5s both; }
+.cine-word { font: 400 clamp(24px, 4.4vw, 54px)/1 var(--font-poster, Anton, Impact, sans-serif); letter-spacing: 0.16em; text-transform: uppercase; color: #6fe0a8; animation: cineUp 0.5s ease 2s both; }
+.cine-stars { display: flex; gap: 12px; color: #6fe0a8; margin-bottom: 8px; }
+.cine-stars span { animation: cineStar 0.6s cubic-bezier(0.2, 1.5, 0.4, 1) both; animation-delay: calc(2.2s + var(--i) * 0.12s); }
+.cine-t2 .cine-level { animation-delay: 2.3s; } .cine-t2 .cine-word { animation-delay: 2.8s; } .cine-t2 .cine-stars span { animation-delay: calc(3s + var(--i) * 0.12s); }
+.cine-t3 .cine-level { animation-delay: 4.3s; } .cine-t3 .cine-word { animation-delay: 4.8s; color: #f19ab2; } .cine-t3 .cine-stars { color: #f19ab2; } .cine-t3 .cine-stars span { animation-delay: calc(5s + var(--i) * 0.12s); }
+@keyframes cineWipe { to { clip-path: inset(0 0 0 0); } }
+@keyframes cineUp { from { opacity: 0; transform: translateY(14px); } }
+@keyframes cineStar { from { opacity: 0; transform: scale(0) rotate(-40deg); } }
