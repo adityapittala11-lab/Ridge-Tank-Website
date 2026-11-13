@@ -550,7 +550,7 @@
     dur: 5.3, card: 3.55,
     setup(S, W, H, k, coach) {
       S.color = (coach && coach.color) || '#3FBF7F';
-      S.surf = Math.round(H * 0.38); S.L = Math.min(W * 0.42, H * 0.8) * (0.92 + 0.12 * k);
+      S.surf = Math.round(H * 0.47); S.L = Math.min(W * 0.42, H * 0.8) * (0.92 + 0.12 * k);
       S.v = W * 1.05; S.cam = 0; S.camV = 0; S.ripples = []; S.crowns = []; S.flash = 0;
       S.snow = Array.from({ length: 140 }, () => ({ x: rnd(-W, W * 7), y: rnd(S.surf + 10, H), a: rnd(0.08, 0.35), r: rnd(0.6, 1.8), z: rnd(0.4, 1) }));
       S.ghosts = [];
@@ -561,17 +561,17 @@
       const L = S.L, surf = S.surf, v = S.v;
       // the fish's jukes: snap to a new depth every 0.32s
       const jig = tt => { const i = Math.floor(tt / 0.32), f = E.inOut(clamp((tt - i * 0.32) / 0.16, 0, 1)), a = S.zig[clamp(i, 0, 11)], b = S.zig[clamp(i + 1, 0, 11)]; return lerp(a, b, f) * H * 0.075; };
-      const depth = surf + H * 0.2;
+      const depth = surf + H * 0.19;
       let fx = W * 0.32 + v * ts, fy = depth + jig(ts), fAng = 0;
-      if (ts >= 1.95) { const u = seg(ts, 1.95, 2.45); fy = lerp(depth + jig(1.95), surf - H * 0.27, Math.sin(u * Math.PI / 2)); fAng = -0.5 * (1 - u); }
+      if (ts >= 1.95) { const u = seg(ts, 1.95, 2.45); fy = lerp(depth + jig(1.95), surf - H * 0.24, Math.sin(u * Math.PI / 2)); fAng = -0.5 * (1 - u); }
       // the Mako closes the gap, copying each cut a beat later
       const gap = lerp(W * 0.42, W * 0.16, E.inQ(seg(ts, 0, 1.95)));
       let mx = fx - gap - L * 0.39, my = depth + jig(ts - 0.13), ang = clamp(Math.atan2(jig(ts - 0.1) - jig(ts - 0.16), v * 0.06) * 0.6, -0.28, 0.28), jaw = 0;
       if (ts >= 1.95) {
         const u = seg(ts, 2.03, 3.0);
         mx = lerp(fx - W * 0.2 - L * 0.39, fx - L * 0.4, seg(ts, 1.95, 2.45)); if (ts > 2.45) mx = W * 0.32 + v * ts - L * 0.4;
-        my = ts < 2.03 ? lerp(depth + jig(1.82), surf + H * 0.06, seg(ts, 1.95, 2.03)) : surf + H * 0.06 - H * 0.36 * Math.sin(Math.PI * u);
-        ang = ts < 2.03 ? -0.45 : Math.atan2(-H * 0.36 * Math.PI * Math.cos(Math.PI * u) / 0.97, v);
+        my = ts < 2.03 ? lerp(depth + jig(1.82), surf + H * 0.06, seg(ts, 1.95, 2.03)) : surf + H * 0.06 - H * 0.33 * Math.sin(Math.PI * u);
+        ang = ts < 2.03 ? -0.45 : Math.atan2(-H * 0.33 * Math.PI * Math.cos(Math.PI * u) / 0.97, v);
         jaw = ts < 2.45 ? E.outQ(seg(ts, 2.2, 2.43)) : 0.12;
         if (ts > 3.0) { my = surf + H * 0.08 + (ts - 3) * H * 0.1; ang = 0.12; }
       }
@@ -586,10 +586,18 @@
       // --- events ---
       const surfYw = wx => { let y = surf + Math.sin(wx * 0.01 + t * 1.4) * 3 + Math.sin(wx * 0.027 - t * 2) * 1.3; for (const r of S.ripples) { const age = ts - r.t0, d = Math.abs(wx - r.x); y += r.amp * Math.exp(-age * 2) * Math.sin(d * 0.05 - age * 11) * Math.exp(-d / (200 + age * 300)); } return y; };
       if (!S.e1 && ts >= 2.0) { S.e1 = true; const x = fx; for (let i = 0; i < 40; i++) spawn(S, { type: 'drop', x: x + rnd(-20, 20), y: surf, vx: v * rnd(0.2, 0.5) + rnd(-120, 120), vy: -rnd(200, 520), g: 1100, r: rnd(1.2, 3), max: 1.2, floor: surf + 4 }); S.ripples.push({ x, t0: ts, amp: 6 }); S.crowns.push({ x, t0: ts, w: L * 0.08, h: L * 0.15, life: 0.6 }); }
-      if (!S.e2 && ts >= 2.07) { S.e2 = true; const x = sideToWorld(shark, 198, 45).x; for (let i = 0; i < 60 + 40 * k; i++) spawn(S, { type: 'drop', x: x + rnd(-L * 0.1, L * 0.1), y: surf, vx: v * rnd(0.25, 0.6) + rnd(-160, 160), vy: -rnd(260, 700), g: 1150, r: rnd(1.4, 3.8), max: 1.4, floor: surf + 4 }); S.ripples.push({ x, t0: ts, amp: 10 }); S.crowns.push({ x, t0: ts, w: L * 0.16, h: L * 0.3, life: 0.75 }); S.shake = 6 + 3 * k; }
-      if (!S.e3 && ts >= 2.45) { S.e3 = true; S.flash = 0.25; S.shake = 8 + 4 * k; for (let i = 0; i < 22; i++) { const an = rnd(0, TAU), sp = rnd(100, 280); spawn(S, { type: 'scale', x: mouth.x, y: mouth.y, vx: Math.cos(an) * sp + v * 0.3, vy: Math.sin(an) * sp - 100, g: 700, r: rnd(1.5, 3), spin: rnd(-14, 14), max: 1.1 }); } }
-      if (!S.e4 && ts >= 2.97) { S.e4 = true; const x = mx; for (let i = 0; i < 110 + 70 * k; i++) spawn(S, { type: 'drop', x: x + rnd(-L * 0.4, L * 0.25), y: surf, vx: v * rnd(0.15, 0.7) + rnd(-200, 120), vy: -rnd(180, 640), g: 1150, r: rnd(1.4, 4.4), max: 1.5, floor: surf + 4 }); for (let i = 0; i < 14; i++) spawn(S, { type: 'foam', x: x + rnd(-L * 0.5, L * 0.3), y: surf + rnd(-2, 3), r: rnd(10, 24), a: 0.55, max: rnd(1.4, 2.2) }); for (let i = 0; i < 50; i++) spawn(S, { type: 'bubble', x: x + rnd(-L * 0.4, L * 0.3), y: surf + rnd(8, L * 0.4), vx: v * 0.1, vy: -rnd(60, 180), r: rnd(1.5, 6), max: rnd(1.2, 2.4), ph: rnd(0, 6), layer: 'under', ceil: surf + 3, a: 0.8 }); S.ripples.push({ x, t0: ts, amp: 13 }); S.crowns.push({ x: x - L * 0.1, t0: ts, w: L * 0.4, h: L * 0.34, life: 0.95 }); S.shake = 12 + 8 * k; }
+      if (!S.e2 && ts >= 2.07) { S.e2 = true; { const q = sideToWorld(shark, 198, 45); hit(S, q.x - S.cam, surf, 0.45); S.focus.a = 0; } const x = sideToWorld(shark, 198, 45).x; for (let i = 0; i < 60 + 40 * k; i++) spawn(S, { type: 'drop', x: x + rnd(-L * 0.1, L * 0.1), y: surf, vx: v * rnd(0.25, 0.6) + rnd(-160, 160), vy: -rnd(260, 700), g: 1150, r: rnd(1.4, 3.8), max: 1.4, floor: surf + 4 }); S.ripples.push({ x, t0: ts, amp: 10 }); S.crowns.push({ x, t0: ts, w: L * 0.16, h: L * 0.3, life: 0.75 }); S.shake = 6 + 3 * k; }
+      if (!S.e3 && ts >= 2.45) { S.e3 = true; S.flash = 0.15; S.shake = 8 + 4 * k; hit(S, mouth.x - S.cam, mouth.y, 0.95 + 0.3 * k); S.focus.hold = true; S.focus.a = 0.6; for (let i = 0; i < 22; i++) { const an = rnd(0, TAU), sp = rnd(100, 280); spawn(S, { type: 'scale', x: mouth.x, y: mouth.y, vx: Math.cos(an) * sp + v * 0.3, vy: Math.sin(an) * sp - 100, g: 700, r: rnd(1.5, 3), spin: rnd(-14, 14), max: 1.1 }); } }
+      if (!S.e4 && ts >= 2.97) { S.e4 = true; const x = mx; hit(S, x - S.cam, surf, 0.8 + 0.3 * k); S.focus.a = 0.35; S.streak = { x: 10, y: 22 }; for (let i = 0; i < 110 + 70 * k; i++) spawn(S, { type: 'drop', x: x + rnd(-L * 0.4, L * 0.25), y: surf, vx: v * rnd(0.15, 0.7) + rnd(-200, 120), vy: -rnd(180, 640), g: 1150, r: rnd(1.4, 4.4), max: 1.5, floor: surf + 4 }); for (let i = 0; i < 14; i++) spawn(S, { type: 'foam', x: x + rnd(-L * 0.5, L * 0.3), y: surf + rnd(-2, 3), r: rnd(10, 24), a: 0.55, max: rnd(1.4, 2.2) }); for (let i = 0; i < 50; i++) spawn(S, { type: 'bubble', x: x + rnd(-L * 0.4, L * 0.3), y: surf + rnd(8, L * 0.4), vx: v * 0.1, vy: -rnd(60, 180), r: rnd(1.5, 6), max: rnd(1.2, 2.4), ph: rnd(0, 6), layer: 'under', ceil: surf + 3, a: 0.8 }); S.ripples.push({ x, t0: ts, amp: 13 }); S.crowns.push({ x: x - L * 0.1, t0: ts, w: L * 0.4, h: L * 0.34, life: 0.95 }); S.shake = 12 + 8 * k; }
       if (ts < 3.0 && ts > 0.1 && Math.random() < 0.6) spawn(S, { type: 'bubble', x: sideToWorld(shark, 30, 42).x, y: sideToWorld(shark, 30, 42).y, vx: -rnd(20, 60), vy: -rnd(30, 90), r: rnd(1, 3), max: 1.2, ph: rnd(0, 6), layer: 'under', ceil: surf + 3, a: 0.6 });
+      // --- effects: in the air the background smears behind a sharp shark; focus lines hold through the slow-mo ---
+      if (S.focus && S.focus.hold && t > 2.95) S.focus.hold = false;
+      S.bokeh = true;
+      if (ts > 2.05 && ts < 2.98) {
+        S.streak = { x: 26, y: 0 };
+        const fish = { x: fx, y: fy, a: fAng };
+        S.sharp = c => { c.translate(-S.cam, 0); if (ts < 3.0) sideFish(c, fish.x, fish.y, fish.a + Math.sin(ts * 26) * 0.08, L * 0.25, '#eadfc8', Math.sin(ts * 46) * L * 0.025); sideShark(c, shark); };
+      }
       // --- draw (world space, the camera tracks) ---
       ctx.save(); ctx.translate(-S.cam, 0);
       const x0 = S.cam - 30, x1 = S.cam + W + 30;
@@ -1400,6 +1408,9 @@
       if (!S._acc) { ax.globalCompositeOperation = 'copy'; ax.globalAlpha = 1; ax.drawImage(cv, 0, 0); S._acc = true; }
       else { ax.globalCompositeOperation = 'source-over'; ax.globalAlpha = 1 - Math.pow(bl, dt * 60); ax.drawImage(cv, 0, 0); ax.globalAlpha = 1; ctx.globalCompositeOperation = 'copy'; ctx.drawImage(a, 0, 0); ctx.globalCompositeOperation = 'source-over'; }
     } else S._acc = false;
+    // the subject stays sharp on top of its own smear (a tracking shot: background blurred, subject crisp)
+    if (S.sharp) { ctx.save(); if (S._camT) ctx.setTransform(S._camT); S.sharp(ctx); ctx.restore(); ctx.setTransform(1, 0, 0, 1, 0, 0); }
+    S.sharp = null;
     // soft specks right in front of the lens
     if (S.bokeh) {
       if (!S._bok) S._bok = Array.from({ length: 6 }, () => ({ x: Math.random(), y: Math.random(), r: rnd(0.025, 0.07), v: rnd(0.01, 0.04), ph: rnd(0, 6), a: rnd(0.1, 0.26) }));
@@ -1447,6 +1458,7 @@
       ctx.translate(W / 2 + nx * sh * 0.6 + kx, H / 2 + ny * sh * 0.6 + ky); ctx.rotate(nr * sh * 0.0011); ctx.scale(1 + sh * 0.0012, 1 + sh * 0.0012); ctx.translate(-W / 2, -H / 2);
       S.shake = sh * Math.pow(0.012, dt);
     }
+    S._camT = ctx.getTransform();
     scene.draw(ctx, t, dt, S, W, H, k);
     post(cv, ctx, S, t, dt, W, H, dpr);
   }
