@@ -67,6 +67,45 @@
       // Bigger bubbles rise faster and wobble wider, like the real thing.
       return { x: x == null ? rnd(W * 0.05, W * 0.95) : x + rnd(-14, 14), y: H + r + rnd(0, 40), r, vy: -(26 + r * 9), amp: 3 + r * 1.3, f: rnd(1.1, 2.1), ph: rnd(0, 6.28), a: rnd(0.16, 0.34) };
     }
+    // ---- more life: light rays from above, schools of fish in the middle distance, and now and then a big shark far off ----
+    let rays = [], schools = [], far = null, nextSchool = 5, nextFar = 16, mx = 0, my = 0, pmx = 0, pmy = 0;
+    const SK = { front: new Path2D('M198 45C188 36 164 26 138 23L114 1C113 11 110 19 103 24L98 25L97 57.4C108 59.2 119 60 130 60L113 82C128 77 141 69 150 60C166 59 184 55 192 50Z'),
+      rear: new Path2D('M106 23.6C94 25.6 83 28 74 30L63 23L66 32C58 34 52 36 46 38L46 46C60 49 72 53 84 55L80 64L95 57C98 57.6 101 58 104 58.4Z'),
+      tail: new Path2D('M50 37L4 2C14 20 21 31 26 42C22 50 19 58 16 67L50 46.6Z') };
+    const busy = () => (document.body.dataset.view === 'academy' ? 0.55 : 1); // the Academy is the liveliest water
+    function ray(i, n) { return { x: (i + rnd(0.2, 0.8)) / n, w: rnd(60, 150), lean: rnd(0.16, 0.34), a: rnd(0.028, 0.055), f: rnd(0.05, 0.11), ph: rnd(0, 6.28) }; }
+    function school() {
+      const dir = Math.random() < 0.5 ? 1 : -1, z = rnd(0.35, 1), n = Math.round(rnd(6, 15) * (W < 720 ? 0.6 : 1));
+      const fish = Array.from({ length: n }, (_, i) => ({ ox: -rnd(0, 26) * i * 0.5 - rnd(0, 30), oy: rnd(-1, 1) * (16 + n * 2.2), s: rnd(0.8, 1.25), ph: rnd(0, 6.28), f: rnd(7, 11), lag: rnd(0.2, 1.3) }));
+      return { dir, z, x: dir > 0 ? -80 : W + 80, y: rnd(H * 0.18, H * 0.86), v: rnd(46, 84) * z, wob: rnd(18, 46), wf: rnd(0.25, 0.5), ph: rnd(0, 6.28), fish, scare: 0, t0: 0 };
+    }
+    function farShark() {
+      const dir = Math.random() < 0.5 ? 1 : -1, w = rnd(240, 420);
+      return { dir, w, x: dir > 0 ? -w : W + w, y: rnd(H * 0.2, H * 0.7), v: rnd(13, 22), a: rnd(0.045, 0.075), beat: rnd(2.4, 3.2), ph: rnd(0, 6.28) };
+    }
+    function drawFish(x, y, len, ang, wag, alpha) {
+      ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.globalAlpha = alpha;
+      ctx.beginPath(); ctx.ellipse(0, 0, len * 0.5, len * 0.17, 0, 0, 6.2832); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-len * 0.42, 0); ctx.lineTo(-len * 0.82, -len * 0.2 + wag); ctx.lineTo(-len * 0.82, len * 0.2 + wag); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+    function drawFar(t) {
+      const f = far, k = f.w / 200, sw = Math.sin(t * 6.2832 / f.beat + f.ph);
+      ctx.save(); ctx.translate(f.x + pmx * 6, f.y + Math.sin(t * 0.3 + f.ph) * 10 + pmy * 4); ctx.scale(f.dir * k, k); ctx.translate(-100, -42);
+      ctx.globalAlpha = f.a; ctx.fillStyle = '#9fd9c0';
+      ctx.fill(SK.front);
+      ctx.translate(104, 41); ctx.rotate(sw * 0.045); ctx.translate(-104, -41); ctx.fill(SK.rear);
+      ctx.translate(48, 42); ctx.rotate(Math.sin(t * 6.2832 / f.beat + f.ph - 0.9) * 0.1); ctx.translate(-48, -42); ctx.fill(SK.tail);
+      ctx.restore();
+    }
+    window.addEventListener('pointermove', e => { mx = e.clientX / (W || 1) - 0.5; my = e.clientY / (H || 1) - 0.5; }, { passive: true });
+    // The water answers a click: a few bubbles from that spot, and nearby fish scatter.
+    window.addEventListener('pointerdown', e => {
+      if (!raf) return;
+      for (let i = 0; i < 4; i++) { const b = bubble(e.clientX); b.y = e.clientY + rnd(-4, 10); b.r = rnd(1.4, 3.4); bubbles.push(b); }
+      for (const sc of schools) if (Math.abs(sc.x - e.clientX) < 260 && Math.abs(sc.y - e.clientY) < 200) sc.scare = 1;
+    }, { passive: true });
+
     function size() {
       dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       W = window.innerWidth; H = window.innerHeight;
@@ -75,6 +114,9 @@
       const n = W < 720 ? 20 : 42;
       specks = Array.from({ length: n }, () => speck(true));
       bubbles = [];
+      const nr = W < 720 ? 3 : 5;
+      rays = Array.from({ length: nr }, (_, i) => ray(i, nr));
+      schools = []; far = null;
     }
 
     function frame(now) {
@@ -89,11 +131,54 @@
       if (tick++ % 20 === 0) surfaceEl = document.querySelector('.waterline');
       surface = surfaceEl && surfaceEl.isConnected ? surfaceEl.getBoundingClientRect().bottom - 8 : -1e9;
 
+      pmx += (mx - pmx) * 0.06; pmy += (my - pmy) * 0.06; // the layers lean a little with the pointer, the near ones most
+
+      // back: light from above, swaying slowly. Skipped while the hero's surface is on screen (that is air up there).
+      if (surface < -1e8) {
+        for (const r of rays) {
+          const x0 = r.x * W + Math.sin(t * r.f + r.ph) * 40 - pmx * 10, lean = (r.lean + Math.sin(t * r.f * 0.7 + r.ph) * 0.05) * H;
+          const g = ctx.createLinearGradient(0, 0, 0, H * 0.78);
+          g.addColorStop(0, 'rgba(190,240,215,' + r.a + ')'); g.addColorStop(1, 'rgba(190,240,215,0)');
+          ctx.globalAlpha = 0.75 + Math.sin(t * r.f * 2.3 + r.ph) * 0.25;
+          ctx.fillStyle = g;
+          ctx.beginPath(); ctx.moveTo(x0, 0); ctx.lineTo(x0 + r.w, 0); ctx.lineTo(x0 + r.w * 1.9 - lean, H * 0.78); ctx.lineTo(x0 - lean - r.w * 0.5, H * 0.78); ctx.closePath(); ctx.fill();
+        }
+        // far: one big shark, rarely, barely there
+        nextFar -= dt;
+        if (!far && nextFar <= 0) far = farShark();
+        if (far) {
+          far.x += far.dir * far.v * dt; far.y -= dy * 0.08;
+          drawFar(t);
+          if (far.x < -far.w * 1.2 || far.x > W + far.w * 1.2) { far = null; nextFar = rnd(28, 60) * busy(); }
+        }
+      }
+
+      // middle: schools of fish. Each fish trails the leader's path with its own lag, so the school bends as it turns.
+      nextSchool -= dt;
+      if (nextSchool <= 0 && schools.length < 2) { schools.push(school()); nextSchool = rnd(9, 22) * busy(); }
+      ctx.fillStyle = '#bfe9d6';
+      for (let i = schools.length - 1; i >= 0; i--) {
+        const sc = schools[i];
+        sc.t0 += dt; sc.scare = Math.max(0, sc.scare - dt * 0.7);
+        sc.x += sc.dir * sc.v * (1 + sc.scare * 1.6) * dt; sc.y -= dy * sc.z * 0.2;
+        if (sc.x < -420 || sc.x > W + 420) { schools.splice(i, 1); continue; }
+        const path = tt => sc.y + Math.sin(tt * sc.wf + sc.ph) * sc.wob;
+        for (const f of sc.fish) {
+          const tt = sc.t0 - f.lag, fx = sc.x + sc.dir * f.ox * (1 + sc.scare * 0.8) + pmx * 14 * sc.z, base = path(tt);
+          const fy = base + f.oy * (1 + sc.scare * 1.3) + Math.sin(t * 1.3 + f.ph) * 3 + pmy * 8 * sc.z;
+          if (fy < surface) continue;
+          const slope = (path(tt + 0.1) - base) / (sc.v * 0.1);
+          const len = (9 + 9 * sc.z) * f.s;
+          drawFish(fx, fy, len, sc.dir > 0 ? Math.atan(slope) : Math.PI - Math.atan(slope), Math.sin(t * f.f * (1 + sc.scare) + f.ph) * len * 0.14, 0.1 + 0.2 * sc.z);
+        }
+      }
+      ctx.globalAlpha = 1;
+
       for (const s of specks) {
         s.y += s.vy * dt - dy * s.z * 0.3; // scrolling down pushes them up past you, the close ones most
         if (s.y < -6) { s.y = H + 4; s.x = rnd(0, W); } else if (s.y > H + 6) { s.y = -4; s.x = rnd(0, W); }
         if (s.y < surface) continue;
-        const x = s.x + Math.sin(t * s.f + s.ph) * s.sway;
+        const x = s.x + Math.sin(t * s.f + s.ph) * s.sway + pmx * 10 * s.z;
         ctx.globalAlpha = s.a;
         ctx.fillStyle = '#d8f3e6';
         ctx.beginPath(); ctx.arc(x, s.y, s.r, 0, 6.2832); ctx.fill();

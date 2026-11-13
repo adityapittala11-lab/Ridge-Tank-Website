@@ -117,21 +117,61 @@
     }
     function strip(label, value) { return h('div', { class: 'strip-stat' }, h('div', { class: 'mono strip-val' }, String(value)), h('div', { class: 'muted small' }, label)); }
 
+    // Claiming a bounty opens a wanted poster, not a plain box. The poster swings down on its nail, its parts show up
+    // in order (heading, the mark, the reward stamp, the job, the form), and a "CLAIMED" stamp lands when it is sent.
     function claimModal(b) {
       const needs = b.proof !== 'none';
+      const info = RT.bountyInfo(b);
       const input = b.proof === 'link'
-        ? h('input', { class: 'input', type: 'url', placeholder: 'https://…', autocomplete: 'off', autofocus: true })
-        : h('textarea', { class: 'input textarea', rows: 3, maxlength: 500, placeholder: needs ? 'What did you do? Add names or details.' : 'Anything the officers should know? (optional)', autofocus: needs });
-      const send = h('button', { class: 'btn btn-primary', type: 'button' }, 'Send to officers');
-      const m = modal({
-        title: b.title,
-        subtitle: `+${b.points} Bites if approved`,
-        body: h('div', { class: 'stack' },
-          b.description ? h('p', { class: 'muted' }, b.description) : null,
-          RT.field(b.proof === 'link' ? 'Link' : needs ? 'Your note' : 'Note (optional)', input),
-          h('p', { class: 'muted small' }, 'Officers check every claim. Bites show up on your profile once it’s approved.')),
-        actions: [send]
-      });
+        ? h('input', { class: 'input wp-input', type: 'url', placeholder: 'https://…', autocomplete: 'off' })
+        : h('textarea', { class: 'input textarea wp-input', rows: 3, maxlength: 500, placeholder: needs ? 'What did you do? Add names or details.' : 'Anything the officers should know? (optional)' });
+      const send = h('button', { class: 'btn wp-send', type: 'button' }, 'Claim the bounty');
+      const close = h('button', { class: 'wp-close', type: 'button', 'aria-label': 'Close' }, icon('x', 18));
+      // A torn paper edge: the same poster always tears the same way.
+      let seed = 0; for (const ch of String(b.id) + b.title) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+      const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+      const pts = [];
+      const edge = (n, f) => { for (let i = 0; i < n; i++) pts.push(f(i / n, rand() * 1.1)); };
+      edge(22, (t, j) => `${(t * 100).toFixed(1)}% ${j.toFixed(2)}%`);
+      edge(30, (t, j) => `${(100 - j * 0.9).toFixed(2)}% ${(t * 100).toFixed(1)}%`);
+      edge(22, (t, j) => `${(100 - t * 100).toFixed(1)}% ${(100 - j).toFixed(2)}%`);
+      edge(30, (t, j) => `${(j * 0.9).toFixed(2)}% ${(100 - t * 100).toFixed(1)}%`);
+      const waiting = info.mine.filter(c => c.status === 'pending').length, won = info.mine.filter(c => c.status === 'approved').length;
+      const mark = h('div', { class: 'wp-mark', 'aria-hidden': 'true' }, RT.megalodon ? RT.megalodon('wp-shark') : icon('fin', 60));
+      const stamp = h('div', { class: 'wp-stamp', 'aria-hidden': 'true' }, 'Claimed');
+      const paper = h('div', { class: 'wp-paper', style: { clipPath: 'polygon(' + pts.join(',') + ')' } },
+        h('p', { class: 'wp-over wp-s1' }, 'Ridge Tank bounty board'),
+        h('h2', { class: 'wp-wanted wp-s1', id: 'wp-title' }, 'Wanted'),
+        h('div', { class: 'wp-rule wp-s1' }),
+        h('div', { class: 'wp-s2' }, mark),
+        h('h3', { class: 'wp-job wp-s3' }, b.title),
+        h('div', { class: 'wp-reward wp-s4' }, h('span', { class: 'wp-reward-l' }, 'Reward'), h('span', { class: 'wp-reward-n' }, '+' + b.points), h('span', { class: 'wp-reward-l' }, 'Bites')),
+        b.description ? h('p', { class: 'wp-text wp-s5' }, b.description) : null,
+        h('p', { class: 'wp-meta wp-s5' }, RT.bountyMeta(b), info.mine.length ? ' · You: ' + [waiting ? waiting + ' waiting' : '', won ? won + ' approved' : ''].filter(Boolean).join(', ') : ''),
+        h('div', { class: 'wp-form wp-s6' },
+          h('label', { class: 'wp-label' }, h('span', null, b.proof === 'link' ? 'Your link' : needs ? 'Your proof' : 'Note (optional)'), input),
+          send,
+          h('p', { class: 'wp-fine' }, 'Officers check every claim. Bites land once it’s approved.')),
+        stamp);
+      const hang = h('div', { class: 'wp-hang', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'wp-title' }, h('span', { class: 'wp-nail', 'aria-hidden': 'true' }), close, paper);
+      const wrap = h('div', { class: 'wp-wrap' }, h('div', { class: 'wp-dark' }),
+        h('div', { class: 'wp-bubbles', 'aria-hidden': 'true' }, Array.from({ length: 9 }, (_, i) => h('i', { style: { left: (8 + rand() * 84) + '%', '--d': (rand() * 5).toFixed(2) + 's', '--s': (5 + rand() * 12).toFixed(0) + 'px', '--t': (5 + rand() * 5).toFixed(1) + 's' } }))),
+        hang);
+      const lastFocus = document.activeElement;
+      function shut() {
+        if (wrap.classList.contains('out')) return;
+        wrap.classList.add('out');
+        document.removeEventListener('keydown', onKey);
+        setTimeout(() => { wrap.remove(); if (lastFocus && lastFocus.focus) lastFocus.focus(); }, 380);
+      }
+      const onKey = e => { if (e.key === 'Escape') shut(); };
+      document.addEventListener('keydown', onKey);
+      close.addEventListener('click', shut);
+      wrap.addEventListener('pointerdown', e => { if (e.target === wrap || e.target.classList.contains('wp-dark')) shut(); });
+      (document.getElementById('modal-root') || document.body).appendChild(wrap);
+      const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      setTimeout(() => { if (wrap.isConnected) (needs ? input : send).focus({ preventScroll: true }); }, still ? 50 : 1900);
+
       send.addEventListener('click', () => busy(send, async () => {
         const val = input.value.trim();
         if (needs && !val) { toast(b.proof === 'link' ? 'Paste a link first.' : 'Add a short note first.', 'error'); return; }
@@ -140,9 +180,8 @@
           const claim = await api.claimBounty(b.id, val);
           if (claim && claim.id != null) RT.triage({ claimId: claim.id }); // sorts it for the officers; fire and forget
           await refresh();
-          m.close();
-          toast('Sent. Officers will take a look.', 'success');
-          draw();
+          paper.classList.add('claimed');
+          setTimeout(() => { shut(); toast('Sent. Officers will take a look.', 'success'); draw(); }, still ? 200 : 1300);
         } catch (e) {
           toast(friendly(e), 'error');
           refresh().then(draw).catch(() => {});
