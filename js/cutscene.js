@@ -65,10 +65,6 @@
     const hl = ctx.createLinearGradient(0, 18, 0, 40); hl.addColorStop(0, 'rgba(255,255,255,0.18)'); hl.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = hl; ctx.fillRect(90, 0, 120, 40); ctx.restore();
     if (o.stripes) { ctx.save(); ctx.clip(P.front); ctx.fillStyle = 'rgba(0,0,0,0.26)'; for (let x = 112; x < 168; x += 10) { ctx.beginPath(); ctx.moveTo(x, 24); ctx.quadraticCurveTo(x - 3, 38, x - 1, 52); ctx.lineTo(x + 3, 52); ctx.quadraticCurveTo(x + 1, 38, x + 4, 24); ctx.fill(); } ctx.restore(); }
-    // the snout comes toward you: a lit cone over the middle of the face, with a shadow under it
-    const sg = ctx.createRadialGradient(-0.04, -0.2 - lift, 0.02, 0, -0.06 - lift, 0.34); sg.addColorStop(0, shade(col, 0.22)); sg.addColorStop(0.6, col); sg.addColorStop(1, mid);
-    ctx.fillStyle = 'rgba(20,2,8,0.35)'; ctx.beginPath(); ctx.ellipse(0, 0.0 - lift * 0.5, 0.31, 0.2, 0, 0, TAU); ctx.fill();
-    ctx.fillStyle = sg; ctx.beginPath(); ctx.ellipse(0, -0.08 - lift, 0.29, 0.21, 0, 0, TAU); ctx.fill();
     // gills
     ctx.strokeStyle = rgba(shade(o.color, -0.6), 0.55); ctx.lineWidth = 1.3; ctx.lineCap = 'round';
     for (let i = 0; i < 5; i++) { const gx = 150 + i * 3.6; ctx.beginPath(); ctx.moveTo(gx, 34 + i * 0.4); ctx.quadraticCurveTo(gx + 2.2, 42, gx - 0.4, 51 - i * 0.3); ctx.stroke(); }
