@@ -945,8 +945,100 @@
     }
   };
 
+  // ---------- a rubber stamp slammed onto the screen ----------
+  function stamp(ctx, x, y, word, sz, col, age, rot) {
+    if (age < 0) return;
+    const drop = E.inC(clamp(age / 0.16, 0, 1)), sc = lerp(2.6, 1, drop), al = drop;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.scale(sc, sc); ctx.globalAlpha = al;
+    ctx.font = `${Math.round(sz)}px Anton, Impact, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const tw = ctx.measureText(word).width, pw = tw + sz * 0.7, ph = sz * 1.35;
+    ctx.strokeStyle = col; ctx.lineWidth = sz * 0.09; ctx.beginPath(); ctx.roundRect(-pw / 2, -ph / 2, pw, ph, sz * 0.12); ctx.stroke();
+    ctx.lineWidth = sz * 0.03; ctx.beginPath(); ctx.roundRect(-pw / 2 + sz * 0.14, -ph / 2 + sz * 0.14, pw - sz * 0.28, ph - sz * 0.28, sz * 0.08); ctx.stroke();
+    ctx.fillStyle = col; ctx.fillText(word, 0, sz * 0.04);
+    // worn ink: knock a few specks out of it
+    ctx.globalCompositeOperation = 'destination-out';
+    let sd = 7; const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 40; i++) { ctx.beginPath(); ctx.arc((r() - 0.5) * pw, (r() - 0.5) * ph, r() * sz * 0.05, 0, TAU); ctx.fill(); }
+    ctx.restore();
+  }
+  // the stage the human coaches stand on: dark, one spotlight
+  function stage(ctx, W, H, t, cx, on) {
+    ctx.fillStyle = '#04120d'; ctx.fillRect(-40, -40, W + 80, H + 80);
+    const fl = H * 0.86;
+    const g = ctx.createRadialGradient(cx, fl, 0, cx, fl, W * 0.5); g.addColorStop(0, `rgba(30,90,66,${0.9 * on})`); g.addColorStop(1, 'rgba(4,18,13,0)');
+    ctx.fillStyle = g; ctx.fillRect(-40, -40, W + 80, H + 80);
+    ctx.fillStyle = `rgba(242,236,224,${0.06 * on})`; ctx.beginPath(); ctx.moveTo(cx - W * 0.06, -10); ctx.lineTo(cx + W * 0.06, -10); ctx.lineTo(cx + W * 0.24, fl); ctx.lineTo(cx - W * 0.24, fl); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = `rgba(242,236,224,${0.08 * on})`; ctx.beginPath(); ctx.ellipse(cx, fl, W * 0.24, H * 0.05, 0, 0, TAU); ctx.fill();
+  }
+
+  // =====================================================================
+  // CAM: the tough customer. Arms crossed, one eyebrow up. Your words fly in, one lands, and Cam is won over.
+  // =====================================================================
+  SCENES.cam = {
+    dur: 5.0, card: 3.3,
+    setup(S, W, H, k, coach) { S.color = (coach && coach.color) || '#F09AB2'; S.conf = []; S.flash = 0; },
+    draw(ctx, t, dt, S, W, H, k) {
+      const ts = warp(t, [[0, 0], [1.75, 1.75], [2.25, 1.95], [9, 8.7]]);
+      const cx = W * 0.6, fl = H * 0.86, u = H / 540;
+      const hits = [0.95, 1.4, 1.92];
+      let bounce = 0; for (const h of hits) if (ts > h) bounce += Math.exp(-(ts - h) * 9) * Math.sin((ts - h) * 30) * (h === 1.92 ? 1.6 : 1);
+      const won = E.outQ(seg(ts, 1.92, 2.15)), jump = ts > 2.0 ? Math.max(0, Math.sin(Math.PI * seg(ts, 2.0, 2.45))) * 26 * u : 0;
+      const on = E.outQ(seg(t, 0, 0.5));
+      stage(ctx, W, H, t, cx, on);
+      ctx.save(); ctx.translate(0, -jump);
+      // Cam: shoulders, head, arms
+      const by = fl - 6 * u, sh = by - 175 * u, hy = sh - 52 * u + bounce * 3 * u, skin = '#FFE4CF', shirt = S.color, sd = shade(shirt, -0.2);
+      ctx.fillStyle = sd; ctx.beginPath(); ctx.moveTo(cx - 92 * u, by); ctx.bezierCurveTo(cx - 92 * u, sh + 20 * u, cx - 70 * u, sh, cx, sh); ctx.bezierCurveTo(cx + 70 * u, sh, cx + 92 * u, sh + 20 * u, cx + 92 * u, by); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = shirt; ctx.beginPath(); ctx.moveTo(cx - 80 * u, by); ctx.bezierCurveTo(cx - 82 * u, sh + 24 * u, cx - 62 * u, sh + 6 * u, cx - 6 * u, sh + 4 * u); ctx.bezierCurveTo(cx + 40 * u, sh + 6 * u, cx + 60 * u, sh + 30 * u, cx + 50 * u, by); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = skin; ctx.fillRect(cx - 13 * u, sh - 14 * u, 26 * u, 20 * u);
+      ctx.beginPath(); ctx.arc(cx, hy, 44 * u, 0, TAU); ctx.fill();
+      ctx.fillStyle = shade(skin, -0.12); ctx.beginPath(); ctx.arc(cx + 8 * u, hy + 6 * u, 40 * u, -0.4, 1.6); ctx.fill();
+      ctx.fillStyle = '#2a1a14'; ctx.beginPath(); ctx.arc(cx, hy - 6 * u, 45 * u, Math.PI * 1.02, Math.PI * 1.98); ctx.quadraticCurveTo(cx + 20 * u, hy - 30 * u, cx - 44 * u, hy - 12 * u); ctx.fill();
+      // face: skeptical (one brow up, flat mouth to the side) -> won over (both brows up, big smile)
+      ctx.fillStyle = '#1a0e0a'; const ey = hy + 4 * u, blink = Math.abs(Math.sin(ts * 1.3)) > 0.985 ? 0.2 : 1;
+      for (const s2 of [-1, 1]) { ctx.beginPath(); ctx.ellipse(cx + s2 * 15 * u, ey, 4 * u * (1 + won * 0.3), 5 * u * blink * (1 + won * 0.3), 0, 0, TAU); ctx.fill(); }
+      ctx.strokeStyle = '#2a1a14'; ctx.lineWidth = 4 * u; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(cx - 22 * u, ey - lerp(10, 16, won) * u); ctx.lineTo(cx - 8 * u, ey - lerp(12, 18, won) * u); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx + 8 * u, ey - lerp(19, 18, won) * u); ctx.lineTo(cx + 22 * u, ey - lerp(14, 16, won) * u); ctx.stroke();
+      if (won < 0.5) { ctx.beginPath(); ctx.moveTo(cx - 6 * u, hy + 24 * u); ctx.lineTo(cx + 12 * u, hy + 21 * u); ctx.stroke(); }
+      else { ctx.fillStyle = '#7a1434'; ctx.beginPath(); ctx.arc(cx, hy + 18 * u, 14 * u * won, 0.1, Math.PI - 0.1); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#fff'; ctx.fillRect(cx - 9 * u * won, hy + 19 * u, 18 * u * won, 4 * u); }
+      // arms: crossed and closed off, then flung up
+      const arm = (s2, front) => {
+        const S0 = { x: cx + s2 * 66 * u, y: sh + 30 * u };
+        const E0 = { x: cx + s2 * 76 * u, y: sh + 95 * u }, H0 = { x: cx - s2 * 40 * u, y: sh + 78 * u + (front ? 0 : 10 * u) };
+        const E1 = { x: cx + s2 * 112 * u, y: sh - 20 * u }, H1 = { x: cx + s2 * 104 * u, y: sh - 92 * u };
+        const e = { x: lerp(E0.x, E1.x, won), y: lerp(E0.y, E1.y, won) }, h = { x: lerp(H0.x, H1.x, won), y: lerp(H0.y, H1.y, won) };
+        ctx.strokeStyle = front ? shirt : sd; ctx.lineWidth = 30 * u; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(S0.x, S0.y); ctx.lineTo(e.x, e.y); ctx.lineTo(h.x, h.y); ctx.stroke();
+        ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(h.x, h.y, 14 * u, 0, TAU); ctx.fill();
+      };
+      arm(1, false); arm(-1, true);
+      ctx.restore();
+      // the "?" above Cam's head turns into a "!"
+      const qx = cx + 82 * u, qy = hy - 74 * u - jump;
+      const qs = ts < 1.92 ? E.outC(seg(ts, 0.35, 0.6)) * (1 - 0.18 * Math.min(2, hits.filter(h => ts > h).length)) : E.outC(seg(ts, 1.95, 2.2)) * 1.25;
+      if (qs > 0.01) { ctx.save(); ctx.translate(qx, qy); ctx.rotate(ts < 1.92 ? Math.sin(ts * 3) * 0.12 : 0); ctx.scale(qs, qs); ctx.fillStyle = ts < 1.92 ? '#7a1434' : '#6fe0a8'; ctx.beginPath(); ctx.arc(0, 0, 30 * u, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.moveTo(-10 * u, 22 * u); ctx.lineTo(-24 * u, 36 * u); ctx.lineTo(4 * u, 28 * u); ctx.fill(); ctx.fillStyle = ts < 1.92 ? '#f2ece0' : '#0e402c'; ctx.font = `${Math.round(40 * u)}px Anton, Impact, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(ts < 1.92 ? '?' : '!', 0, 2 * u); ctx.restore(); }
+      // your words: speech bubbles thrown at Cam
+      hits.forEach((h, i) => {
+        const a = seg(ts, h - 0.45, h); if (a <= 0 || a >= 1) return;
+        const x = lerp(-60 * u, cx - 30 * u, a), y = lerp(H * (0.3 + i * 0.12), hy, a) - Math.sin(Math.PI * a) * 60 * u, sz = (i === 2 ? 1.35 : 1) * u;
+        ctx.save(); ctx.translate(x, y); ctx.rotate(Math.sin(a * 6) * 0.15); ctx.fillStyle = '#f2ece0'; ctx.beginPath(); ctx.roundRect(-48 * sz, -24 * sz, 96 * sz, 48 * sz, 18 * sz); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(-26 * sz, 20 * sz); ctx.lineTo(-40 * sz, 36 * sz); ctx.lineTo(-10 * sz, 22 * sz); ctx.fill();
+        ctx.fillStyle = '#0e402c'; for (let j = -1; j <= 1; j++) { ctx.beginPath(); ctx.arc(j * 20 * sz, 0, 6 * sz, 0, TAU); ctx.fill(); } ctx.restore();
+      });
+      hits.forEach((h, i) => { if (!S['h' + i] && ts >= h) { S['h' + i] = true; S.shake = i === 2 ? 10 + 4 * k : 3; for (let j = 0; j < (i === 2 ? 14 : 8); j++) { const an = rnd(-1.6, 1.6) + Math.PI, sp = rnd(120, 320); spawn(S, { type: 'scale', x: cx - 30 * u, y: hy, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, g: 600, r: rnd(2, 4), spin: rnd(-12, 12), max: 0.7 }); } } });
+      // confetti when Cam is won over
+      if (!S.cf && ts >= 1.95) { S.cf = true; S.flash = 0.12; const cols = ['#6fe0a8', '#f2ece0', '#7a1434', S.color]; for (let i = 0; i < 90 + 40 * k; i++) { const an = rnd(-Math.PI * 0.95, -Math.PI * 0.05), sp = rnd(300, 820) * u; S.conf.push({ x: cx + rnd(-40, 40) * u, y: hy, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, c: cols[i % 4], r: rnd(4, 9) * u, sp: rnd(-10, 10), a: rnd(0, 6) }); } }
+      for (const c of S.conf) { c.vy += 900 * u * dt; c.vx *= Math.pow(0.5, dt); c.vy *= Math.pow(0.7, dt); c.x += c.vx * dt; c.y += c.vy * dt; c.a += c.sp * dt; ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.a); ctx.scale(1, Math.abs(Math.cos(c.a * 1.7)) + 0.15); ctx.fillStyle = c.c; ctx.fillRect(-c.r, -c.r * 0.5, c.r * 2, c.r); ctx.restore(); }
+      stepParts(ctx, S, dt, 'over');
+      if (!S.st && ts >= 2.45) { S.st = true; S.shake = 14 + 6 * k; for (let i = 0; i < 26; i++) { const an = rnd(0, TAU), sp = rnd(80, 300); spawn(S, { type: 'mist', x: W * 0.27 + Math.cos(an) * 60 * u, y: H * 0.36 + Math.sin(an) * 30 * u, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, drag: 0.85, r: rnd(3, 8) * u, color: '#7a1434', a: 0.9, max: 3 }); } }
+      if (ts < 3.25) stamp(ctx, W * 0.27, H * 0.36, 'WON OVER', 50 * u, '#c23a62', ts - 2.3, -0.14);
+      if (S.flash > 0.01) { ctx.fillStyle = `rgba(255,248,250,${S.flash.toFixed(3)})`; ctx.fillRect(0, 0, W, H); S.flash *= Math.pow(0.003, dt); }
+      vignette(ctx, W, H, 0.6);
+    }
+  };
+
   // ---------- which scene for which coach ----------
-  const BY_COACH = { 'Great White': 'greatwhite', Tiger: 'tiger', Mako: 'mako', Hammerhead: 'hammer', Nurse: 'nurse', Rex: 'rex' };
+  const BY_COACH = { 'Great White': 'greatwhite', Tiger: 'tiger', Mako: 'mako', Hammerhead: 'hammer', Nurse: 'nurse', Rex: 'rex', Cam: 'cam' };
   const STAR = '<svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z" fill="currentColor"/></svg>';
 
   function play(key, level, stars, coach) {
@@ -1029,5 +1121,5 @@
     }
     return out;
   };
-  RT.cutsceneKit = { frontShark, makeCrack, sandFloor, topRay, SCENES, BY_COACH, sideShark, sideFish, sideToWorld, topShark, topFish, Trail, openWater, crown, spawn, stepParts, vignette, warp, shade, rgba, E, seg, lerp, clamp, rnd, TAU };
+  RT.cutsceneKit = { stamp, stage, frontShark, makeCrack, sandFloor, topRay, SCENES, BY_COACH, sideShark, sideFish, sideToWorld, topShark, topFish, Trail, openWater, crown, spawn, stepParts, vignette, warp, shade, rgba, E, seg, lerp, clamp, rnd, TAU };
 })();
