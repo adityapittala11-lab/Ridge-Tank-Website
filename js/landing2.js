@@ -50,6 +50,9 @@
   const MARKS = {
     'tier-tiger': '<g fill="#000" opacity="0.26"><path d="M150 26L153 50"/><path d="M160 27L162 50" /><path d="M140 26L143 52"/><path d="M130 27L133 54"/><path d="M120 28L123 54"/></g>'.replace(/<path d="M(\d+) (\d+)L(\d+) (\d+)"\s*\/>/g, (m,x1,y1,x2,y2)=>`<path d="M${x1} ${y1}Q${(+x1+ +x2)/2-3} ${(+y1+ +y2)/2} ${x2} ${y2}L${+x2+3} ${y2}Q${(+x1+ +x2)/2} ${(+y1+ +y2)/2} ${+x1+3} ${y1}Z"/>`),
     'tier-white': '<path fill="#fff" opacity="0.34" d="M97 52C120 61 150 61 191 51C176 58 150 62 130 61C118 60 108 57 98 55Z"/>'
+      + '<path fill="#000" opacity="0.5" d="M178 47C184 47 190 48 196 49C190 52 184 53 178 53C176 51 176 49 178 47Z"/>'
+      + '<g fill="#f4f7f5"><path d="M179 48l1.6 4 1.6-4z"/><path d="M184 48.4l1.6 4.2 1.6-4.2z"/><path d="M189 49l1.5 4 1.5-4z"/><path d="M181.5 53l1.5-3.4 1.5 3.4z" opacity="0.9"/><path d="M186.5 53.2l1.4-3.4 1.4 3.4z" opacity="0.9"/></g>'
+      + '<circle cx="176" cy="41.5" r="3.4" fill="#0a0f0c"/>'
   };
   const shark = (cls, variant) => svg('shark ' + cls, '0 0 200 84', SHARK(MARKS[variant]));
   // Just the fin, for anything riding along a waterline.
@@ -318,7 +321,7 @@
     if (!tiers) return;
     tiers.classList.add('tiers-sharks');
     tiers.dataset.play = '1';
-    const sizes = [46, 68, 96, 138];
+    const sizes = [46, 68, 120, 138];
     const beats = ['0.85s', '1.15s', '1.6s', '2.3s']; // bigger sharks beat their tails slower
     tiers.querySelectorAll('.tier-stop').forEach((stop, i) => {
       const node = stop.querySelector('.tier-node');

@@ -836,3 +836,7 @@ html[data-look="v3"] .ac-av.av-rex .av-jaw { animation-duration: 2.6s; }
 html[data-look="v3"] .ac-av.av-rex { --av-beat: 1.2s; }
 html.tank-lite[data-look="v3"] .ac-av .av-tail, html.tank-lite[data-look="v3"] .ac-av .av-fin, html.tank-lite[data-look="v3"] .ac-av .av-swim, html.tank-lite[data-look="v3"] .ac-av .av-eye, html.tank-lite[data-look="v3"] .ac-av .av-jaw, html.tank-lite[data-look="v3"] .ac-av .av-bob { animation: none !important; }
 @media (prefers-reduced-motion: reduce) { html[data-look="v3"] .ac-av * { animation: none !important; } }
+
+/* officer tools: jump + safety toggle laid out in the bar */
+html[data-look="v3"] .ac-officer .ac-jump { width: 64px; }
+html[data-look="v3"] .ac-officer-sep { font-weight: 700; opacity: 0.6; margin-left: 6px; }

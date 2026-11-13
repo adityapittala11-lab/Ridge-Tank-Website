@@ -10,12 +10,15 @@
   const S = RT.state;
 
   // ---------------- small helpers ----------------
-  const LS = { date: 'rt_academy_date', early: 'rt_academy_early', draft: 'rt_academy_draft_', local: 'rt_academy_rounds_' };
+  const LS = { date: 'rt_academy_date', early: 'rt_academy_early', draft: 'rt_academy_draft_', local: 'rt_academy_rounds_', nosafety: 'rt_academy_nosafety' };
   const store = {
     get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
     set(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage blocked */ } }
   };
   const DAY = 86400000;
+  // Officer-only: turn off the Academy fair-play guards (paste/copy blocking, integrity holds) for this account, for testing.
+  const safetyOff = () => !!S.isAdmin && store.get(LS.nosafety, false) === true;
+  RT.academySafetyOff = safetyOff;
   const daysBetween = (a, b) => Math.round((parseLocalDate(b) - parseLocalDate(a)) / DAY);
   const addDays = (iso, n) => { const d = parseLocalDate(iso); d.setDate(d.getDate() + n); return localDateISO(d); };
   const longDate = iso => fmtDate(iso, { weekday: 'long', month: 'long', day: 'numeric' });
@@ -228,9 +231,20 @@
     const reset = h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: () => { store.set(LS.date, null); draw(); } }, 'Back to today');
     const early = h('button', { class: 'btn btn-sm ' + (earlyOn() ? 'btn-ghost' : 'btn-primary'), type: 'button', onclick: () => { store.set(LS.early, earlyOn() ? null : true); draw(); } },
       earlyOn() ? 'Back to normal dates' : 'Open all levels for me');
+    // Jump straight to any level (opens all levels first so it is playable).
+    const jump = h('input', { class: 'input ac-jump', type: 'number', min: 1, max: 40, placeholder: '#', 'aria-label': 'Level number' });
+    const go = h('button', { class: 'btn btn-sm btn-ghost', type: 'button' }, 'Go to level');
+    const goTo = () => { const n = Math.max(1, Math.min(40, Math.floor(Number(jump.value) || 0))); if (!n) return; if (!earlyOn() && !openForAll()) store.set(LS.early, true); RT.go('academy/level/' + n); };
+    go.addEventListener('click', goTo);
+    jump.addEventListener('keydown', e => { if (e.key === 'Enter') goTo(); });
+    // Turn the fair-play guards off for testing (paste/copy allowed, rounds never held). This account only.
+    const safe = h('button', { class: 'btn btn-sm ' + (safetyOff() ? 'btn-primary' : 'btn-ghost'), type: 'button', onclick: () => { store.set(LS.nosafety, safetyOff() ? null : true); draw(); } },
+      safetyOff() ? 'Safety features: OFF' : 'Disable safety features');
     return h('div', { class: 'ac-officer' },
       openForAll() ? h('span', { class: 'muted small' }, 'The course is open to everyone (academy.openNow in config.js).') : early, openForAll() ? null : h('span', { class: 'muted small' }, earlyOn() ? 'Every level is open on your account. Members still see the normal dates.' : 'Officers only. Members still see the normal dates.'),
-      h('span', null, 'Show the course as it looks on'), input, store.get(LS.date, null) ? reset : null,
+      h('span', { class: 'ac-officer-sep' }, 'Jump'), jump, go,
+      safe, safetyOff() ? h('span', { class: 'muted small' }, 'Paste and copy are allowed and rounds are never held. Testing only, your account.') : null,
+      h('span', { class: 'ac-officer-sep' }, 'Date'), input, store.get(LS.date, null) ? reset : null,
       AC.local ? h('span', { class: 'ac-officer-note' }, 'Progress is saved in this browser until the database has the course tables (db/030_course.sql).') : null);
   }
 
@@ -359,6 +373,7 @@
   // an AI tool or an auto-typer program (api/_integrity.js). People type unevenly; programs don't.
   function newStats() { return { typed: 0, keys: 0, untrusted: 0, orphan: 0, backs: 0, pauses: 0, pastes: 0, ikiN: 0, ikiSum: 0, ikiSq: 0, dwellN: 0, dwellSum: 0, dwellSq: 0, mobile: false }; }
   function guardBox(box, st, onPaste) {
+    if (safetyOff()) return; // officer testing: no paste/copy guard
     let prevLen = box.value.length, lastKey = 0, lastKeyAt = 0;
     const down = new Map();
     const blockPaste = e => { e.preventDefault(); st.pastes++; toast('Pasting is off in the Academy. Type it yourself.', 'error'); if (onPaste) onPaste(); };
@@ -426,12 +441,13 @@
   (function () {
     const inNoCopy = n => !!(n && (n.nodeType === 1 ? n : n.parentElement) && (n.nodeType === 1 ? n : n.parentElement).closest('.no-copy'));
     const stop = e => {
+      if (safetyOff()) return; // officer testing: copying allowed
       const sel = window.getSelection && window.getSelection();
       if (inNoCopy(e.target) || (sel && sel.rangeCount && inNoCopy(sel.getRangeAt(0).commonAncestorContainer))) { e.preventDefault(); toast('Copying is off in the Academy.', 'error'); }
     };
     document.addEventListener('copy', stop, true);
     document.addEventListener('cut', stop, true);
-    document.addEventListener('contextmenu', e => { if (inNoCopy(e.target) && !/^(TEXTAREA|INPUT)$/.test(e.target.tagName)) e.preventDefault(); }, true);
+    document.addEventListener('contextmenu', e => { if (!safetyOff() && inNoCopy(e.target) && !/^(TEXTAREA|INPUT)$/.test(e.target.tagName)) e.preventDefault(); }, true);
   })();
 
   // ---------------- one level ----------------
@@ -744,7 +760,7 @@
     mine.done = true; mine.busy = true; mine.busyWho = sp.ag; drawRound();
     const payload = Object.assign({
       mode: 'score', kind: sp.kind, item: sp.item, focus: sp.focus, talk: sp.mode === 'talk', speaker: charInfo(sp.ag), transcript: transcriptOf(mine),
-      telemetry: { answers: mine.tel, pastes: mine.pastes, leaves: mine.leaves }
+      telemetry: { answers: mine.tel, pastes: mine.pastes, leaves: mine.leaves }, noSafety: safetyOff()
     }, roundInfo(sp));
     Promise.all([scoreOnServer(payload).then(j => ({ j }), e => ({ e })), new Promise(r => setTimeout(r, 700))]).then(([{ j, e }]) => {
       if (j && j.row) AC.rounds.push(j.row);

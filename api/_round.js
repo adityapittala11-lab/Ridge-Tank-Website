@@ -69,11 +69,17 @@ export async function scoreRound(userId, body, key) {
   const aiWritten = graded ? graded.aiWritten : null;
   const v = tally(facts, kind, Object.assign({}, scores));
 
-  const integrity = check(answers, body.telemetry, aiWritten);
-  const counted = integrity.hold ? { passed: false, stars: 0 } : { passed: v.passed, stars: v.stars };
+  let integrity = check(answers, body.telemetry, aiWritten);
 
   await ensureSchema();
   const pool = getPool();
+  // Officer "disable safety features": only honoured for a real admin account, never a member.
+  if (body.noSafety) {
+    const adm = await pool.query('select 1 from public.admins where user_id = $1 limit 1', [userId]);
+    if (adm.rows.length) integrity = { hold: false, flag: false, reasons: [], notes: [] };
+  }
+  const counted = integrity.hold ? { passed: false, stars: 0 } : { passed: v.passed, stars: v.stars };
+
   const me = await pool.query('select id from public.members where user_id = $1 limit 1', [userId]);
   if (!me.rows.length) throw bad('Finish setting up your member profile first.', 403);
   const breakdown = Object.assign({ ai: !!graded }, v.c, integrity.hold ? { would_pass: v.passed, would_stars: v.stars } : {});
