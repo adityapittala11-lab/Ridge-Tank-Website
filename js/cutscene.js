@@ -1037,8 +1037,96 @@
     }
   };
 
+  // =====================================================================
+  // DANA: the busy bakery owner. Your first message bounces off a closed door. The follow-up loops in through
+  // the mail slot, the lights come on, the sign flips to OPEN. Yes.
+  // =====================================================================
+  function paperPlane(ctx, x, y, ang, sz) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+    ctx.fillStyle = '#f2ece0'; ctx.beginPath(); ctx.moveTo(sz, 0); ctx.lineTo(-sz * 0.8, -sz * 0.55); ctx.lineTo(-sz * 0.45, 0); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#c9c0ae'; ctx.beginPath(); ctx.moveTo(sz, 0); ctx.lineTo(-sz * 0.45, 0); ctx.lineTo(-sz * 0.8, sz * 0.4); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  SCENES.dana = {
+    dur: 5.2, card: 3.4,
+    setup(S, W, H, k, coach) { S.color = (coach && coach.color) || '#D2476E'; S.flash = 0; S.stars = Array.from({ length: 50 }, () => [rnd(0, W), rnd(0, H * 0.4), rnd(0.5, 1.6), rnd(0, 6)]); },
+    draw(ctx, t, dt, S, W, H, k) {
+      const ts = warp(t, [[0, 0], [1.95, 1.95], [2.45, 2.15], [9, 8.7]]);
+      const u = H / 540, gy = H * 0.86, sx = W * 0.6, sw = 330 * u, top = gy - 300 * u;
+      const doorX = sx, doorW = 66 * u, doorTop = gy - 132 * u, slotY = doorTop + 70 * u;
+      const lit = E.outQ(seg(ts, 2.15, 2.4));
+      // night street
+      const sky = ctx.createLinearGradient(0, 0, 0, gy); sky.addColorStop(0, '#020a07'); sky.addColorStop(1, '#0d3326');
+      ctx.fillStyle = sky; ctx.fillRect(-40, -40, W + 80, H + 80);
+      for (const [x, y, r, ph] of S.stars) { ctx.fillStyle = `rgba(242,236,224,${(0.3 + 0.3 * Math.sin(t * 2 + ph)).toFixed(3)})`; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); }
+      const zb = 1.32 + 0.3 * E.inOut(seg(t, 1.75, 2.7));
+      ctx.save(); ctx.translate(W * 0.56, H * 0.66); ctx.scale(zb, zb); ctx.translate(-sx, -(gy - 110 * u));
+      ctx.fillStyle = '#06170f'; ctx.fillRect(-W, gy, W * 3, H * 2);
+      // warm light spilling onto the pavement once it's open
+      if (lit > 0) { const g = ctx.createRadialGradient(sx, gy, 0, sx, gy, sw); g.addColorStop(0, `rgba(255,214,160,${(0.35 * lit).toFixed(3)})`); g.addColorStop(1, 'rgba(255,214,160,0)'); ctx.fillStyle = g; ctx.fillRect(sx - sw, gy - 10, sw * 2, H - gy + 10); }
+      // the shop
+      ctx.fillStyle = '#163126'; ctx.fillRect(sx - sw / 2, top, sw, gy - top);
+      ctx.fillStyle = '#0f241b'; ctx.fillRect(sx - sw / 2, top, sw, 14 * u);
+      ctx.fillStyle = '#7a1434'; ctx.fillRect(sx - 92 * u, top + 26 * u, 184 * u, 42 * u);
+      ctx.fillStyle = '#f2ece0'; ctx.font = `${Math.round(28 * u)}px Anton, Impact, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText("DANA'S BAKERY", sx, top + 48 * u);
+      // windows: dark until the yes, then warm with loaves on the shelf
+      for (const s2 of [-1, 1]) {
+        const wx = sx + s2 * 104 * u, wy = gy - 128 * u, ww = 96 * u, wh = 82 * u;
+        ctx.fillStyle = '#0a1712'; ctx.fillRect(wx - ww / 2, wy, ww, wh);
+        if (lit > 0) {
+          ctx.fillStyle = `rgba(255,220,170,${(0.9 * lit).toFixed(3)})`; ctx.fillRect(wx - ww / 2, wy, ww, wh);
+          ctx.fillStyle = `rgba(150,82,40,${lit.toFixed(3)})`; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.ellipse(wx - 28 * u + i * 28 * u, wy + wh - 18 * u, 13 * u, 9 * u, 0, Math.PI, 0); ctx.fill(); }
+          ctx.fillStyle = `rgba(122,20,52,${(0.5 * lit).toFixed(3)})`; ctx.fillRect(wx - ww / 2, wy + wh - 16 * u, ww, 4 * u);
+        }
+        ctx.strokeStyle = '#2b4a3c'; ctx.lineWidth = 4 * u; ctx.strokeRect(wx - ww / 2, wy, ww, wh); ctx.beginPath(); ctx.moveTo(wx, wy); ctx.lineTo(wx, wy + wh); ctx.stroke();
+      }
+      // the door, its mail slot and the sign
+      ctx.fillStyle = lit > 0 ? `rgb(${Math.round(lerp(14, 120, lit))},${Math.round(lerp(36, 30, lit))},${Math.round(lerp(28, 52, lit))})` : '#0e241c';
+      ctx.fillRect(doorX - doorW / 2, doorTop, doorW, gy - doorTop);
+      ctx.fillStyle = '#05100b'; ctx.fillRect(doorX - 20 * u, slotY - 3 * u, 40 * u, 6 * u);
+      const flip = seg(ts, 2.15, 2.4), fx = Math.abs(Math.cos(Math.PI * flip)), open = flip > 0.5;
+      ctx.save(); ctx.translate(doorX, doorTop + 34 * u + Math.sin(Math.max(0, ts - 2.15) * 12) * Math.exp(-Math.max(0, ts - 2.15) * 3) * 4 * u); ctx.scale(Math.max(0.03, fx), 1);
+      ctx.fillStyle = open ? '#6fe0a8' : '#f2ece0'; ctx.fillRect(-28 * u, -12 * u, 56 * u, 24 * u);
+      ctx.fillStyle = open ? '#0e402c' : '#7a1434'; ctx.font = `${Math.round(16 * u)}px Anton, Impact, sans-serif`; ctx.fillText(open ? 'OPEN' : 'CLOSED', 0, 1 * u); ctx.restore();
+      ctx.strokeStyle = '#2b4a3c'; ctx.lineWidth = 1.5 * u; ctx.beginPath(); ctx.moveTo(doorX - 18 * u, doorTop + 22 * u); ctx.lineTo(doorX, doorTop + 8 * u); ctx.lineTo(doorX + 18 * u, doorTop + 22 * u); ctx.stroke();
+      // the awning: stripes and a scalloped edge that flaps when it opens
+      const flapA = lit > 0 ? Math.sin(ts * 14) * Math.exp(-(ts - 2.15) * 2) * 6 * u : 0;
+      const aw = sw + 30 * u, ay = top + 82 * u, ah = 40 * u, nS = 9;
+      for (let i = 0; i < nS; i++) {
+        const x0 = sx - aw / 2 + i * aw / nS, x1 = x0 + aw / nS;
+        ctx.fillStyle = i % 2 ? '#f2ece0' : S.color; ctx.beginPath(); ctx.moveTo(x0 + 8 * u, ay); ctx.lineTo(x1 + 8 * u, ay); ctx.lineTo(x1, ay + ah + flapA); ctx.quadraticCurveTo((x0 + x1) / 2, ay + ah + 16 * u + flapA, x0, ay + ah + flapA); ctx.closePath(); ctx.fill();
+      }
+      ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(sx - aw / 2 + 8 * u, ay, aw, 6 * u);
+      // plane one: straight at the door, bonk, falls
+      if (ts > 0.3 && ts < 1.9) {
+        let x, y, a;
+        if (ts < 1.1) { const q = E.inOut(seg(ts, 0.3, 1.1)), q2 = Math.min(1, q + 0.02); const P = v => ({ x: lerp(sx - W * 0.5, doorX - 30 * u, v), y: lerp(top, doorTop + 60 * u, v) - Math.sin(Math.PI * v) * H * 0.1 }); const p = P(q), p2 = P(q2); x = p.x; y = p.y; a = Math.atan2(p2.y - p.y, p2.x - p.x); }
+        else { const f = ts - 1.1; x = doorX - 30 * u - f * 70 * u; y = doorTop + 60 * u + f * f * 380 * u; a = 1.2 + f * 9; if (y > gy - 6 * u) { y = gy - 6 * u; a = 0.2; } }
+        paperPlane(ctx, x, y, a, 20 * u);
+      }
+      if (!S.bonk && ts >= 1.1) { S.bonk = true; S.shake = 4; for (let i = 0; i < 6; i++) spawn(S, { type: 'scale', x: doorX - 30 * u, y: doorTop + 60 * u, vx: rnd(-200, -40), vy: rnd(-200, 40), g: 500, r: 2, spin: 8, max: 0.6 }); }
+      if (ts > 1.15 && ts < 1.85) { const a = Math.min(1, (ts - 1.15) * 6) * Math.min(1, (1.85 - ts) * 5); ctx.globalAlpha = a; ctx.fillStyle = '#f2ece0'; ctx.beginPath(); ctx.roundRect(sx + 40 * u, top - 54 * u, 120 * u, 40 * u, 12 * u); ctx.fill(); ctx.fillStyle = '#7a1434'; ctx.font = `${Math.round(20 * u)}px Anton, Impact, sans-serif`; ctx.fillText('NOT NOW.', sx + 100 * u, top - 33 * u); ctx.globalAlpha = 1; }
+      // plane two: the follow-up. It loops and slides into the mail slot.
+      if (ts > 1.3 && ts < 2.16) {
+        const P = v => { const b = { x: lerp(sx - W * 0.5, doorX - 14 * u, v), y: lerp(gy - 40 * u, slotY, v) }; const l = seg(v, 0.3, 0.68), r = 70 * u; return { x: b.x + Math.sin(TAU * l) * r * 0.9, y: b.y - (1 - Math.cos(TAU * l)) * r }; };
+        const q = E.inOut(seg(ts, 1.3, 2.15)), p = P(q), p2 = P(Math.min(1, q + 0.01)), sc = q > 0.92 ? lerp(1, 0.4, seg(q, 0.92, 1)) : 1;
+        paperPlane(ctx, p.x, p.y, Math.atan2(p2.y - p.y, p2.x - p.x), 24 * u * sc);
+        if (Math.random() < 0.5) spawn(S, { type: 'ring', x: p.x, y: p.y, r: 1, grow: 6 * u, a: 0.35, w: 1, max: 0.5 });
+      }
+      if (!S.yes && ts >= 2.15) { S.yes = true; S.flash = 0.18; S.shake = 8 + 4 * k; for (let i = 0; i < 40; i++) { const an = rnd(-Math.PI, 0), sp = rnd(120, 420); spawn(S, { type: 'scale', x: doorX, y: doorTop, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, g: 300, r: rnd(1.5, 3), spin: rnd(-10, 10), max: rnd(0.8, 1.5) }); } }
+      // the smell of fresh bread drifting out of the door
+      if (lit > 0.5 && Math.random() < 0.5) spawn(S, { type: 'mist', x: doorX + rnd(-20, 20) * u, y: doorTop - 4 * u, vx: rnd(-20, 20), vy: -rnd(30, 70), r: rnd(10, 20) * u, color: '#f2ece0', a: 0.18, max: 2.2 });
+      stepParts(ctx, S, dt, 'over');
+      ctx.restore();
+      if (!S.st && ts >= 2.55) { S.st = true; S.shake = 14 + 6 * k; }
+      if (ts < 3.3) stamp(ctx, W * 0.22, H * 0.34, 'YES', 76 * u, '#6fe0a8', ts - 2.4, -0.16);
+      if (S.flash > 0.01) { ctx.fillStyle = `rgba(255,236,210,${S.flash.toFixed(3)})`; ctx.fillRect(0, 0, W, H); S.flash *= Math.pow(0.003, dt); }
+      vignette(ctx, W, H, 0.6);
+    }
+  };
+
   // ---------- which scene for which coach ----------
-  const BY_COACH = { 'Great White': 'greatwhite', Tiger: 'tiger', Mako: 'mako', Hammerhead: 'hammer', Nurse: 'nurse', Rex: 'rex', Cam: 'cam' };
+  const BY_COACH = { 'Great White': 'greatwhite', Tiger: 'tiger', Mako: 'mako', Hammerhead: 'hammer', Nurse: 'nurse', Rex: 'rex', Cam: 'cam', Dana: 'dana' };
   const STAR = '<svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z" fill="currentColor"/></svg>';
 
   function play(key, level, stars, coach) {
