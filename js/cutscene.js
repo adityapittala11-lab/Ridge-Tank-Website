@@ -931,9 +931,13 @@
       const cx = W / 2 + sway + away * W * 0.3, cy = H * 0.5 + (ts < 2.1 ? lerp(-H * 0.05, H * 0.06, seg(ts, 0, 2.1)) : H * 0.06 + away * H * 0.2);
       const jaw = ts < 2.1 ? E.outQ(seg(ts, 1.35, 2.0)) : ts < 2.25 ? lerp(1, 0, E.inQ(seg(ts, 2.1, 2.22))) : 0.15 * (1 - away);
       const eyeRoll = ts > 1.97 && ts < 2.7 ? 1 : 0;
+      // --- effects: the charge rushes at you (outward zoom blur), focus lines lock on as the eyes roll back ---
+      if (ts > 0.6 && ts < 2.2) { const r = E.inQ(seg(ts, 0.6, 2.15)); S.zoom = { x: cx, y: cy, amt: 0.11 * r }; S.blur = 0.3 * r; } else S.blur = 0;
+      if (!S.lock && ts >= 1.97) { S.lock = true; S.focus = { x: cx, y: cy, a: 0.7, hold: true }; S.chroma = 4; }
       // --- the bite ---
       if (!S.bite && ts >= 2.2) {
-        S.bite = true; S.flash = 0.5; S.red = 0.55; S.shake = 26 + 10 * k;
+        S.bite = true; S.flash = 0.3; S.red = 0.55; S.shake = 26 + 10 * k;
+        hit(S, W * 0.5, H * 0.52, 1.3 + 0.3 * k); S.impact = 0.08; S.chroma = 18; S.focus.hold = false; S.focus.a = 0.8; S.kick = { x: 0, y: 22 };
         const n = 9;
         for (const [row, yy] of [[0, H * 0.34], [1, H * 0.7]]) for (let i = 0; i < n; i++) {
           const u = (i + 0.5 + (row ? 0.5 : 0)) / (n + 0.5), x = lerp(W * 0.14, W * 0.86, u), y = yy + (row ? -1 : 1) * Math.pow((u - 0.5) * 2, 2) * H * 0.09;
