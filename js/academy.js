@@ -277,7 +277,8 @@
     return h('section', { class: 'card span-7 ac-now' },
       h('div', { class: 'ac-now-head' },
         h('div', { class: 'ac-lvl' }, h('span', { class: 'card-label' }, 'Level'), h('span', { class: 'big-num' }, String(n))),
-        h('div', { class: 'min0' }, h('p', { class: 'card-label' }, label), h('h2', null, p.cur ? L.t : 'All 40 levels done'), sub)),
+        h('div', { class: 'min0 grow' }, h('p', { class: 'card-label' }, label), h('h2', null, p.cur ? L.t : 'All 40 levels done'), sub),
+        p.cur ? portrait(mainAgent(n), 64) : null),
       h('div', { class: 'ac-sbar' }, h('p', { class: 'card-label' }, `Season ${p.season}: ${inSeason} of 10 levels done`), bar),
       h('div', { class: 'ac-foot' },
         h('p', { class: 'muted' }, h('b', null, String(p.done)), ' of 40 levels · ', h('b', null, p.xp.toLocaleString()), ' XP · ', p.rank, ' rank'),
@@ -287,7 +288,9 @@
   function nextCard(p) {
     const el = h('section', { class: 'card span-5' }, h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Next meeting')));
     const up = S.meetings.map(m => Object.assign({}, m, { d: String(m.meeting_date).slice(0, 10) })).filter(m => m.d >= p.t).sort((a, b) => (a.d < b.d ? -1 : 1));
-    const m = up[0];
+    // Same fallback as the Home ticket, so the two pages never disagree about the next meeting.
+    const cd = (window.RT_CONFIG && window.RT_CONFIG.countdown) || {};
+    const m = up[0] || (cd.date && cd.date >= p.t ? { d: cd.date, name: cd.text, location: [cd.time, cd.place].filter(Boolean).join(' · ') } : null);
     if (!m) { el.appendChild(h('p', { class: 'muted' }, 'No meeting on the calendar yet. Officers add meetings in Officer tools.')); return el; }
     const dd = daysBetween(p.t, m.d);
     const todo = [];

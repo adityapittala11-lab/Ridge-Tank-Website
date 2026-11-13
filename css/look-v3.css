@@ -893,3 +893,7 @@ html[data-look="v3"] .ac-officer-tag { display: inline-flex; align-items: center
   html[data-look="v3"] .home-hero-row .cd-info { padding: 16px 24px 20px; }
   html[data-look="v3"] .home-hero-row .cd-what { font-size: 24px; }
 }
+/* the coach for your next level sits at the right of the Academy's level card */
+.ac-now-head { align-items: center; }
+.ac-now-head > .ac-av { flex: none; margin-left: auto; }
+.ac-now-head .grow { flex: 1; }
