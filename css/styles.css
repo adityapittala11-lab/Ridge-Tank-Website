@@ -2300,3 +2300,27 @@ body.cine-quake #app { animation: cineQuake 0.5s linear 3.45s both; }
 @keyframes cineWipe { to { clip-path: inset(0 0 0 0); } }
 @keyframes cineUp { from { opacity: 0; transform: translateY(14px); } }
 @keyframes cineStar { from { opacity: 0; transform: scale(0) rotate(-40deg); } }
+
+/* ---------- level-complete cutscenes (js/cutscene.js) ---------- */
+.cs { position: fixed; inset: 0; z-index: 300; overflow: hidden; cursor: pointer; background: #020806; animation: csIn 0.35s ease both; transition: opacity 0.45s ease; }
+.cs.out { opacity: 0; pointer-events: none; }
+@keyframes csIn { from { opacity: 0; } }
+.cs canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.cs-card { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 4px; text-align: center; color: #f1f4f1; pointer-events: none; opacity: 0; }
+.cs.show-card .cs-card { opacity: 1; }
+.cs-card::before { content: ""; position: absolute; left: 50%; top: 50%; width: min(760px, 92vw); height: 320px; translate: -50% -50%; background: radial-gradient(ellipse at center, rgba(2, 8, 6, 0.72), rgba(2, 8, 6, 0) 70%); z-index: -1; opacity: 0; }
+.cs.show-card .cs-card::before { animation: csFade 0.5s ease both; }
+.cs-level { font: 400 clamp(64px, 14vw, 180px)/0.9 var(--font-poster, Anton, Impact, sans-serif); letter-spacing: 0.02em; text-transform: uppercase; clip-path: inset(0 100% 0 0); text-shadow: 0 8px 40px rgba(0, 0, 0, 0.6); }
+.cs.show-card .cs-level { animation: csWipe 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.cs-word { font: 400 clamp(22px, 4.2vw, 52px)/1 var(--font-poster, Anton, Impact, sans-serif); letter-spacing: 0.18em; text-transform: uppercase; color: #6fe0a8; opacity: 0; }
+.cs.show-card .cs-word { animation: csUp 0.45s ease 0.35s both; }
+.cs-coach { margin-top: 4px; font-size: clamp(14px, 1.9vw, 19px); font-weight: 600; color: rgba(241, 244, 241, 0.75); opacity: 0; }
+.cs.show-card .cs-coach { animation: csUp 0.45s ease 0.5s both; }
+.cs-stars { display: flex; gap: 12px; color: #6fe0a8; margin-bottom: 6px; }
+.cs-stars span { opacity: 0; }
+.cs.show-card .cs-stars span { animation: csStar 0.55s cubic-bezier(0.2, 1.5, 0.4, 1) both; animation-delay: calc(0.6s + var(--i) * 0.12s); }
+.cs-skip { position: absolute; right: 18px; bottom: 16px; font-size: 12.5px; font-weight: 600; color: rgba(241, 244, 241, 0.45); letter-spacing: 0.04em; animation: csFade 0.6s ease 1s both; }
+@keyframes csWipe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes csUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes csStar { from { opacity: 0; transform: scale(0) rotate(-40deg); } to { opacity: 1; transform: none; } }
+@keyframes csFade { from { opacity: 0; } to { opacity: 1; } }
