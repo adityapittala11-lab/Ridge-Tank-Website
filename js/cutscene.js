@@ -489,9 +489,17 @@
       if (ts < 2.2) head = q(P.A0, P.cA, P.C, E.inQ(seg(ts, 0.7, 2.2)));
       else head = q(P.C, P.cB, P.B1, E.inOut(seg(ts, 2.2, 3.7)) * 0.98 + seg(ts, 2.2, 3.7) * 0.02);
       // head-shake after the bite
+      if (ts > 2.24 && ts < 2.7 && Math.sin(ts * 46) > 0.96) { S.zoom = { x: W / 2, y: H / 2, amt: 0.035 }; S.shake = Math.max(S.shake, 6); }
       if (ts > 2.22 && ts < 2.9) { const d = Math.exp(-(ts - 2.22) * 5), last = S.trail.pts[S.trail.pts.length - 1]; const ang = Math.atan2(head.y - last.y, head.x - last.x); head.x += -Math.sin(ang) * Math.sin(ts * 46) * S.len * 0.035 * d; head.y += Math.cos(ang) * Math.sin(ts * 46) * S.len * 0.035 * d; }
+      const lastP = S.trail.pts[S.trail.pts.length - 1];
+      const hv = lastP ? { x: (head.x - lastP.x) / Math.max(sdt, 1e-3), y: (head.y - lastP.y) / Math.max(sdt, 1e-3) } : { x: 0, y: 0 };
       S.trail.push(head.x, head.y);
       const zoom = 1 + 0.1 * Math.sin(Math.PI * seg(t, 1.7, 3.3));
+      const scr = p => ({ x: (p.x - S.C.x) * zoom + S.C.x, y: (p.y - S.C.y) * zoom + S.C.y });
+      // effects: the charge smears, the strike hits, focus lines hold through the slow-mo
+      const hs = Math.hypot(hv.x, hv.y), fast = clamp(hs / (S.len * 3.2), 0, 1);
+      S.bokeh = true;
+      if (S.focus && S.focus.hold && t > 2.75) S.focus.hold = false;
       ctx.save(); ctx.translate(S.C.x, S.C.y); ctx.scale(zoom, zoom); ctx.translate(-S.C.x, -S.C.y);
       openWater(ctx, W, H, t, S.C.x, S.C.y);
       // --- the school ---
@@ -512,7 +520,8 @@
       if (!S.victim && ts > 1.95) { let best = null, bd = 1e9; for (const f of S.fish) { const d = Math.hypot(f.x - head.x, f.y - head.y); if (d < bd && !f.dead) { bd = d; best = f; } } S.victim = best; }
       if (S.victim && !S.victim.dead && ts < 2.22) { const v = S.victim, u = seg(ts, 1.95, 2.2); v.x = lerp(v.x, head.x, u * 0.35); v.y = lerp(v.y, head.y, u * 0.35); v.al = 1; v.s *= 1.0; }
       if (!S.bit && ts >= 2.2) {
-        S.bit = true; S.flash = 0.22; S.shake = 9 + 6 * k;
+        S.bit = true; S.flash = 0.14; S.shake = 9 + 6 * k;
+        { const q = scr(head); hit(S, q.x, q.y, 0.85 + 0.3 * k); S.focus.hold = true; S.focus.a = 0.55; }
         if (S.victim) S.victim.dead = true;
         for (let i = 0; i < 26; i++) { const an = rnd(0, TAU), sp = rnd(60, 240); spawn(S, { type: 'scale', x: head.x, y: head.y, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, drag: 0.93, r: rnd(1.4, 3), spin: rnd(-12, 12), max: rnd(0.8, 1.5) }); }
         spawn(S, { type: 'mist', x: head.x, y: head.y, r: S.len * 0.16, color: '#7a1434', a: 0.45, max: 1.8 });
@@ -524,7 +533,7 @@
       stepParts(ctx, S, dt, 'under');
       const speed = ts < 2.2 ? lerp(0.5, 1.4, seg(ts, 0.7, 2.2)) : lerp(1.6, 0.9, seg(ts, 2.2, 3.7));
       S.ph = (S.ph || 0) + sdt * 9 * speed;
-      if (ts > 0.6 && ts < 4.2) topShark(ctx, S.trail, { len: S.len, color: S.color, kind: 'tiger', stripes: true, phase: S.ph, amp: 0.05 + 0.03 * speed, shadow: 0.22 });
+      if (ts > 0.6 && ts < 4.2) { const o = { len: S.len, color: S.color, kind: 'tiger', stripes: true, phase: S.ph, amp: 0.05 + 0.03 * speed, shadow: 0.22 }; const bl = fast * S.len * 0.09; if (bl > 2) ghosts(ctx, hv.x / hs * bl, hv.y / hs * bl, 4, 0.5, a => topShark(ctx, S.trail, Object.assign({}, o, { alpha: a, shadow: a < 1 ? 0 : 0.22 }))); else topShark(ctx, S.trail, o); }
       topFish(ctx, S.fish.slice(half), '#c9efdc', ts);
       stepParts(ctx, S, dt, 'over');
       ctx.restore();
@@ -1330,6 +1339,12 @@
     S.focus = { x, y, a: Math.min(1, 0.95 * p) };
     const a = rnd(0, TAU); S.kick = { x: Math.cos(a) * 12 * p, y: Math.abs(Math.sin(a)) * 12 * p };
   }
+  // Motion blur for one moving thing: draw it a few times back along its velocity, fading, then sharp on top.
+  // fn(alpha) draws the thing at the given opacity.
+  function ghosts(ctx, vx, vy, n, a, fn) {
+    for (let i = n; i >= 1; i--) { ctx.save(); ctx.translate(-vx * i / n, -vy * i / n); fn(a * (1 - i / (n + 1))); ctx.restore(); }
+    fn(1);
+  }
   const FX = {};
   function buf(name, w, h) {
     let c = FX[name]; if (!c) c = FX[name] = document.createElement('canvas');
@@ -1519,5 +1534,5 @@
     }
     return out;
   };
-  RT.cutsceneKit = { hit, post, renderFrame, megSide, stamp, stage, frontShark, makeCrack, sandFloor, topRay, SCENES, BY_COACH, sideShark, sideFish, sideToWorld, topShark, topFish, Trail, openWater, crown, spawn, stepParts, vignette, warp, shade, rgba, E, seg, lerp, clamp, rnd, TAU };
+  RT.cutsceneKit = { ghosts, hit, post, renderFrame, megSide, stamp, stage, frontShark, makeCrack, sandFloor, topRay, SCENES, BY_COACH, sideShark, sideFish, sideToWorld, topShark, topFish, Trail, openWater, crown, spawn, stepParts, vignette, warp, shade, rgba, E, seg, lerp, clamp, rnd, TAU };
 })();
