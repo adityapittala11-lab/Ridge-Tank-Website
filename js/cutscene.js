@@ -213,11 +213,24 @@
     }
     // hammerhead: the wide flat head, eyes at the very ends
     if (o.kind === 'hammer') {
-      const h = pts[Math.round(0.035 / uEnd * N)], hw = L * 0.17, hd = L * 0.035;
-      ctx.fillStyle = o.color;
-      ctx.beginPath(); ctx.moveTo(h.x + h.nx * hw + h.tx * hd, h.y + h.ny * hw + h.ty * hd); ctx.quadraticCurveTo(h.x + h.tx * hd * 1.8, h.y + h.ty * hd * 1.8, h.x - h.nx * hw + h.tx * hd, h.y - h.ny * hw + h.ty * hd);
-      ctx.lineTo(h.x - h.nx * hw * 0.92 - h.tx * hd, h.y - h.ny * hw * 0.92 - h.ty * hd); ctx.quadraticCurveTo(h.x - h.tx * hd * 0.2, h.y - h.ty * hd * 0.2, h.x + h.nx * hw * 0.92 - h.tx * hd, h.y + h.ny * hw * 0.92 - h.ty * hd); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#05090a'; for (const sd of [1, -1]) { ctx.beginPath(); ctx.arc(h.x + h.nx * hw * 0.93 * sd + h.tx * hd * 0.2, h.y + h.ny * hw * 0.93 * sd + h.ty * hd * 0.2, Math.max(1.2, L * 0.008), 0, TAU); ctx.fill(); }
+      const h = pts[Math.round(0.03 / uEnd * N)], nb = pts[Math.round(0.12 / uEnd * N)], hw = L * 0.18, hd = L * 0.03;
+      const P = (side, fwd) => [h.x + h.nx * side + h.tx * fwd, h.y + h.ny * side + h.ty * fwd];
+      const head = () => {
+        ctx.beginPath(); let q = P(hw, hd * 0.2); ctx.moveTo(q[0], q[1]);
+        q = P(hw * 0.5, hd * 1.15); let q2 = P(hw * 0.12, hd * 1.2); ctx.quadraticCurveTo(q[0], q[1], q2[0], q2[1]);
+        q = P(0, hd * 0.95); ctx.lineTo(q[0], q[1]); q = P(-hw * 0.12, hd * 1.2); ctx.lineTo(q[0], q[1]);
+        q = P(-hw * 0.5, hd * 1.15); q2 = P(-hw, hd * 0.2); ctx.quadraticCurveTo(q[0], q[1], q2[0], q2[1]);
+        q = P(-hw * 1.06, -hd * 0.5); q2 = P(-hw * 0.94, -hd * 1.1); ctx.quadraticCurveTo(q[0], q[1], q2[0], q2[1]);
+        q = P(-hw * 0.4, -hd * 1.0); ctx.quadraticCurveTo(q[0], q[1], nb.x - nb.nx * nb.w, nb.y - nb.ny * nb.w);
+        ctx.lineTo(nb.x + nb.nx * nb.w, nb.y + nb.ny * nb.w);
+        q = P(hw * 0.4, -hd * 1.0); q2 = P(hw * 0.94, -hd * 1.1); ctx.quadraticCurveTo(q[0], q[1], q2[0], q2[1]);
+        q = P(hw * 1.06, -hd * 0.5); q2 = P(hw, hd * 0.2); ctx.quadraticCurveTo(q[0], q[1], q2[0], q2[1]);
+        ctx.closePath();
+      };
+      ctx.fillStyle = shade(o.color, -0.32); head(); ctx.fill();
+      ctx.save(); head(); ctx.clip(); ctx.fillStyle = o.color; ctx.translate(-L * 0.004, -L * 0.006); ctx.scale(1, 1); head(); ctx.fill(); ctx.restore();
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = Math.max(1, L * 0.004); head(); ctx.stroke();
+      ctx.fillStyle = '#05090a'; for (const sd of [1, -1]) { const q = P(hw * 0.97 * sd, -hd * 0.1); ctx.beginPath(); ctx.arc(q[0], q[1], Math.max(1.3, L * 0.009), 0, TAU); ctx.fill(); }
     } else {
       const e = pts[Math.round(0.075 / uEnd * N)]; ctx.fillStyle = '#05090a';
       for (const sd of [1, -1]) { ctx.beginPath(); ctx.arc(e.x + e.nx * e.w * 0.86 * sd, e.y + e.ny * e.w * 0.86 * sd, Math.max(1.2, L * 0.0075), 0, TAU); ctx.fill(); }
@@ -594,8 +607,124 @@
     }
   };
 
+  // ---------- sand floor seen from above (shared by the bottom-dwellers) ----------
+  function sandFloor(ctx, W, H, t, S, cx, cy) {
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * 0.85);
+    g.addColorStop(0, '#6a8670'); g.addColorStop(0.5, '#3b5747'); g.addColorStop(1, '#10211a');
+    ctx.fillStyle = g; ctx.fillRect(-60, -60, W + 120, H + 120);
+    // ripples in the sand: a dark trough and a lit crest
+    if (!S.rip) S.rip = Array.from({ length: Math.ceil((H + 120) / 26) }, (_, i) => ({ y: -60 + i * 26 + rnd(-6, 6), ph: rnd(0, 6), a: rnd(0.35, 0.9), f: rnd(0.008, 0.014) }));
+    ctx.lineWidth = 2;
+    for (const r of S.rip) {
+      for (const [dy, col] of [[0, `rgba(14,32,24,${(0.32 * r.a).toFixed(3)})`], [-3, `rgba(226,238,222,${(0.07 * r.a).toFixed(3)})`]]) {
+        ctx.strokeStyle = col; ctx.beginPath();
+        for (let x = -60; x <= W + 60; x += 22) { const y = r.y + dy + Math.sin(x * r.f + r.ph) * 9 + Math.sin(x * 0.029 + r.ph * 2) * 3; x === -60 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+        ctx.stroke();
+      }
+    }
+    if (!S.peb) S.peb = Array.from({ length: 60 }, () => ({ x: rnd(-40, W + 40), y: rnd(-40, H + 40), r: rnd(1.5, 5), a: rnd(0, 3), c: Math.random() < 0.3 ? '#d9cfbd' : '#1c3328' }));
+    for (const b of S.peb) { ctx.fillStyle = b.c; ctx.globalAlpha = 0.55; ctx.beginPath(); ctx.ellipse(b.x, b.y, b.r, b.r * 0.62, b.a, 0, TAU); ctx.fill(); }
+    ctx.globalAlpha = 1;
+    // sunlight caustics: a bright net sliding over the sand
+    ctx.lineWidth = 1.8; ctx.lineJoin = 'round';
+    for (let layer = 0; layer < 2; layer++) {
+      ctx.strokeStyle = `rgba(236,248,226,${layer ? 0.045 : 0.06})`;
+      const dir = layer ? 1 : -1;
+      for (let k = -6; k < 30; k++) {
+        ctx.beginPath();
+        for (let i = 0; i <= 30; i++) {
+          const b = -60 + i * (H + 120) / 30, a = k * 52 + dir * b * 0.55;
+          const x = a + Math.sin(b * 0.023 + t * (layer ? 1.1 : -0.8) + k * 1.7) * 24 + Math.sin(b * 0.061 - t * 1.6 + k) * 8;
+          i ? ctx.lineTo(x, b) : ctx.moveTo(x, b);
+        }
+        ctx.stroke();
+      }
+    }
+  }
+  // a stingray from above. flap: -1..1, buried: 0..1 (1 = under the sand)
+  function topRay(ctx, x, y, ang, s, col, flap, buried, glow) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+    const wing = s * (0.6 + 0.08 * flap), sw = s * 0.1 * flap;
+    const body = () => { ctx.beginPath(); ctx.moveTo(s * 0.5, 0); ctx.bezierCurveTo(s * 0.48, wing * 0.55, s * 0.05 + sw, wing, -s * 0.05 + sw, wing); ctx.bezierCurveTo(-s * 0.25, wing * 0.8, -s * 0.45, s * 0.12, -s * 0.5, 0); ctx.bezierCurveTo(-s * 0.45, -s * 0.12, -s * 0.25, -wing * 0.8, -s * 0.05 + sw, -wing); ctx.bezierCurveTo(s * 0.05 + sw, -wing, s * 0.48, -wing * 0.55, s * 0.5, 0); ctx.closePath(); };
+    // tail
+    ctx.strokeStyle = shade(col, -0.3); ctx.globalAlpha = 1 - buried * 0.8; ctx.lineWidth = Math.max(1.5, s * 0.035); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-s * 0.45, 0); ctx.quadraticCurveTo(-s * 0.9, Math.sin(flap * 2) * s * 0.12, -s * 1.45, Math.sin(flap * 3 + 1) * s * 0.08); ctx.stroke();
+    // body: buried rays take the colour of the sand and show only a faint edge and the eyes
+    ctx.globalAlpha = 1;
+    if (buried < 1) { ctx.globalAlpha = 1 - buried; ctx.fillStyle = shade(col, -0.25); body(); ctx.fill(); ctx.save(); body(); ctx.clip(); ctx.fillStyle = col; ctx.beginPath(); ctx.ellipse(s * 0.04, -s * 0.03, s * 0.36, wing * 0.66, 0, 0, TAU); ctx.fill(); ctx.fillStyle = rgba(shade(col, 0.35), 0.45); for (const [a, b, r] of [[0.1, 0.25, 0.05], [-0.1, -0.3, 0.04], [0.2, -0.15, 0.035], [-0.2, 0.2, 0.045]]) { ctx.beginPath(); ctx.arc(s * a, s * b, s * r, 0, TAU); ctx.fill(); } ctx.restore(); }
+    if (buried > 0) { ctx.globalAlpha = buried; ctx.strokeStyle = 'rgba(16,36,26,0.16)'; ctx.lineWidth = 1.2; body(); ctx.stroke(); ctx.fillStyle = 'rgba(214,230,212,0.05)'; body(); ctx.fill(); }
+    if (glow > 0.01) { ctx.globalAlpha = glow; ctx.strokeStyle = '#6fe0a8'; ctx.lineWidth = 2.6; ctx.shadowColor = '#6fe0a8'; ctx.shadowBlur = 14; body(); ctx.stroke(); ctx.shadowBlur = 0; }
+    ctx.globalAlpha = 1 - buried * 0.55; ctx.fillStyle = '#05090a';
+    for (const sd of [1, -1]) { ctx.beginPath(); ctx.arc(s * 0.22, sd * s * 0.09, Math.max(1.4, s * 0.025), 0, TAU); ctx.fill(); }
+    ctx.restore();
+  }
+
+  // =====================================================================
+  // HAMMERHEAD: the hunter that sees what's hidden. It sweeps the sea floor, its head pulsing out electric
+  // scans; one scan lights up a stingray buried in the sand, it hooks round and pins it with that wide head.
+  // =====================================================================
+  SCENES.hammer = {
+    dur: 5.6, card: 3.75,
+    setup(S, W, H, k, coach) {
+      S.color = (coach && coach.color) || '#8FA69B';
+      S.len = Math.min(W, H) * 0.58 * (0.94 + 0.12 * k);
+      S.R = { x: W * 0.63, y: H * 0.36 }; S.rs = S.len * 0.3;
+      S.trail = new Trail();
+      const A0 = { x: -W * 0.28, y: H * 0.84 };
+      for (let i = 60; i >= 0; i--) S.trail.push(A0.x - i * S.len * 0.03, A0.y + i * S.len * 0.006);
+      S.nextScan = 0.35; S.flash = 0; S.glow = 0;
+    },
+    draw(ctx, t, dt, S, W, H, k) {
+      const ts = warp(t, [[0, 0], [2.1, 2.1], [2.7, 2.4], [9, 8.7]]);
+      const sdt = dt * (t > 2.1 && t < 2.7 ? 0.45 : 1);
+      const L = S.len, R = S.R;
+      const P1 = u => ({ x: lerp(-W * 0.28, W * 0.47, u), y: lerp(H * 0.84, H * 0.68, u) - Math.sin(u * Math.PI) * H * 0.07 });
+      let head;
+      if (ts < 1.8) {
+        const u = seg(ts, 0, 1.8), b = P1(u), b2 = P1(Math.min(1, u + 0.01)), tl = Math.hypot(b2.x - b.x, b2.y - b.y) || 1;
+        const sw = Math.sin(ts * 6.2) * L * 0.035; // the head sweeps side to side like a metal detector
+        head = { x: b.x - (b2.y - b.y) / tl * sw, y: b.y + (b2.x - b.x) / tl * sw };
+      } else if (ts < 2.35) {
+        const u = E.inQ(seg(ts, 1.8, 2.35)), a = P1(1), c = { x: W * 0.69, y: H * 0.7 }, e = { x: R.x, y: R.y + L * 0.02 };
+        head = { x: (1 - u) * (1 - u) * a.x + 2 * (1 - u) * u * c.x + u * u * e.x, y: (1 - u) * (1 - u) * a.y + 2 * (1 - u) * u * c.y + u * u * e.y };
+      } else {
+        const d = Math.exp(-(ts - 2.35) * 3); // pinned: grinding the ray into the sand
+        head = { x: R.x + Math.sin(ts * 30) * L * 0.012 * d, y: R.y + L * 0.02 - Math.abs(Math.sin(ts * 15)) * L * 0.02 * d };
+      }
+      S.trail.push(head.x, head.y);
+      // --- events ---
+      if (ts > S.nextScan && ts < 1.8) { S.nextScan += 0.34; spawn(S, { type: 'ring', x: head.x, y: head.y, r: L * 0.08, grow: L * 0.85, a: 0.55, w: 1.8, color: '#6fe0a8', max: 0.95 }); }
+      if (!S.found && ts >= 1.72) { S.found = true; S.flash = 0.08; spawn(S, { type: 'ring', x: R.x, y: R.y, r: S.rs * 0.6, grow: S.rs * 1.6, a: 0.9, w: 3, color: '#6fe0a8', max: 0.6 }); spawn(S, { type: 'ring', x: R.x, y: R.y, r: S.rs * 0.5, grow: S.rs * 2.6, a: 0.5, w: 1.5, color: '#6fe0a8', max: 0.9 }); }
+      if (S.found) S.glow = ts < 2.35 ? 0.55 + 0.45 * Math.sin(ts * 28) : Math.max(0, S.glow - dt * 1.4);
+      if (!S.pin && ts >= 2.35) {
+        S.pin = true; S.flash = 0.18; S.shake = 13 + 6 * k;
+        for (let i = 0; i < 30; i++) { const an = rnd(0, TAU), sp = rnd(120, 420); spawn(S, { type: 'mist', x: R.x + Math.cos(an) * S.rs * 0.3, y: R.y + Math.sin(an) * S.rs * 0.3, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, drag: 0.9, r: rnd(L * 0.08, L * 0.18), color: '#dfe6d2', a: 0.55, max: rnd(1.6, 2.8) }); }
+        for (let i = 0; i < 70; i++) { const an = rnd(0, TAU), sp = rnd(150, 520); spawn(S, { type: 'scale', x: R.x, y: R.y, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, drag: 0.9, r: rnd(0.8, 2), spin: rnd(-10, 10), max: rnd(0.6, 1.3) }); }
+        spawn(S, { type: 'ring', x: R.x, y: R.y, r: L * 0.06, grow: L * 0.9, a: 0.7, w: 3, color: '#f2ece0', max: 0.7 });
+      }
+      // a little sand kicked up by the tail as it hooks round
+      if (ts > 1.8 && ts < 2.35 && Math.random() < 0.7) { const tp = S.trail.samples([L * 0.85])[0]; spawn(S, { type: 'mist', x: tp.x + rnd(-8, 8), y: tp.y + rnd(-8, 8), vx: rnd(-30, 30), vy: rnd(-30, 30), drag: 0.95, r: L * 0.06, color: '#a9bfa4', a: 0.25, max: 1.4, layer: 'under' }); }
+      // --- draw ---
+      const zoom = 1 + 0.16 * E.inOut(seg(t, 1.7, 2.7));
+      const fx = lerp(W / 2, R.x, E.inOut(seg(t, 1.7, 2.7)) * 0.6), fy = lerp(H / 2, R.y, E.inOut(seg(t, 1.7, 2.7)) * 0.6);
+      ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(zoom, zoom); ctx.translate(-fx, -fy);
+      sandFloor(ctx, W, H, t, S, R.x, R.y);
+      stepParts(ctx, S, dt, 'under');
+      const buried = S.pin ? Math.max(0, 1 - (ts - 2.35) * 6) : 1;
+      const flap = S.pin ? Math.sin(ts * 34) * Math.exp(-(ts - 2.35) * 0.7) : 0;
+      topRay(ctx, R.x, R.y, -0.5, S.rs, '#7a1434', flap, buried, S.glow);
+      const speed = ts < 1.8 ? 0.8 : ts < 2.35 ? 1.6 : 1.2 + 0.8 * Math.exp(-(ts - 2.35) * 2);
+      S.ph = (S.ph || 0) + sdt * 8 * speed;
+      topShark(ctx, S.trail, { len: L, color: S.color, kind: 'hammer', phase: S.ph, amp: ts < 2.35 ? 0.06 : 0.1, shadow: 0.38 });
+      stepParts(ctx, S, dt, 'over');
+      ctx.restore();
+      if (S.flash > 0.01) { ctx.fillStyle = `rgba(226,250,238,${S.flash.toFixed(3)})`; ctx.fillRect(0, 0, W, H); S.flash *= Math.pow(0.003, dt); }
+      vignette(ctx, W, H, 0.65);
+    }
+  };
+
   // ---------- which scene for which coach ----------
-  const BY_COACH = { 'Great White': 'greatwhite', Tiger: 'tiger', Mako: 'mako' };
+  const BY_COACH = { 'Great White': 'greatwhite', Tiger: 'tiger', Mako: 'mako', Hammerhead: 'hammer' };
   const STAR = '<svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z" fill="currentColor"/></svg>';
 
   function play(key, level, stars, coach) {
@@ -678,5 +807,5 @@
     }
     return out;
   };
-  RT.cutsceneKit = { SCENES, BY_COACH, sideShark, sideFish, sideToWorld, topShark, topFish, Trail, openWater, crown, spawn, stepParts, vignette, warp, shade, rgba, E, seg, lerp, clamp, rnd, TAU };
+  RT.cutsceneKit = { sandFloor, topRay, SCENES, BY_COACH, sideShark, sideFish, sideToWorld, topShark, topFish, Trail, openWater, crown, spawn, stepParts, vignette, warp, shade, rgba, E, seg, lerp, clamp, rnd, TAU };
 })();
