@@ -465,7 +465,7 @@
     const label = t => h('h2', { class: 'dash-label' }, fin('dash-label-fin'), h('span', null, t));
     function dress(root) {
       const banner = root.querySelector('.countdown-banner'), top = root.querySelector('.home-top'), grid = root.querySelector('.home-grid');
-      const first = banner || top;
+      const first = root.querySelector('.home-hero-row') || banner || top;
       if (first && !root.querySelector('.dash-label')) {
         first.parentNode.insertBefore(label('Up next'), first);
         if (grid) grid.parentNode.insertBefore(label('Your numbers'), grid);

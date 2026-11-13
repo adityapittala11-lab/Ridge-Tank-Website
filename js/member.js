@@ -54,32 +54,34 @@
   RT.progressBar = progressBar;
 
   // ---------------- home ----------------
-  // Home: five blocks, most useful first. 1) what to do next, 2) where you stand, 3) this week, 4) ways to earn.
+  // Home, top to bottom: your next level and the next meeting side by side, where you stand in one strip,
+  // then the week and the bounties. One of each thing, nothing repeated.
   RT.views.home = function (root) {
-    const subLine = h('span');
-    root.appendChild(RT.pageHead('Home', subLine));
+    const head = RT.pageHead('Welcome back', null);
+    root.appendChild(head);
+    const row = h('div', { class: 'home-hero-row' });
+    if (RT.academyHomeCard) row.appendChild(RT.academyHomeCard());
     const banner = RT.meetingBanner ? RT.meetingBanner() : null;
-    if (banner) root.appendChild(banner);
-    const nextUp = h('section', { class: 'nextup reveal' });
-    root.appendChild(nextUp);
+    if (banner) { banner.classList.remove('reveal'); row.appendChild(banner); } else row.classList.add('solo');
+    root.appendChild(row);
     const top = h('div', { class: 'home-top' });
-    if (RT.academyHomeCard) top.appendChild(RT.academyHomeCard());
     root.appendChild(top);
 
     const grid = h('div', { class: 'dash-grid home-grid' },
-      h('section', { class: 'card span-12 reveal', style: { '--i': 1 } }, RT.skeleton(3)),
-      h('section', { class: 'card span-6 reveal', style: { '--i': 2 } }, RT.skeleton(3)),
-      h('section', { class: 'card span-6 reveal', style: { '--i': 3 } }, RT.skeleton(3)));
+      h('section', { class: 'card span-12' }, RT.skeleton(2)),
+      h('section', { class: 'card span-6 reveal', style: { '--i': 1 } }, RT.skeleton(3)),
+      h('section', { class: 'card span-6 reveal', style: { '--i': 2 } }, RT.skeleton(3)));
     root.appendChild(grid);
-    const [cStanding, cWeek, cBounties] = grid.children;
+    const [cStanding, cBounties, cWeek] = grid.children;
 
     loadMine().then(d => {
       const { cur, next } = RT.tierFor(d.mine.total_points, S.tiers);
-      subLine.textContent = `Welcome back, ${String(S.me.name || '').split(' ')[0]}.`;
-      renderNext(nextUp, d, next);
+      const title = head.querySelector('.page-title');
+      const first = String(S.me.name || '').split(' ')[0];
+      if (title && first) title.textContent = 'Hey, ' + first;
       renderStanding(cStanding, d, cur, next);
-      renderWeek(cWeek);
       renderBountiesMini(cBounties);
+      renderWeek(cWeek);
       // The invest card shows only while investing is open at a meeting, and then it goes first.
       RT.market.memberCards(d).then(cards => {
         if (!cards || !root.isConnected) return;
@@ -88,29 +90,6 @@
     }).catch(e => toast(friendly(e), 'error'));
     return {};
   };
-
-  // One clear thing to do next: the next meeting, else the best open bounty, else the leaderboard.
-  function renderNext(el, d, next) {
-    const today = RT.localDateISO();
-    const m = S.meetings.filter(x => x.meeting_date >= today).sort((a, b) => (a.meeting_date < b.meeting_date ? -1 : 1))[0];
-    const b = S.bounties.filter(x => RT.bountyInfo(x).open).sort((x, y) => (y.points || 0) - (x.points || 0))[0];
-    let kicker, title, text, href, cta;
-    if (m) {
-      const days = daysUntil(m.meeting_date);
-      kicker = days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : 'In ' + days + ' days';
-      title = 'Be at ' + (m.name || 'the next meeting');
-      text = 'Check in when you arrive to earn Bites. ' + fmtDate(m.meeting_date, { weekday: 'long', month: 'short', day: 'numeric' }) + (m.location ? ' · ' + m.location : '') + '.';
-      href = '#/updates'; cta = 'See the plan';
-    } else if (b) {
-      kicker = '+' + b.points + ' Bites';
-      title = b.title; text = RT.bountyMeta(b); href = '#/bounties'; cta = 'Take it on';
-    } else {
-      kicker = 'Your move'; title = 'Climb the leaderboard'; text = next ? 'You’re ' + (next.point_threshold - d.mine.total_points) + ' Bites from ' + next.name + '.' : 'You’re at the top tier.'; href = '#/leaderboard'; cta = 'See the board';
-    }
-    clear(el).append(
-      h('div', { class: 'nextup-body' }, h('span', { class: 'nextup-kicker' }, kicker), h('h2', { class: 'nextup-title' }, title), h('p', { class: 'muted' }, text)),
-      h('a', { class: 'btn btn-primary btn-lg', href }, cta));
-  }
 
   // One card: Bites, tier progress, rank and badges, with links to the full pages.
   function renderStanding(el, d, cur, next) {
