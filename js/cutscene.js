@@ -723,8 +723,95 @@
     }
   };
 
+  // =====================================================================
+  // NURSE: the calm one with the strongest suction in the sea. It creeps up along the sand, goes perfectly
+  // still, then inhales: sand, water and a fish vanish into its mouth in one spiral. Then it settles, unbothered.
+  // =====================================================================
+  SCENES.nurse = {
+    dur: 5.4, card: 3.6,
+    setup(S, W, H, k, coach) {
+      S.color = (coach && coach.color) || '#86DDB0';
+      S.len = Math.min(W, H) * 0.6 * (0.94 + 0.12 * k);
+      S.F = { x: W * 0.62, y: H * 0.4 };
+      const A = { x: W * 0.02, y: H * 0.96 }, dx = S.F.x - A.x, dy = S.F.y - A.y, dl = Math.hypot(dx, dy);
+      S.dir = { x: dx / dl, y: dy / dl }; S.A = A;
+      S.stop = { x: S.F.x - S.dir.x * S.len * 0.19, y: S.F.y - S.dir.y * S.len * 0.19 };
+      S.trail = new Trail();
+      for (let i = 60; i >= 0; i--) S.trail.push(A.x - S.dir.x * i * S.len * 0.03, A.y - S.dir.y * i * S.len * 0.03);
+      const fs = Math.min(W, H) / 600;
+      S.fish = Array.from({ length: 5 + Math.round(2 * k) }, (_, i) => { const a = rnd(0, TAU), r = rnd(0.03, 0.17) * S.len; return { hx: S.F.x + Math.cos(a) * r, hy: S.F.y + Math.sin(a) * r * 0.8, x: 0, y: 0, a: rnd(0, TAU), s: rnd(30, 40) * fs, ph: rnd(0, 6), al: 1, vx: 0, vy: 0 }; });
+      S.rocks = [[W * 0.86, H * 0.2, S.len * 0.2], [W * 0.95, H * 0.42, S.len * 0.14], [W * 0.79, H * 0.06, S.len * 0.12], [W * 0.12, H * 0.14, S.len * 0.1]];
+      S.grains = []; S.flash = 0;
+    },
+    draw(ctx, t, dt, S, W, H, k) {
+      const ts = warp(t, [[0, 0], [2.1, 2.1], [2.75, 2.36], [9, 8.61]]);
+      const sdt = dt * (t > 2.1 && t < 2.75 ? 0.4 : 1);
+      const L = S.len, F = S.F, D = S.dir;
+      // creep in, slowing to a stop; a short lunge forward as it inhales
+      const u = E.outQ(seg(ts, 0, 1.95));
+      let head = { x: lerp(S.A.x, S.stop.x, u), y: lerp(S.A.y, S.stop.y, u) };
+      const lunge = ts > 2.15 ? Math.sin(Math.PI * seg(ts, 2.15, 2.5)) * L * 0.06 : 0;
+      head.x += D.x * lunge; head.y += D.y * lunge;
+      S.trail.push(head.x, head.y);
+      const mouth = { x: head.x + D.x * L * 0.01, y: head.y + D.y * L * 0.01 };
+      // --- the slurp ---
+      if (!S.slurp && ts >= 2.15) {
+        S.slurp = true; S.flash = 0.1; S.shake = 6 + 4 * k;
+        for (const f of S.fish) { const d = Math.hypot(f.x - mouth.x, f.y - mouth.y); if (d < L * 0.36) { f.suck = { x: f.x, y: f.y, t0: ts, a0: Math.atan2(f.y - mouth.y, f.x - mouth.x), d }; } else { const dd = d || 1; f.vx = (f.x - mouth.x) / dd * 600; f.vy = (f.y - mouth.y) / dd * 600; f.flee = true; } }
+        const hd = Math.atan2(D.y, D.x); for (let i = 0; i < 130 + 60 * k; i++) { const a = hd + rnd(-1, 1) * rnd(0.3, 1.5), r = L * rnd(0.06, 0.5); S.grains.push({ a, r, r0: r, w: rnd(2.5, 4.5), c: Math.random() < 0.6 ? '#e6ecda' : '#9fb59f', z: rnd(0.8, 2.2) }); }
+      }
+      // --- draw ---
+      const zoom = 1 + 0.14 * E.inOut(seg(t, 1.3, 2.6));
+      const fx = lerp(W / 2, F.x, 0.55 * E.inOut(seg(t, 1.3, 2.6))), fy = lerp(H / 2, F.y, 0.55 * E.inOut(seg(t, 1.3, 2.6)));
+      ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(zoom, zoom); ctx.translate(-fx, -fy);
+      sandFloor(ctx, W, H, t, S, F.x, F.y);
+      // rocks: dark, rounded, lit from the top-left
+      for (const [x, y, r] of S.rocks) {
+        ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.beginPath(); ctx.ellipse(x + r * 0.18, y + r * 0.25, r * 1.0, r * 0.82, 0.3, 0, TAU); ctx.fill();
+        const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r * 1.1); g.addColorStop(0, '#46624f'); g.addColorStop(1, '#13241b');
+        ctx.fillStyle = g; ctx.beginPath();
+        for (let i = 0; i <= 12; i++) { const an = i / 12 * TAU, rr = r * (0.82 + 0.18 * Math.sin(an * 3 + x) + 0.08 * Math.sin(an * 7 + y)); const px = x + Math.cos(an) * rr, py = y + Math.sin(an) * rr * 0.8; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+        ctx.fill();
+      }
+      stepParts(ctx, S, dt, 'under');
+      // the fish: hovering and picking at the sand, until the slurp
+      for (const f of S.fish) {
+        if (f.dead) continue;
+        if (!f.x) { f.x = f.hx; f.y = f.hy; }
+        if (f.suck) {
+          const p = E.inQ(seg(ts, f.suck.t0, f.suck.t0 + 0.24)), rr = f.suck.d * Math.pow(1 - p, 1.6), an = f.suck.a0 + p * 2.2;
+          f.x = mouth.x + Math.cos(an) * rr; f.y = mouth.y + Math.sin(an) * rr; f.a = an + Math.PI * 0.7; f.s *= 1 - 0.5 * p * sdt * 4;
+          if (p >= 1) f.dead = true;
+        } else if (f.flee) { f.x += f.vx * sdt; f.y += f.vy * sdt; f.vx *= Math.pow(0.15, sdt); f.vy *= Math.pow(0.15, sdt); f.a = Math.atan2(f.vy, f.vx); }
+        else { f.x = f.hx + Math.sin(ts * 1.7 + f.ph) * L * 0.025; f.y = f.hy + Math.cos(ts * 1.3 + f.ph * 2) * L * 0.02; f.a = Math.cos(ts * 1.7 + f.ph) > 0 ? 0.2 + f.ph : Math.PI + 0.2 + f.ph; }
+      }
+      topFish(ctx, S.fish, '#efe6d2', ts);
+      const speed = ts < 1.95 ? lerp(0.8, 0.25, seg(ts, 0, 1.95)) : ts < 2.6 ? 0.9 : 0.3;
+      S.ph = (S.ph || 0) + sdt * 7 * speed;
+      const girth = 1 + 0.1 * Math.sin(Math.PI * seg(ts, 2.35, 2.9));
+      topShark(ctx, S.trail, { len: L, color: S.color, kind: 'nurse', phase: S.ph, amp: 0.035 + 0.04 * speed, shadow: 0.32, girth });
+      // barbels at the snout, twitching while it waits
+      const tw = Math.sin(ts * 9) * 0.25 * (ts > 1.4 && ts < 2.15 ? 1 : 0.3), nx = -D.y, ny = D.x;
+      ctx.strokeStyle = shade(S.color, -0.4); ctx.lineWidth = Math.max(1.4, L * 0.006); ctx.lineCap = 'round';
+      for (const sd of [1, -1]) { const bx = head.x + nx * sd * L * 0.022 + D.x * L * 0.004, by = head.y + ny * sd * L * 0.022 + D.y * L * 0.004, an = Math.atan2(D.y, D.x) + sd * (0.35 + tw * sd); ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + Math.cos(an) * L * 0.035, by + Math.sin(an) * L * 0.035); ctx.stroke(); }
+      // the inhale: sand spirals into the mouth and the water folds in on itself
+      if (S.slurp) {
+        const age = ts - 2.15;
+        for (let i = S.grains.length - 1; i >= 0; i--) { const g = S.grains[i], pr = g.r; g.r -= (L * 1.2 + (g.r0 - g.r) * 6) * sdt * g.z; g.a += g.w * sdt * (1 + L * 0.05 / Math.max(g.r, 4)); if (g.r < L * 0.012) { S.grains.splice(i, 1); continue; } const x = mouth.x + Math.cos(g.a) * g.r, y = mouth.y + Math.sin(g.a) * g.r, x2 = mouth.x + Math.cos(g.a - 0.12) * pr, y2 = mouth.y + Math.sin(g.a - 0.12) * pr; ctx.strokeStyle = g.c; ctx.globalAlpha = 0.8; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(x, y); ctx.stroke(); }
+        ctx.globalAlpha = 1;
+        if (age < 0.4) { const q = E.inQ(age / 0.4); for (const [m, w] of [[1, 3], [0.7, 1.6]]) { ctx.strokeStyle = rgba('#e6f5ee', 0.7 * (1 - q)); ctx.lineWidth = w; ctx.beginPath(); ctx.arc(mouth.x, mouth.y, lerp(L * 0.5 * m, L * 0.02, q), 0, TAU); ctx.stroke(); } }
+        if (!S.settle && ts >= 2.7) { S.settle = true; const pts = S.trail.samples([0, L * 0.2, L * 0.4, L * 0.6, L * 0.8]); for (const q of pts) for (let i = 0; i < 4; i++) { const an = rnd(0, TAU), sp = rnd(30, 110); spawn(S, { type: 'mist', x: q.x, y: q.y, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, drag: 0.93, r: rnd(L * 0.07, L * 0.14), color: '#d4dcc6', a: 0.35, max: rnd(1.8, 2.6), layer: 'under' }); } }
+        if (ts > 2.7 && ts < 3.6 && Math.random() < 0.25) { const g = S.trail.samples([L * 0.22])[0]; spawn(S, { type: 'ring', x: g.x + rnd(-L * 0.06, L * 0.06), y: g.y + rnd(-L * 0.06, L * 0.06), r: 1.5, grow: L * 0.02, a: 0.7, w: 1.2, max: 0.9 }); }
+      }
+      stepParts(ctx, S, dt, 'over');
+      ctx.restore();
+      if (S.flash > 0.01) { ctx.fillStyle = `rgba(226,250,238,${S.flash.toFixed(3)})`; ctx.fillRect(0, 0, W, H); S.flash *= Math.pow(0.003, dt); }
+      vignette(ctx, W, H, 0.65);
+    }
+  };
+
   // ---------- which scene for which coach ----------
-  const BY_COACH = { 'Great White': 'greatwhite', Tiger: 'tiger', Mako: 'mako', Hammerhead: 'hammer' };
+  const BY_COACH = { 'Great White': 'greatwhite', Tiger: 'tiger', Mako: 'mako', Hammerhead: 'hammer', Nurse: 'nurse' };
   const STAR = '<svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z" fill="currentColor"/></svg>';
 
   function play(key, level, stars, coach) {
