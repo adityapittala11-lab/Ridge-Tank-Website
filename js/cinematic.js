@@ -42,7 +42,9 @@
     return () => cancelAnimationFrame(raf);
   }
 
-  RT.levelCinematic = function (level, stars) {
+  RT.levelCinematic = function (level, stars, coach) {
+    coach = coach || {};
+    const cName = coach.name || '', cColor = coach.color || '#6fe0a8';
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
     if (document.documentElement.classList.contains('tank-lite')) return false;
     const tier = level >= 28 ? 3 : level >= 14 ? 2 : 1;
@@ -54,13 +56,17 @@
     if (tier >= 2) wrap.appendChild(el('div', 'cine-light'));
     const canvas = el('canvas', 'cine-fish'); wrap.appendChild(canvas);
 
+    // tier 1 and 2: the round's own coach swims across the screen, in its colour
+    if (tier <= 2) {
+      const lead = el('div', 'cine-shark coach', '<svg class="shark" viewBox="0 0 200 84">' + SHARK + '</svg>');
+      lead.style.color = cColor; lead.style.top = (tier === 2 ? 30 : 38) + '%';
+      lead.firstChild.style.setProperty('--beat', tier === 2 ? '0.8s' : '1.1s');
+      wrap.appendChild(lead);
+    }
     if (tier === 2) {
-      [['cine-shark far', 0.42], ['cine-shark near', 0.3]].forEach(([cls, top], i) => {
-        const s = el('div', cls, '<svg class="shark" viewBox="0 0 200 84">' + SHARK + '</svg>');
-        s.style.top = (top * 100 + rnd(-4, 4)) + '%';
-        s.firstChild.style.setProperty('--beat', i ? '0.7s' : '1.1s');
-        wrap.appendChild(s);
-      });
+      const s = el('div', 'cine-shark far', '<svg class="shark" viewBox="0 0 200 84">' + SHARK + '</svg>');
+      s.style.top = (42 + rnd(-4, 4)) + '%'; s.firstChild.style.setProperty('--beat', '1.2s');
+      wrap.appendChild(s);
     }
     if (tier === 3 && RT.megalodon) {
       const k = (level - 28) / 12; // 0 at level 28, 1 at level 40: bigger, slower, closer
@@ -72,7 +78,7 @@
       for (let i = 0; i < 16; i++) { const b = el('i', 'cine-bub'); b.style.cssText = `left:${rnd(4, 96)}%;--s:${rnd(5, 18)}px;--d:${rnd(2.4, 4.2)}s;--t:${rnd(1.6, 2.8)}s`; wrap.appendChild(b); }
     }
     const n = Math.max(1, Math.min(3, stars || 1));
-    const card = el('div', 'cine-card', '<div class="cine-stars">' + Array.from({ length: n }, (_, i) => '<span style="--i:' + i + '">' + STAR + '</span>').join('') + '</div><div class="cine-level">Level ' + level + '</div><div class="cine-word">' + (tier === 3 ? 'Conquered' : 'Passed') + '</div>');
+    const card = el('div', 'cine-card', '<div class="cine-stars">' + Array.from({ length: n }, (_, i) => '<span style="--i:' + i + '">' + STAR + '</span>').join('') + '</div><div class="cine-level">Level ' + level + '</div><div class="cine-word">' + (tier === 3 ? 'Conquered' : 'Passed') + '</div>' + (cName ? '<div class="cine-coach">with ' + cName + '</div>' : ''));
     wrap.appendChild(card);
     document.body.appendChild(wrap);
     const stopFish = school(canvas, tier === 1 ? 70 : tier === 2 ? 110 : 46, tier === 3 ? 2.2 : 2.6, tier === 3 ? '#e9b9c6' : '#bfe9d6');

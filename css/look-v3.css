@@ -808,3 +808,31 @@ html[data-look="v3"] .dw-fin { display: block; width: 100%; height: 36px; transf
 /* the surface line is drawn over the cut */
 html[data-look="v3"] .dw-front { position: absolute; left: 0; right: 0; bottom: 0; height: 14px; z-index: 2; background: var(--wave-line) repeat-x 0 0 / 120px 14px; animation: waveSlide 7s linear infinite; }
 html.tank-lite[data-look="v3"] .dw-front, html.tank-lite[data-look="v3"] .dw-back, html.tank-lite[data-look="v3"] .dw-fin { animation: none !important; }
+
+/* ---------- each shark coach is alive: tail swish, fin, a blink, a jaw on the toothy ones ---------- */
+html[data-look="v3"] .ac-av .av-shark, html[data-look="v3"] .ac-av .av-role { overflow: visible; }
+html[data-look="v3"] .ac-av .av-tail, html[data-look="v3"] .ac-av .av-fin, html[data-look="v3"] .ac-av .av-jaw, html[data-look="v3"] .ac-av .av-eye { transform-box: fill-box; }
+html[data-look="v3"] .ac-av .av-tail { transform-origin: right center; animation: avTail var(--av-beat, 1.5s) ease-in-out infinite; }
+html[data-look="v3"] .ac-av .av-fin { transform-origin: bottom center; animation: avFin calc(var(--av-beat, 1.5s) * 1.3) ease-in-out infinite; }
+html[data-look="v3"] .ac-av .av-swim { transform-box: view-box; transform-origin: 32px 34px; animation: avSwim calc(var(--av-beat, 1.5s) * 2) ease-in-out infinite; }
+html[data-look="v3"] .ac-av .av-eye { animation: avBlink var(--av-blink, 6s) steps(1) infinite; }
+html[data-look="v3"] .ac-av .av-bob { transform-box: view-box; transform-origin: 32px 48px; animation: avBob 3.4s ease-in-out infinite; }
+@keyframes avTail { 0%, 100% { transform: rotate(-11deg); } 50% { transform: rotate(11deg); } }
+@keyframes avFin { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(4deg); } }
+@keyframes avSwim { 0%, 100% { transform: translateY(0) rotate(-0.8deg); } 50% { transform: translateY(-1.3px) rotate(0.8deg); } }
+@keyframes avBlink { 0%, 94%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.1); } }
+@keyframes avBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.6px); } }
+html[data-look="v3"] .ac-av .av-jaw { transform-origin: left center; animation: avChomp 4.5s ease-in-out infinite; }
+@keyframes avChomp { 0%, 70%, 100% { transform: translateY(0); } 80% { transform: translateY(2.2px); } 86% { transform: translateY(0); } }
+/* each coach its own tempo: Mako quick, Nurse calm, Tiger brisk, Great White slow and heavy, Hammerhead sways, Rex chompy */
+html[data-look="v3"] .ac-av.av-mako { --av-beat: 0.7s; --av-blink: 5s; }
+html[data-look="v3"] .ac-av.av-nurse { --av-beat: 2.1s; --av-blink: 7s; }
+html[data-look="v3"] .ac-av.av-tiger { --av-beat: 1.05s; --av-blink: 4.5s; }
+html[data-look="v3"] .ac-av.av-great-white { --av-beat: 2.4s; --av-blink: 8s; }
+html[data-look="v3"] .ac-av.av-hammerhead { --av-beat: 1.6s; }
+html[data-look="v3"] .ac-av.av-hammerhead .av-swim { animation: avSway 3.2s ease-in-out infinite; }
+@keyframes avSway { 0%, 100% { transform: translateX(-1px) rotate(-1.4deg); } 50% { transform: translateX(1px) rotate(1.4deg); } }
+html[data-look="v3"] .ac-av.av-rex .av-jaw { animation-duration: 2.6s; }
+html[data-look="v3"] .ac-av.av-rex { --av-beat: 1.2s; }
+html.tank-lite[data-look="v3"] .ac-av .av-tail, html.tank-lite[data-look="v3"] .ac-av .av-fin, html.tank-lite[data-look="v3"] .ac-av .av-swim, html.tank-lite[data-look="v3"] .ac-av .av-eye, html.tank-lite[data-look="v3"] .ac-av .av-jaw, html.tank-lite[data-look="v3"] .ac-av .av-bob { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { html[data-look="v3"] .ac-av * { animation: none !important; } }
