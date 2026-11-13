@@ -854,3 +854,14 @@ html.tank-lite[data-look="v3"] .ac-av .av-tail, html.tank-lite[data-look="v3"] .
 /* officer tools: jump + safety toggle laid out in the bar */
 html[data-look="v3"] .ac-officer .ac-jump { width: 64px; }
 html[data-look="v3"] .ac-officer-sep { font-weight: 700; opacity: 0.6; margin-left: 6px; }
+
+/* Academy level navigation + tidier officer bar */
+html[data-look="v3"] .ac-crumbs { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+html[data-look="v3"] .ac-crumb-sea { flex: 1 1 auto; min-width: 0; }
+html[data-look="v3"] .ac-nav { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+html[data-look="v3"] .ac-nav-btn { display: inline-flex; align-items: center; gap: 2px; padding: 6px 12px; border: 1px solid var(--line-2, rgba(255,255,255,.18)); border-radius: 0; color: var(--ink); font-size: 14px; font-weight: 600; text-decoration: none; transition: background 0.15s ease, border-color 0.15s ease; }
+html[data-look="v3"] a.ac-nav-btn:hover { background: var(--g-300); color: #07140d; border-color: var(--g-300); }
+html[data-look="v3"] .ac-nav-btn.is-off { opacity: 0.32; }
+html[data-look="v3"] .ac-nav-now { font-size: 13px; opacity: 0.7; padding: 0 4px; min-width: 48px; text-align: center; }
+html[data-look="v3"] .ac-officer { display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap; }
+html[data-look="v3"] .ac-officer-tag { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--g-300); }
