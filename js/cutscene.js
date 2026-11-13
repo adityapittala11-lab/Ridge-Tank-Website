@@ -1146,28 +1146,29 @@
         ctx.fillStyle = i % 2 ? '#f2ece0' : S.color; ctx.beginPath(); ctx.moveTo(x0 + 8 * u, ay); ctx.lineTo(x1 + 8 * u, ay); ctx.lineTo(x1, ay + ah + flapA); ctx.quadraticCurveTo((x0 + x1) / 2, ay + ah + 16 * u + flapA, x0, ay + ah + flapA); ctx.closePath(); ctx.fill();
       }
       ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(sx - aw / 2 + 8 * u, ay, aw, 6 * u);
-      // plane one: straight at the door, bonk, falls
-      if (ts > 0.3 && ts < 1.9) {
-        let x, y, a;
-        if (ts < 1.1) { const q = E.inOut(seg(ts, 0.3, 1.1)), q2 = Math.min(1, q + 0.02); const P = v => ({ x: lerp(sx - W * 0.5, doorX - 30 * u, v), y: lerp(top, doorTop + 60 * u, v) - Math.sin(Math.PI * v) * H * 0.1 }); const p = P(q), p2 = P(q2); x = p.x; y = p.y; a = Math.atan2(p2.y - p.y, p2.x - p.x); }
-        else { const f = ts - 1.1; x = doorX - 30 * u - f * 70 * u; y = doorTop + 60 * u + f * f * 380 * u; a = 1.2 + f * 9; if (y > gy - 6 * u) { y = gy - 6 * u; a = 0.2; } }
-        paperPlane(ctx, x, y, a, 20 * u);
-      }
-      if (!S.bonk && ts >= 1.1) { S.bonk = true; S.shake = 4; for (let i = 0; i < 6; i++) spawn(S, { type: 'scale', x: doorX - 30 * u, y: doorTop + 60 * u, vx: rnd(-200, -40), vy: rnd(-200, 40), g: 500, r: 2, spin: 8, max: 0.6 }); }
+      // plane one: straight at the door, bonk, falls (drawn with a short motion-blur trail)
+      const plane1 = tt => {
+        if (tt < 1.1) { const q = E.inOut(seg(tt, 0.3, 1.1)), q2 = Math.min(1, q + 0.02); const P = v => ({ x: lerp(sx - W * 0.5, doorX - 30 * u, v), y: lerp(top, doorTop + 60 * u, v) - Math.sin(Math.PI * v) * H * 0.1 }); const p = P(q), p2 = P(q2); return { x: p.x, y: p.y, a: Math.atan2(p2.y - p.y, p2.x - p.x) }; }
+        const f = tt - 1.1; let y = doorTop + 60 * u + f * f * 380 * u, a = 1.2 + f * 9; if (y > gy - 6 * u) { y = gy - 6 * u; a = 0.2; } return { x: doorX - 30 * u - f * 70 * u, y, a };
+      };
+      if (ts > 0.3 && ts < 1.9) { for (const [d, al] of [[0.06, 0.15], [0.03, 0.3]]) { if (ts - d > 0.3 && ts < 1.1) { const p = plane1(ts - d); ctx.globalAlpha = al; paperPlane(ctx, p.x, p.y, p.a, 20 * u); ctx.globalAlpha = 1; } } const p = plane1(ts); paperPlane(ctx, p.x, p.y, p.a, 20 * u); }
+      const scr = (x, y) => ({ x: (x - sx) * zb + W * 0.56, y: (y - (gy - 110 * u)) * zb + H * 0.66 });
+      if (!S.bonk && ts >= 1.1) { S.bonk = true; S.shake = 4; { const q = scr(doorX - 30 * u, doorTop + 60 * u); S.chroma = 5; S.zoom = { x: q.x, y: q.y, amt: 0.04 }; S.kick = { x: -8, y: 3 }; } for (let i = 0; i < 6; i++) spawn(S, { type: 'scale', x: doorX - 30 * u, y: doorTop + 60 * u, vx: rnd(-200, -40), vy: rnd(-200, 40), g: 500, r: 2, spin: 8, max: 0.6 }); }
       if (ts > 1.15 && ts < 1.85) { const a = Math.min(1, (ts - 1.15) * 6) * Math.min(1, (1.85 - ts) * 5); ctx.globalAlpha = a; ctx.fillStyle = '#f2ece0'; ctx.beginPath(); ctx.roundRect(sx + 40 * u, top - 54 * u, 120 * u, 40 * u, 12 * u); ctx.fill(); ctx.fillStyle = '#7a1434'; ctx.font = `${Math.round(20 * u)}px Anton, Impact, sans-serif`; ctx.fillText('NOT NOW.', sx + 100 * u, top - 33 * u); ctx.globalAlpha = 1; }
       // plane two: the follow-up. It loops and slides into the mail slot.
       if (ts > 1.3 && ts < 2.16) {
         const P = v => { const b = { x: lerp(sx - W * 0.5, doorX - 14 * u, v), y: lerp(gy - 40 * u, slotY, v) }; const l = seg(v, 0.3, 0.68), r = 70 * u; return { x: b.x + Math.sin(TAU * l) * r * 0.9, y: b.y - (1 - Math.cos(TAU * l)) * r }; };
-        const q = E.inOut(seg(ts, 1.3, 2.15)), p = P(q), p2 = P(Math.min(1, q + 0.01)), sc = q > 0.92 ? lerp(1, 0.4, seg(q, 0.92, 1)) : 1;
-        paperPlane(ctx, p.x, p.y, Math.atan2(p2.y - p.y, p2.x - p.x), 24 * u * sc);
+        const at = tt => { const q = E.inOut(seg(tt, 1.3, 2.15)), p = P(q), p2 = P(Math.min(1, q + 0.01)); return { x: p.x, y: p.y, a: Math.atan2(p2.y - p.y, p2.x - p.x), sc: q > 0.92 ? lerp(1, 0.4, seg(q, 0.92, 1)) : 1 }; };
+        for (const [d, al] of [[0.06, 0.14], [0.03, 0.28]]) if (ts - d > 1.3) { const p = at(ts - d); ctx.globalAlpha = al; paperPlane(ctx, p.x, p.y, p.a, 24 * u * p.sc); ctx.globalAlpha = 1; }
+        const p = at(ts); paperPlane(ctx, p.x, p.y, p.a, 24 * u * p.sc);
         if (Math.random() < 0.5) spawn(S, { type: 'ring', x: p.x, y: p.y, r: 1, grow: 6 * u, a: 0.35, w: 1, max: 0.5 });
       }
-      if (!S.yes && ts >= 2.15) { S.yes = true; S.flash = 0.18; S.shake = 8 + 4 * k; for (let i = 0; i < 40; i++) { const an = rnd(-Math.PI, 0), sp = rnd(120, 420); spawn(S, { type: 'scale', x: doorX, y: doorTop, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, g: 300, r: rnd(1.5, 3), spin: rnd(-10, 10), max: rnd(0.8, 1.5) }); } }
+      if (!S.yes && ts >= 2.15) { S.yes = true; S.flash = 0.12; S.shake = 8 + 4 * k; { const q = scr(doorX, slotY); hit(S, q.x, q.y, 0.8 + 0.2 * k); } for (let i = 0; i < 40; i++) { const an = rnd(-Math.PI, 0), sp = rnd(120, 420); spawn(S, { type: 'scale', x: doorX, y: doorTop, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, g: 300, r: rnd(1.5, 3), spin: rnd(-10, 10), max: rnd(0.8, 1.5) }); } }
       // the smell of fresh bread drifting out of the door
       if (lit > 0.5 && Math.random() < 0.5) spawn(S, { type: 'mist', x: doorX + rnd(-20, 20) * u, y: doorTop - 4 * u, vx: rnd(-20, 20), vy: -rnd(30, 70), r: rnd(10, 20) * u, color: '#f2ece0', a: 0.18, max: 2.2 });
       stepParts(ctx, S, dt, 'over');
       ctx.restore();
-      if (!S.st && ts >= 2.55) { S.st = true; S.shake = 14 + 6 * k; }
+      if (!S.st && ts >= 2.55) { S.st = true; S.shake = 14 + 6 * k; hit(S, W * 0.22, H * 0.34, 0.6); S.focus.a = 0.25; S.kick = { x: 0, y: 14 }; }
       if (ts < 3.3) stamp(ctx, W * 0.22, H * 0.34, 'YES', 76 * u, '#6fe0a8', ts - 2.4, -0.16);
       if (S.flash > 0.01) { ctx.fillStyle = `rgba(255,236,210,${S.flash.toFixed(3)})`; ctx.fillRect(0, 0, W, H); S.flash *= Math.pow(0.003, dt); }
       vignette(ctx, W, H, 0.6);
