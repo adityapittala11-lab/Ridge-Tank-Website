@@ -111,10 +111,10 @@
     function itemsByDate() {
       const map = new Map();
       const add = (date, item) => { if (!map.has(date)) map.set(date, []); map.get(date).push({ ...item, date }); };
-      S.meetings.forEach(m => add(String(m.meeting_date).slice(0, 10), {
+      (RT.allMeetings ? RT.allMeetings() : S.meetings).forEach(m => add(String(m.meeting_date).slice(0, 10), {
         type: m.kind === 'event' ? 'event' : 'meeting',
         title: m.name || (m.kind === 'event' ? 'Event' : 'Meeting'),
-        start: m.start_time, end: m.end_time, location: m.location, description: m.description
+        start: m.start_time, end: m.end_time, location: m.location, description: m.description || (m.fromConfig ? [m.time_label, m.location].filter(Boolean).join(' · ') + '. Walk in, no sign-up.' : '')
       }));
       S.bounties.filter(b => b.active && b.ends_at).forEach(b => add(localDateISO(new Date(b.ends_at)), {
         type: 'deadline', title: 'Bounty ends: ' + b.title, description: `+${b.points} Bites. Claim it before it closes.`

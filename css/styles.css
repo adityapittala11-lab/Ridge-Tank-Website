@@ -1765,8 +1765,9 @@ body.lb-open { overflow: hidden; }
 .ac-facts div { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); font-size: 14px; }
 .ac-facts dt { color: var(--ink-3); }
 .ac-small { font-size: 13px; color: var(--ink-3); margin-top: 12px; }
-.ac-round-wrap { position: fixed; inset: 0; z-index: 85; display: grid; place-items: center; padding: 16px; background: rgb(var(--glass-strong) / 0.84); }
-.ac-round { width: min(760px, 100%); height: min(86dvh, 760px); display: flex; flex-direction: column; border-radius: 0; background: var(--glass-strong); border: 1px solid var(--line-2); overflow: hidden; }
+.ac-round-wrap { position: fixed; inset: 0; z-index: 85; display: grid; place-items: center; padding: 16px; background: rgba(2, 8, 5, 0.8); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+html[data-theme="light"] .ac-round-wrap { background: rgba(11, 36, 25, 0.45); }
+.ac-round { width: min(760px, 100%); height: min(86dvh, 760px); display: flex; flex-direction: column; border-radius: 0; background: #05110c; border: 1px solid var(--line-2); overflow: hidden; }
 .ac-rh { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
 .ac-who { min-width: 0; flex: 1; }
 .ac-who b { display: block; font: 700 17px var(--font-display); }
@@ -1840,6 +1841,7 @@ body.lb-open { overflow: hidden; }
   .ac-edges .when { grid-column: 2; justify-content: flex-start; text-align: left; }
   .ac-cat { grid-template-columns: 96px 1fr 40px; }
   .ac-round-wrap { padding: 0; align-items: end; }
+  .ac-round { height: 100dvh; max-height: none; }
   .ac-round { width: 100%; height: 92dvh; border-radius: 0; }
   .ac-score .big-num { font-size: 60px; }
 }
@@ -2324,3 +2326,5 @@ body.cine-quake #app { animation: cineQuake 0.5s linear 3.45s both; }
 @keyframes csUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 @keyframes csStar { from { opacity: 0; transform: scale(0) rotate(-40deg); } to { opacity: 1; transform: none; } }
 @keyframes csFade { from { opacity: 0; } to { opacity: 1; } }
+
+html[data-theme="light"] .ac-round { background: #fbf7ee; }

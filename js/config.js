@@ -183,6 +183,7 @@ window.RT_CONFIG = {
   teams: {
     open: true,          // false = form closed
     closes: 'Wed, Nov 11',
+    closesOn: '2026-11-11', // the form closes by itself after this day (YYYY-MM-DD); move it to reopen
     seats: 3,
     list: [
       { value: 'presidential', label: 'Presidential Team', icon: 'shield',
