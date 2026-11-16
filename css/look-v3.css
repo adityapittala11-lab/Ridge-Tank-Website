@@ -935,3 +935,18 @@ html[data-theme="light"] .ac-step { color: var(--paper, #f2ece0); }
 .ac-more-rules { margin-top: 18px; }
 .ac-more-rules summary { cursor: pointer; font-weight: 600; padding: 2px 0; }
 .ac-more-rules[open] summary { margin-bottom: 12px; }
+
+/* leaderboard with fewer than 3 people: the podium sits in the middle instead of hugging the left */
+.podium[data-n="1"] { grid-template-columns: minmax(0, 320px); justify-content: center; }
+.podium[data-n="2"] { grid-template-columns: repeat(2, minmax(0, 320px)); justify-content: center; }
+/* the mystery block's "Details soon" is a label, not a button */
+html[data-skin="poster"] .mystery-reveal { background: transparent; color: var(--mint); padding: 0; letter-spacing: 0.06em; text-transform: uppercase; font-size: 13px; }
+/* sponsor page on phones: one perk per row so nothing gets squeezed */
+@media (max-width: 560px) { .sp-perks { grid-template-columns: 1fr !important; } }
+/* footer and small links: comfortable to tap on phones */
+@media (max-width: 720px) {
+  .f-link { min-height: 44px; }
+  .link-sm, .hero-link { display: inline-flex; align-items: center; min-height: 40px; }
+}
+/* Home: the two lower cards line up as a pair */
+html[data-look="v3"] .view-home .home-grid { align-items: stretch; }
