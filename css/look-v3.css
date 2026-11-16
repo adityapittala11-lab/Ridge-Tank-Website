@@ -950,3 +950,27 @@ html[data-skin="poster"] .mystery-reveal { background: transparent; color: var(-
 }
 /* Home: the two lower cards line up as a pair */
 html[data-look="v3"] .view-home .home-grid { align-items: stretch; }
+
+/* ---------- home tidy: one fin motion, one type scale ---------- */
+@keyframes finCruise {
+  0% { transform: translate(-60px, 44px); }
+  6% { transform: translate(4vw, 0); }
+  90% { transform: translate(92vw, 0); }
+  96% { transform: translate(97vw, 44px); }
+  100% { transform: translate(calc(100vw + 60px), 44px); }
+}
+@keyframes finBob { 0%, 100% { transform: translateY(1.5px) rotate(-1.5deg); } 50% { transform: translateY(0) rotate(1.5deg); } }
+html[data-look="v3"] .dw-clip { position: absolute; left: 0; right: 0; top: 0; bottom: 7px; overflow: hidden; z-index: 1; }
+html[data-look="v3"] .dash-swimmer { bottom: 0; width: 46px; height: 34px; overflow: visible; animation: finCruise 26s linear infinite; }
+html[data-look="v3"] .dw-fin { height: 34px; transform-origin: 50% 100%; animation: finBob 2.6s ease-in-out infinite; }
+html[data-look="v3"] .wl-swimmer { animation: finCruise 26s linear infinite; }
+html[data-look="v3"] .wl-fin { rotate: none; transform-origin: 50% 100%; animation: finBob 2.6s ease-in-out infinite; }
+html[data-look="v3"] .tier-progress .bar-fill { min-width: 11px; }
+html.tank-lite[data-look="v3"] .wl-swimmer, html.tank-lite[data-look="v3"] .wl-fin { animation: none !important; }
+/* type scale on home: 64 title, 56 numbers, 26 sections, 24 names, 15 body, 13 small */
+html[data-look="v3"] .view-home .points-card .big-num, html[data-look="v3"] .view-home .cd-big { font-size: 56px; line-height: 1; }
+html[data-look="v3"] .view-home .ac-home h3 { font: 400 24px/1.1 var(--font-poster); letter-spacing: 0.02em; text-transform: uppercase; }
+html[data-look="v3"] .view-home .ach-n { font-size: 1em; }
+html[data-look="v3"] .view-home .mini-val { font: 400 24px/1.1 var(--font-poster); letter-spacing: 0.02em; }
+html[data-look="v3"] .view-home .pts-unit, html[data-look="v3"] .view-home .cd-when, html[data-look="v3"] .view-home .btn-lg { font-size: 15px; }
+html[data-look="v3"] .view-home .small, html[data-look="v3"] .view-home .tier-chip, html[data-look="v3"] .view-home .tier-progress { font-size: 13px; }
