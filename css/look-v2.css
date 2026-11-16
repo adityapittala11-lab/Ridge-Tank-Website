@@ -34,13 +34,19 @@ html[data-skin="poster"] {
   --ink: var(--snow);
   --ink-2: rgba(241, 244, 241, 0.84);
   --ink-3: rgba(241, 244, 241, 0.66);
-  --ink-4: rgba(241, 244, 241, 0.46);
+  --ink-4: rgba(241, 244, 241, 0.56);
   --line: rgba(241, 244, 241, 0.16);
   --line-2: rgba(241, 244, 241, 0.3);
   --glass: var(--forest-deep);
   --glass-strong: #082a1d;
   --g-300: var(--mint);
   --g-400: #4fcf90;
+  /* the old pink scale, remapped to the brand: soft white text, burgundy fills */
+  --b-200: #f0d7de;
+  --b-300: #f0d7de;
+  --b-400: #9b1c45;
+  --b-500: var(--burgundy);
+  --meg: #9b1c45;
 
   /* the next-meeting ticket (landing page, log in page, Home) */
   --ticket-bg: var(--burgundy);
@@ -67,7 +73,7 @@ html[data-skin="poster"][data-theme="light"] {
   --ink: var(--pine-ink);
   --ink-2: rgba(11, 36, 25, 0.84);
   --ink-3: rgba(11, 36, 25, 0.66);
-  --ink-4: rgba(11, 36, 25, 0.46);
+  --ink-4: rgba(11, 36, 25, 0.62);
   --line: rgba(11, 36, 25, 0.16);
   --line-2: rgba(11, 36, 25, 0.32);
   --glass: #fbf7ee;
@@ -75,6 +81,11 @@ html[data-skin="poster"][data-theme="light"] {
   --g-200: var(--forest);
   --g-300: #14694a;
   --g-400: #14694a;
+  --b-200: var(--burgundy);
+  --b-300: var(--burgundy);
+  --b-400: var(--burgundy);
+  --b-500: var(--burgundy);
+  --meg: var(--burgundy);
   --ticket-bg: var(--forest);
   --ticket-ink: var(--paper);
   --ticket-accent: var(--mint);
@@ -131,6 +142,7 @@ html[data-skin="poster"] .brand-mark { background: var(--burgundy); box-shadow: 
 html[data-skin="poster"] .brand-name { font: 400 22px/1 var(--font-poster); letter-spacing: 0.02em; text-transform: uppercase; }
 html[data-skin="poster"] #topbar .menu-panel, html[data-skin="poster"] .picker-list { background: var(--glass); border: 1px solid var(--line-2); box-shadow: 0 18px 36px -18px rgba(0, 0, 0, 0.55); }
 html[data-skin="poster"] #bottombar { background: var(--glass); }
+html[data-skin="poster"]:not([data-theme="light"]) #topbar .menu-panel, html[data-skin="poster"]:not([data-theme="light"]) #bottombar, html[data-skin="poster"]:not([data-theme="light"]) .picker-list { background: #05110c; }
 html[data-skin="poster"] #app { padding-top: 92px; }
 
 /* ---------- surfaces and controls ---------- */
@@ -155,7 +167,7 @@ html[data-skin="poster"] .f-anim, html[data-skin="poster"] .f-panel.in .f-anim {
 html[data-skin="poster"] .avatar { box-shadow: none; }
 html[data-skin="poster"] .av-g1 { background: #1f8a5c; }
 html[data-skin="poster"] .av-g2 { background: #14694a; }
-html[data-skin="poster"] .av-g3 { background: #2a7d6b; }
+html[data-skin="poster"] .av-g3 { background: #14694a; }
 html[data-skin="poster"] .av-b1 { background: #a51d45; }
 html[data-skin="poster"] .av-b2 { background: var(--burgundy); }
 html[data-skin="poster"] .modal { box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.6); }

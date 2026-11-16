@@ -466,7 +466,7 @@
   SCENES.tiger = {
     dur: 5.3, card: 3.45,
     setup(S, W, H, k, coach) {
-      S.color = (coach && coach.color) || '#D2476E';
+      S.color = (coach && coach.color) || '#9B1C45';
       S.C = { x: W * 0.58, y: H * 0.47 }; S.R = Math.min(W, H) * 0.24;
       S.len = Math.min(W, H) * 0.6 * (0.94 + 0.12 * k);
       const n = Math.round(240 + 100 * k);
@@ -1017,7 +1017,7 @@
   // =====================================================================
   SCENES.cam = {
     dur: 5.0, card: 3.3,
-    setup(S, W, H, k, coach) { S.color = (coach && coach.color) || '#F09AB2'; S.conf = []; S.flash = 0; },
+    setup(S, W, H, k, coach) { S.color = (coach && coach.color) || '#F2ECE0'; S.conf = []; S.flash = 0; },
     draw(ctx, t, dt, S, W, H, k) {
       const ts = warp(t, [[0, 0], [1.75, 1.75], [2.25, 1.95], [9, 8.7]]);
       const port = W < H, cx = W * (port ? 0.5 : 0.6), fl = H * (port ? 0.72 : 0.86), u = Math.min(H / 540, W / 520);
@@ -1098,7 +1098,7 @@
   }
   SCENES.dana = {
     dur: 5.2, card: 3.4,
-    setup(S, W, H, k, coach) { S.color = (coach && coach.color) || '#D2476E'; S.flash = 0; S.stars = Array.from({ length: 50 }, () => [rnd(0, W), rnd(0, H * 0.4), rnd(0.5, 1.6), rnd(0, 6)]); },
+    setup(S, W, H, k, coach) { S.color = (coach && coach.color) || '#7A1434'; S.flash = 0; S.stars = Array.from({ length: 50 }, () => [rnd(0, W), rnd(0, H * 0.4), rnd(0.5, 1.6), rnd(0, 6)]); },
     draw(ctx, t, dt, S, W, H, k) {
       const ts = warp(t, [[0, 0], [1.95, 1.95], [2.45, 2.15], [9, 8.7]]);
       const port = W < H, u = Math.min(H / 540, W / 520), gy = H * (port ? 0.7 : 0.86), sx = W * (port ? 0.5 : 0.6), sw = 330 * u, top = gy - 300 * u;
@@ -1208,7 +1208,7 @@
     dur: 6.2, card: 4.2,
     setup(S, W, H, k) {
       S.k = k; S.L = H * (3.3 + 0.5 * k); S.flash = 0; S.dark = 0; S.flow = []; S.lines = [];
-      const M = Math.min(W, H), cols = ['#86DDB0', '#D2476E', '#8FA69B', '#3FBF7F', '#C9D2CD'];
+      const M = Math.min(W, H), cols = ['#86DDB0', '#9B1C45', '#8FA69B', '#3FBF7F', '#C9D2CD'];
       S.pod = cols.map((c, i) => ({ c, x: W * (0.12 + i * 0.13) + rnd(-20, 20), y: H * (0.32 + (i % 3) * 0.1) + rnd(-15, 15), len: M * (0.15 + (i === 4 ? 0.04 : 0)), vx: W * 0.06, vy: 0, ang: 0, ph: rnd(0, 6), flee: { x: (i % 2 ? 1 : -1) * rnd(0.6, 1), y: -rnd(0.4, 1) } }));
       S.prey = { x: W * 0.36, y: H * 0.5, len: M * 0.2, ang: 0 };
       S.snow = Array.from({ length: 170 }, () => ({ x: rnd(0, W), y: rnd(0, H), z: rnd(0.3, 1), vx: 0, vy: 0 }));

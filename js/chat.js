@@ -42,9 +42,7 @@
 
     const liveDot = h('span', { class: 'live-pill' }, h('span', { class: 'live-dot' }), 'Connecting');
     const head = h('header', { class: 'chat-head' },
-      h('div', { class: 'chat-title' },
-        h('span', { class: 'chat-icon' }, icon('chat', 18)),
-        h('div', null, h('h2', null, 'Program chat'), h('p', { class: 'muted small' }, S.isAdmin ? 'You post, members reply.' : 'Officers post here. Reply to any message.'))),
+      h('span', { class: 'muted small' }, S.isAdmin ? 'You post, members reply.' : 'Tap the reply arrow on a message to answer it.'),
       h('div', { class: 'row gap-sm' }, S.isAdmin ? clearBtn() : null, liveDot));
 
     const list = h('div', { class: 'chat-list' });
@@ -64,12 +62,12 @@
       const muted = !S.isAdmin && RT.moderation.isMuted(S.me);
       composer.hidden = muted || (!S.isAdmin && !replyTo);
       hint.hidden = !(muted || (!S.isAdmin && !replyTo));
-      hint.textContent = muted ? 'You are muted for ' + RT.moderation.mutedFor(S.me) + '. You can read the chat but not post.' : 'Only officers start messages. Tap the reply arrow on a message to answer it.';
+      hint.textContent = muted ? 'You are muted for ' + RT.moderation.mutedFor(S.me) + '. You can read the chat but not post.' : 'Only officers start new messages.';
       if (S.isAdmin) input.placeholder = replyTo ? 'Write a reply…' : 'Post to everyone…';
     }
 
     const panel = h('section', { class: 'chat card reveal' }, head, h('div', { class: 'chat-body' }, scroller, newPill), replyBar, composer, hint);
-    root.appendChild(panel);
+    root.append(RT.pageHead('Chat', 'Officers post here. You reply.'), panel);
 
     // ---------- data ----------
     function add(row, { animate = false } = {}) {

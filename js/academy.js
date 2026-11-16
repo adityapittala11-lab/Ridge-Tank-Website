@@ -151,7 +151,7 @@
     r = Math.round((t - r) * p + r); g = Math.round((t - g) * p + g); b = Math.round((t - b) * p + b);
     return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
   }
-  const AVC = { Nurse: '#86DDB0', Tiger: '#D2476E', Hammerhead: '#8FA69B', Mako: '#3FBF7F', 'Great White': '#C9D2CD', Cam: '#F09AB2', Rex: '#A51D45', Sully: '#6F8C7E', Dana: '#D2476E' };
+  const AVC = { Nurse: '#86DDB0', Tiger: '#9B1C45', Hammerhead: '#8FA69B', Mako: '#3FBF7F', 'Great White': '#C9D2CD', Cam: '#F2ECE0', Rex: '#A51D45', Sully: '#6F8C7E', Dana: '#7A1434' };
   function sharkSvg(name) {
     const c = AVC[name], dk = shade(c, -0.5), lt = shade(c, 0.72);
     const body = 'M3 22L17 35C25 30 36 26 46 28C54 30 60 34 63 38C57 41 50 47 40 48.5C30 50 24 46 17 41L3 54L9 38Z';
@@ -249,7 +249,7 @@
     const year = h('section', { class: 'card ac-year' });
     for (let s = 1; s <= 4; s++) year.appendChild(seasonEl(s, p));
     body.append(grid,
-      h('div', { class: 'section-row' }, h('h2', { class: 'h2' }, 'Your year'), h('span', { class: 'muted' }, 'Levels open five at a time. You collect each block’s Edge by checking in at a meeting.')),
+      h('div', { class: 'section-row' }, h('h2', { class: 'h2' }, 'Seasons'), h('span', { class: 'muted' }, 'Levels open five at a time. You collect each block’s Edge by checking in at a meeting.')),
       year);
   }
 
@@ -286,31 +286,20 @@
   }
 
   function nextCard(p) {
-    const el = h('section', { class: 'card span-5' }, h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Next meeting')));
-    const up = S.meetings.map(m => Object.assign({}, m, { d: String(m.meeting_date).slice(0, 10) })).filter(m => m.d >= p.t).sort((a, b) => (a.d < b.d ? -1 : 1));
-    // Same fallback as the Home ticket, so the two pages never disagree about the next meeting.
-    const cd = (window.RT_CONFIG && window.RT_CONFIG.countdown) || {};
-    const m = up[0] || (cd.date && cd.date >= p.t ? { d: cd.date, name: cd.text, location: [cd.time, cd.place].filter(Boolean).join(' · ') } : null);
-    if (!m) { el.appendChild(h('p', { class: 'muted' }, 'No meeting on the calendar yet. Officers add meetings in Officer tools.')); return el; }
-    const dd = daysBetween(p.t, m.d);
+    const el = h('section', { class: 'span-5 ticket-col' });
+    const ticket = RT.meetingBanner ? RT.meetingBanner() : null;
+    if (!ticket) { el.classList.add('card'); el.appendChild(h('p', { class: 'muted' }, 'No meeting on the calendar yet. Officers add meetings in Officer tools.')); return el; }
+    ticket.classList.remove('reveal');
+    el.appendChild(ticket);
+    const m = (RT.allMeetings ? RT.allMeetings() : S.meetings).map(x => Object.assign({}, x, { d: String(x.meeting_date).slice(0, 10) })).filter(x => x.d >= p.t).sort((a, b) => (a.d < b.d ? -1 : 1))[0];
     const todo = [];
-    C.blocks.forEach(b => {
-      const c = blockClaim(b, p);
-      if (c.state === 'ready' && m.d >= c.from) todo.push(h('li', null, h('i'), h('span', null, 'Check in to collect ' + rewardText(b.reward))));
-    });
-    const gate = C.blocks.find(b => b.gate === m.d);
-    if (gate && blockClaim(gate, p).state === 'locked') {
-      let have = 0;
-      for (let n = gate.a; n <= gate.b; n++) if (p.best[n]) have++;
-      todo.push(h('li', null, h('i'), h('span', null, `Finish levels ${gate.a} to ${gate.b} (${have} of 5 done)`)));
+    if (m) {
+      C.blocks.forEach(b => { const c = blockClaim(b, p); if (c.state === 'ready' && m.d >= c.from) todo.push('Check in to collect ' + rewardText(b.reward) + '.'); });
+      const gate = C.blocks.find(b => b.gate === m.d);
+      if (gate && blockClaim(gate, p).state === 'locked') { let have = 0; for (let n = gate.a; n <= gate.b; n++) if (p.best[n]) have++; todo.push(`Finish levels ${gate.a} to ${gate.b} first (${have} of 5 done).`); }
     }
-    todo.push(h('li', null, h('i'), h('span', null, 'Check in at the door')));
-    el.append(
-      h('div', { class: 'next-when' }, dd === 0 ? 'Today' : dd === 1 ? 'Tomorrow' : 'In ' + dd + ' days'),
-      h('p', { class: 'muted small' }, longDate(m.d) + (m.location ? ' · ' + m.location : '')),
-      h('p', { class: 'ac-next-name' }, m.name || 'Meeting'),
-      h('p', { class: 'card-label ac-gap' }, 'Before you go'),
-      h('ul', { class: 'ac-checks' }, todo));
+    todo.push('Check in at the door to earn your Bites.');
+    el.appendChild(h('div', { class: 'ticket-todo' }, h('p', { class: 'card-label' }, 'Before you go'), h('ul', null, todo.map(t => h('li', null, t)))));
     return el;
   }
 

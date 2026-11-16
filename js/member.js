@@ -305,7 +305,7 @@
     const heroCard = h('section', { class: 'card profile-hero reveal', style: { '--i': 0 } },
       h('div', { class: 'profile-avatar' }, avatar(me.name, 84)),
       h('div', { class: 'grow min0' },
-        h('h1', { class: 'profile-name' }, me.name),
+        h('h2', { class: 'profile-name' }, me.name),
         h('div', { class: 'profile-meta' },
           h('span', null, me.grade ? (me.grade === 'Teacher' ? 'Teacher' : `${me.grade}th grade`) : 'Grade not set'),
           h('span', { class: 'sep' }, '·'),
@@ -332,7 +332,7 @@
         h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: RT.signOut }, icon('logout', 16), 'Sign out')));
 
     const activityCard = h('section', { class: 'card reveal', style: { '--i': 5 } }, RT.skeleton(3));
-    root.append(heroCard, h('div', { class: 'dash-grid' }, codeCard, statsCard, ladderCard), badgesWrap, activityCard, account);
+    root.append(RT.pageHead('Profile', 'Your Bites, badges and invite code.'), heroCard, h('div', { class: 'dash-grid' }, codeCard, statsCard, ladderCard), badgesWrap, activityCard, account);
 
     loadMine().then(d => {
       const { cur, next } = RT.tierFor(d.mine.total_points, S.tiers);

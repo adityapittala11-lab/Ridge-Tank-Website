@@ -265,7 +265,6 @@ html[data-look="v3"] .wl-fin { position: absolute; inset: 0; width: 100%; height
   61%, 94% { rotate: 0deg; }
   100% { rotate: 18deg; }
 }
-}
 
 /* ---------- the first meeting: a print on a pin ---------- */
 html[data-look="v3"] .print { position: relative; }
@@ -528,7 +527,7 @@ html[data-look="v3"] .points-card .stand-main::after {
 }
 html[data-look="v3"] .points-card:has(.tier-chip.tier-tiger) .stand-main::after { --my-shark: 112px; background: var(--g-300); }
 html[data-look="v3"] .points-card:has(.tier-chip.tier-white) .stand-main::after { --my-shark: 150px; background: #fff; }
-html[data-look="v3"] .points-card:has(.tier-chip.tier-mega) .stand-main::after { --my-shark: 200px; background: var(--b-300); }
+html[data-look="v3"] .points-card:has(.tier-chip.tier-mega) .stand-main::after { --my-shark: 200px; background: var(--meg, #9b1c45); }
 html[data-look="v3"][data-theme="light"] .points-card .stand-main::after { background: var(--forest); }
 html[data-look="v3"] .stand-stat { transition: translate 0.2s var(--ease), border-color 0.2s; }
 html[data-look="v3"] .stand-stat:hover { translate: 0 -2px; border-color: var(--g-300); background: rgb(var(--tint) / 0.04); }
@@ -671,7 +670,7 @@ html[data-look="v3"] .points-card .stand-main.has-shark::after { display: none; 
 html[data-look="v3"] .my-shark { position: absolute; right: 5%; top: 0; width: 84px; height: auto; color: #a8cdb9; pointer-events: none; animation: sharkIn 1.6s 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both, idle 5s 2.1s ease-in-out infinite; }
 html[data-look="v3"] .my-shark.t1 { width: 118px; color: var(--g-300); }
 html[data-look="v3"] .my-shark.t2 { width: 156px; color: #fff; }
-html[data-look="v3"] .my-shark.t3 { width: 204px; color: var(--b-300); }
+html[data-look="v3"] .my-shark.t3 { width: 204px; color: var(--meg, #9b1c45); }
 html[data-look="v3"][data-theme="light"] .my-shark { color: var(--forest); }
 @keyframes sharkIn { from { opacity: 0; translate: -260px 12px; } to { opacity: 1; translate: 0 0; } }
 html[data-look="v3"] .view-home .timeline li { animation: rise 0.6s var(--ease) both; }
@@ -759,7 +758,7 @@ html[data-look="v3"] .ac-round { position: relative; overflow: hidden; }
 .ac-cel-star { transform: translateY(14px) scale(0); animation: acStar 0.7s cubic-bezier(0.18,1.3,0.4,1) forwards; animation-delay: var(--d, 0ms); }
 @keyframes acStar { 60% { transform: translateY(-6px) scale(1.18) rotate(8deg); } 100% { transform: translateY(0) scale(1) rotate(0); } }
 .ac-cel-word { position: absolute; bottom: 26%; font: 400 clamp(40px, 8vw, 72px)/1 var(--font-poster); letter-spacing: 0.03em; color: var(--snow, #f1f4f1); text-transform: uppercase; opacity: 0; transform: translateY(16px); animation: acWord 0.6s ease 0.3s forwards; }
-.ac-cel-word.miss { color: #ff9bb2; transform: translateY(0) rotate(-4deg); animation: acMiss 0.5s ease forwards; }
+.ac-cel-word.miss { color: var(--b-200); transform: translateY(0) rotate(-4deg); animation: acMiss 0.5s ease forwards; }
 @keyframes acWord { to { opacity: 1; transform: none; } }
 @keyframes acMiss { 0%,100% { transform: translateX(0) rotate(-4deg); } 20% { transform: translateX(-10px) rotate(-4deg); } 40% { transform: translateX(9px) rotate(-3deg); } 60% { transform: translateX(-6px) rotate(-4deg); } 80% { transform: translateX(4px) rotate(-3deg); } }
 .ac-cel-sweep { position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(122,20,52,0.35) 50%, transparent 70%); transform: translateX(-100%); animation: acSweep 0.8s ease forwards; }
@@ -793,8 +792,8 @@ html[data-look="v3"] .megalodon .mg-jaw { transform-origin: 199px 76px; animatio
 /* the whole animal: a slow heavy glide, and a short surge when the jaw snaps */
 html[data-look="v3"] .megalodon.tier-meg { width: 208px; margin-bottom: 14px; animation: mgGlide 9s ease-in-out infinite; }
 @keyframes mgGlide { 0%, 100% { transform: translate(0, 0) rotate(0deg); } 30% { transform: translate(5px, -3px) rotate(-1.2deg); } 62% { transform: translate(-3px, 1px) rotate(0.6deg); } 70% { transform: translate(12px, 0) rotate(-0.4deg); } 82% { transform: translate(4px, 1px) rotate(0.3deg); } }
-html[data-look="v3"] .tier-stop.tier-mega .megalodon { color: var(--b-300); }
-html[data-look="v3"] .my-meg.my-shark { width: 230px; top: -6px; color: var(--b-300); animation: sharkIn 1.8s 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both, mgGlide 9s 2.3s ease-in-out infinite; }
+html[data-look="v3"] .tier-stop.tier-mega .megalodon { color: var(--meg, #9b1c45); }
+html[data-look="v3"] .my-meg.my-shark { width: 230px; top: -6px; color: var(--meg, #9b1c45); animation: sharkIn 1.8s 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both, mgGlide 9s 2.3s ease-in-out infinite; }
 html.tank-lite[data-look="v3"] .megalodon, html.tank-lite[data-look="v3"] .megalodon * { animation: none !important; }
 @media (prefers-reduced-motion: reduce) { html[data-look="v3"] .megalodon, html[data-look="v3"] .megalodon * { animation: none !important; } }
 
@@ -885,13 +884,13 @@ html[data-look="v3"] .ac-officer-tag { display: inline-flex; align-items: center
 }
 /* the ticket stands up in its column: days on top, the details below, punched where they meet */
 @media (min-width: 861px) {
-  html[data-look="v3"] .home-hero-row .countdown-banner { flex-direction: column;
+  html[data-look="v3"] .home-hero-row .countdown-banner, html[data-look="v3"] .ticket-col .countdown-banner { flex-direction: column;
     -webkit-mask-image: radial-gradient(circle 10px at 0 96px, transparent 96%, #000), radial-gradient(circle 10px at 100% 96px, transparent 96%, #000);
     mask-image: radial-gradient(circle 10px at 0 96px, transparent 96%, #000), radial-gradient(circle 10px at 100% 96px, transparent 96%, #000); }
-  html[data-look="v3"] .home-hero-row .cd-num { width: auto; min-width: 0; height: 96px; flex-direction: row; align-items: baseline; justify-content: flex-start; gap: 12px; padding: 22px 24px 0; box-sizing: border-box; border-right: 0 !important; border-bottom: 2px dashed rgba(255, 255, 255, 0.25); }
-  html[data-look="v3"] .home-hero-row .cd-sub { margin: 0; }
-  html[data-look="v3"] .home-hero-row .cd-info { padding: 16px 24px 20px; }
-  html[data-look="v3"] .home-hero-row .cd-what { font-size: 24px; }
+  html[data-look="v3"] .home-hero-row .cd-num, html[data-look="v3"] .ticket-col .cd-num { width: auto; min-width: 0; height: 96px; flex-direction: row; align-items: baseline; justify-content: flex-start; gap: 12px; padding: 22px 24px 0; box-sizing: border-box; border-right: 0 !important; border-bottom: 2px dashed rgba(255, 255, 255, 0.25); }
+  html[data-look="v3"] .home-hero-row .cd-sub, html[data-look="v3"] .ticket-col .cd-sub { margin: 0; }
+  html[data-look="v3"] .home-hero-row .cd-info, html[data-look="v3"] .ticket-col .cd-info { padding: 16px 24px 20px; }
+  html[data-look="v3"] .home-hero-row .cd-what, html[data-look="v3"] .ticket-col .cd-what { font-size: 24px; }
 }
 /* the coach for your next level sits at the right of the Academy's level card */
 .ac-now-head { align-items: center; }
@@ -901,3 +900,27 @@ html[data-look="v3"] .ac-officer-tag { display: inline-flex; align-items: center
 html[data-look="v3"] .sp-receipt .btn-primary { background: #0e402c; color: #f2ece0; border-color: #0e402c; }
 html[data-look="v3"] .sp-receipt .btn-primary:hover { background: #145a3e; }
 html[data-look="v3"] .sp-receipt .btn-ghost { color: #7a1434; border: 2px solid #7a1434; background: transparent; }
+
+/* Academy: the ticket, with what to do before the meeting under it */
+.ticket-col { display: flex; flex-direction: column; gap: 14px; }
+.ticket-col .countdown-banner { margin: 0 !important; }
+.ticket-todo { padding: 4px 4px 0; }
+.ticket-todo .card-label { margin: 0 0 8px; }
+.ticket-todo ul { margin: 0; padding-left: 18px; color: var(--ink-2); font-size: 14.5px; line-height: 1.55; }
+/* section titles look the same on every page (Anton, like Home's) */
+html[data-look="v3"] .section-row .h2 { font: 400 26px/1 var(--font-poster); letter-spacing: 0.02em; text-transform: uppercase; }
+/* chat: the page has its own title now, so the panel's bar is just the status line */
+html[data-look="v3"] .chat-head { padding: 12px 20px; }
+/* light-mode contrast on Home's level card */
+.ach-n { color: var(--pine-ink, #0b2419); }
+html[data-theme="light"] .ach-n { color: var(--paper, #f2ece0); }
+.ach-track { background: rgb(var(--tint) / 0.14); }
+/* the sponsor page's big line is a poster headline like every other page */
+html[data-look="v3"] .sp-title { font-family: var(--font-poster); font-weight: 400; text-transform: uppercase; letter-spacing: 0.01em; line-height: 0.98; }
+/* "this is you" on the boards: a green highlight (mint edge), not pink */
+html[data-look="v3"] .mini-board li.me, html[data-look="v3"] .board-row.me { background: rgb(111 224 168 / 0.1); box-shadow: inset 3px 0 0 var(--g-300); }
+html[data-look="v3"] .podium-slot.me { background: linear-gradient(180deg, rgb(111 224 168 / 0.12), rgb(var(--tint) / 0.015)), var(--glass); }
+html[data-look="v3"][data-theme="light"] .mini-board li.me, html[data-look="v3"][data-theme="light"] .board-row.me { background: rgb(20 105 74 / 0.08); }
+html[data-look="v3"][data-theme="light"] .podium-slot.me { background: linear-gradient(180deg, rgb(20 105 74 / 0.1), transparent), var(--glass); }
+html[data-look="v3"] .you-tag { background: var(--g-300); color: var(--pine-ink, #0b2419); }
+html[data-look="v3"][data-theme="light"] .you-tag { color: var(--paper, #f2ece0); }
