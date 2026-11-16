@@ -4,27 +4,34 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Privacy · Ridge Tank</title>
-  <meta name="color-scheme" content="dark">
-  <meta name="darkreader-lock">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,600..800&family=Geist:wght@400..600&display=swap">
+  <meta name="color-scheme" content="dark light">
+  <script>try{var t=localStorage.getItem("rt_theme");if(t==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}</script>
   <style>
-    :root { --bg: #030705; --ink: #f2efe8; --ink-2: rgba(242, 239, 232, 0.76); --line: rgba(255, 255, 255, 0.1); --g: #86ddb0; }
+    /* Same look as the rest of the site: Anton headlines, Archivo text, forest green (dark) or cream (light). */
+    @font-face { font-family: "Anton"; font-weight: 400; font-display: swap; src: url(fonts/anton.woff2) format("woff2"); }
+    @font-face { font-family: "Archivo"; font-weight: 100 900; font-stretch: 62% 125%; font-display: swap; src: url(fonts/archivo.woff2) format("woff2"); }
+    :root { --bg: #0e402c; --ink: #f1f4f1; --ink-2: rgba(241, 244, 241, 0.84); --ink-3: rgba(241, 244, 241, 0.62); --line: rgba(241, 244, 241, 0.16); --accent: #6fe0a8; --mark: #7a1434; }
+    [data-theme="light"] { --bg: #f2ece0; --ink: #0b2419; --ink-2: rgba(11, 36, 25, 0.84); --ink-3: rgba(11, 36, 25, 0.62); --line: rgba(11, 36, 25, 0.16); --accent: #14694a; }
     * { box-sizing: border-box; }
-    body { margin: 0; background: radial-gradient(60% 40% at 15% 0%, rgba(11, 74, 47, 0.45), transparent 70%), radial-gradient(50% 40% at 100% 100%, rgba(86, 16, 41, 0.4), transparent 70%), var(--bg); color: var(--ink); font: 16px/1.65 "Geist", system-ui, sans-serif; min-height: 100vh; }
-    main { width: min(720px, calc(100% - 32px)); margin: 0 auto; padding: 64px 0 80px; }
-    a { color: var(--g); }
-    h1 { font: 800 clamp(34px, 6vw, 52px)/1.05 "Bricolage Grotesque", sans-serif; letter-spacing: -0.03em; margin: 18px 0 8px; }
-    h2 { font: 700 21px/1.3 "Bricolage Grotesque", sans-serif; margin: 34px 0 8px; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.65 "Archivo", ui-sans-serif, system-ui, sans-serif; }
+    .bar { border-bottom: 1px solid var(--line); }
+    .bar a { width: min(1160px, calc(100% - 32px)); margin: 0 auto; height: 64px; display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; }
+    .mark { width: 32px; height: 32px; display: grid; place-items: center; background: var(--mark); }
+    .name { font: 400 22px/1 "Anton", sans-serif; letter-spacing: 0.02em; text-transform: uppercase; }
+    main { width: min(720px, calc(100% - 32px)); margin: 0 auto; padding: 44px 0 80px; }
+    a { color: var(--accent); }
+    a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    h1 { font: 400 clamp(48px, 9vw, 76px)/0.95 "Anton", sans-serif; letter-spacing: 0.01em; text-transform: uppercase; margin: 20px 0 10px; }
+    h2 { font: 400 24px/1.15 "Anton", sans-serif; letter-spacing: 0.02em; text-transform: uppercase; margin: 38px 0 8px; }
     p, li { color: var(--ink-2); }
     ul { padding-left: 20px; }
     .back { font-size: 14px; text-decoration: none; }
-    .updated { font-size: 14px; color: rgba(242, 239, 232, 0.5); }
-    footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 14px; color: rgba(242, 239, 232, 0.5); }
+    .updated { font-size: 14px; color: var(--ink-3); }
+    footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 14px; color: var(--ink-3); }
   </style>
 </head>
 <body>
+  <header class="bar"><a href="index.html" aria-label="Ridge Tank home"><span class="mark"><svg width="20" height="20" viewBox="0 0 64 64" aria-hidden="true"><path d="M11 45c8.5-1.8 16-8 20.5-18.5C33.7 21 35 15 35.5 9c8 9.7 15 22.8 18.5 36" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 46h46" stroke="#fff" stroke-width="5" stroke-linecap="round"/></svg></span><span class="name">Ridge Tank</span></a></header>
   <main>
     <a class="back" href="index.html">← Back to Ridge Tank</a>
     <h1>Privacy</h1>

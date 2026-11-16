@@ -78,6 +78,9 @@
     if (location.hash !== canon) history.replaceState(null, '', canon);
 
     closeMenu();
+    // the sponsor dashboard has its own header and footer links; redraw them when crossing in or out of it
+    const spDash = t.key === 'sponsor' && t.sub === 'dashboard';
+    if (spDash !== !!RT._spDash) { RT._spDash = spDash; if (!S.user) renderShell(); }
     updateNav(t.key);
     showFooter(t.key);
     if (window.RTMesh) window.RTMesh.setDim(MESH_DIM[t.key] ?? 0.6);
@@ -259,6 +262,8 @@
       mid.appendChild(navSeg);
       bottomSeg = segmented({ items: navItems().filter(i => BOTTOM_TABS.includes(i.value)), value: key, vertical: true, className: 'bottom-seg', ariaLabel: 'Main navigation', onChange: v => go(v) });
       bottomEl.appendChild(bottomSeg);
+    } else if (!S.user && /^#\/sponsor\/dashboard/.test(location.hash)) {
+      right.appendChild(h('a', { class: 'btn btn-ghost btn-sm hide-sm', href: '#/sponsor' }, 'Sponsor page'));
     } else if (!S.user) {
       right.appendChild(h('a', { class: 'btn btn-ghost btn-sm hide-sm', href: '#/', onclick: e => { e.preventDefault(); RT.jump('faq'); } }, 'FAQ'));
       right.appendChild(h('a', { class: 'btn btn-ghost btn-sm hide-sm nav-sponsors', href: '#/sponsor' }, 'Sponsors'));
@@ -407,6 +412,7 @@
 
   // One short row of links. The main bar already covers every page, so the footer doesn't repeat it.
   function footerLinks() {
+    if (!S.user && /^#\/sponsor\/dashboard/.test(location.hash)) return [{ label: 'Sponsor page', href: '#/sponsor' }, { label: 'Privacy', href: 'privacy.html' }];
     if (!S.user) return [
       { label: 'How it works', jump: 'how' },
       { label: 'FAQ', jump: 'faq' },
@@ -463,7 +469,8 @@
     footerEl.hidden = hide;
     document.body.classList.toggle('has-footer', !hide);
     if (hide) { footerKey = null; return; }
-    if (footerKey !== key) { footerKey = key; renderFooter(); } // replays the entrance on each page
+    const fk = key + (RT._spDash ? ':dash' : '');
+    if (footerKey !== fk) { footerKey = fk; renderFooter(); } // replays the entrance on each page
   }
 
   // ---------------- shared bits ----------------
