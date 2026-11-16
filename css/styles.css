@@ -1256,7 +1256,7 @@ body.is-member #toasts { bottom: calc(100px + env(safe-area-inset-bottom)); }
   body.has-footer #app, body.is-member.has-footer #app { padding-bottom: 40px; }
   #site-footer { width: calc(100% - 32px); }
   .f-panel { border-radius: 0 0 0; }
-  body.is-member .f-panel { padding-bottom: calc(92px + env(safe-area-inset-bottom)); }
+  body.is-member #site-footer { margin-bottom: calc(92px + env(safe-area-inset-bottom)); }
   .f-inner { grid-template-columns: 1fr; gap: 32px; padding: 44px 28px 28px; }
   .f-bar { margin: 0 28px; }
   .span-4, .span-5, .span-7, .span-8 { grid-column: span 12; }

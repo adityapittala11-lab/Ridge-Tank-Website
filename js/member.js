@@ -266,7 +266,8 @@
       }
       podium.hidden = filtered;
       rest.forEach((r, i) => list.appendChild(boardRow(r, i)));
-      if (!rest.length) list.appendChild(h('div', { class: 'empty small' }, h('p', { class: 'muted' }, 'Everyone is on the podium.')));
+      list.hidden = !rest.length && !filtered;
+      podium.dataset.n = String(podium.children.length);
     }
 
     function podiumSlot(r) {
