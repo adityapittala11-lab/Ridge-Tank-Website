@@ -140,9 +140,10 @@ window.RT_CONFIG = {
 
   // The year, shown on the landing page. Dates are yyyy-mm-dd; the phase that contains today is marked "Now".
   phases: [
-    { name: 'Spark', from: '2026-10-21', to: '2026-12-02', when: 'Now to Dec 2', text: 'Find a real problem, pick your idea, and talk to the people who have it.' },
-    { name: 'Build', from: '2026-12-02', to: '2026-12-31', when: 'Dec 2 to Dec 31', text: 'Make the smallest version that works. Test it on three people. Fix it.' },
-    { name: 'Sell', from: '2027-01-13', to: '2027-05-12', when: 'Jan 13 on', text: 'Launch, make your first real sale, and show it at Demo Day on Feb 10.' }
+    { name: 'Spark', from: '2026-10-12', to: '2026-12-02', when: 'Now to Dec 2', text: 'Find a real problem, pick your idea, and talk to the people who have it.' },
+    { name: 'Build', from: '2026-12-02', to: '2027-02-10', when: 'Dec 2 to Feb 10', text: 'Make the smallest version that works, test it, launch it, and show it at Demo Day on Feb 10.' },
+    { name: 'Sell', from: '2027-02-10', to: '2027-04-07', when: 'Feb 10 to Apr 7', text: 'Make real sales and get to your first ten customers.' },
+    { name: 'Grow', from: '2027-04-07', to: '2027-05-12', when: 'Apr 7 to May 12', text: 'Grow what works, then pitch it at the Grand Finale on May 12.' }
   ],
   // Clips and photos from the first meeting, shown under the group photo. show: false hides the whole section.
   pitches: {

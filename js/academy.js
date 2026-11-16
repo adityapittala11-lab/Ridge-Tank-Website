@@ -198,7 +198,7 @@
       value: tabFor(sub), ariaLabel: 'Academy', onChange: v => RT.go(v === 'year' ? 'academy' : 'academy/' + v)
     });
     const subLine = h('span', null, 'Loading your year');
-    root.appendChild(RT.pageHead('Academy', subLine, seg));
+    if (!/^level\//.test(sub)) root.appendChild(RT.pageHead('Academy', subLine, seg));
     const body = h('div', null, RT.skeleton(5));
     root.appendChild(body);
 
@@ -482,29 +482,30 @@
       h('header', { class: 'ac-head' },
         h('span', { class: 'big-num' }, String(n)),
         h('div', { class: 'min0' }, h('h1', null, L.t),
-          h('p', { class: 'muted' }, `With ${agentText(n)} · ${se.xp} XP · pass mark ${se.pass} of 20` + (L.mission ? ' · includes a real-world mission' : '')),
+          h('p', { class: 'muted' }, `With ${agentText(n)} · ${se.xp} XP` + (L.mission ? ' · includes a real-world mission' : '')),
           state)),
       h('div', { class: 'ac-grid' },
         h('div', { class: 'stack' },
           h('section', { class: 'card no-copy' },
-            h('h2', { class: 'ac-h' }, 'Learn', h('span', { class: 'muted' }, '3-minute read')),
+            h('h2', { class: 'ac-h' }, h('span', { class: 'ac-step' }, '1'), 'Learn', h('span', { class: 'muted' }, '3-minute read')),
             h('ul', { class: 'ac-bul' }, sentences(L.learn).map(x => h('li', null, x + '.'))),
             h('p', { class: 'ac-note' }, h('b', null, 'For three stars: '), L.mastery),
             L.mission ? h('p', { class: 'ac-note' }, h('b', null, 'Real-world mission: '), L.mission, ' Show an officer at the next meeting.') : null),
           h('section', { class: 'card' },
-            h('h2', { class: 'ac-h' }, 'Build'),
+            h('h2', { class: 'ac-h' }, h('span', { class: 'ac-step' }, '2'), 'Build'),
             h('p', { class: 'muted no-copy' }, L.build),
             h('div', { class: 'ac-draft' }, draft),
             h('div', { class: 'row between', style: { marginTop: '10px' } }, wc,
               h('button', { class: 'btn btn-ghost btn-sm', type: 'button', onclick: e => { example.hidden = !example.hidden; e.currentTarget.textContent = example.hidden ? 'See an example' : 'Hide the example'; } }, 'See an example')),
             example)),
         h('aside', { class: 'card ac-shark no-copy' },
+          h('h2', { class: 'ac-h' }, h('span', { class: 'ac-step' }, '3'), 'Pitch it to ' + ag),
           h('div', { class: 'ac-shark-top' }, portrait(ag, 64), h('div', null, h('h3', null, ag), h('p', { class: 'muted small' }, who ? who.role : ''))),
           h('p', { class: 'ac-quote' }, '“' + C.scripts[n].opener[1] + '”'),
           h('dl', { class: 'ac-facts' },
             h('div', null, h('dt', null, 'Tests'), h('dd', null, L.round.replace(/\.$/, ''))),
-            h('div', null, h('dt', null, 'Judges'), h('dd', null, who && who.judges ? who.judges : 'Customer, Answers')),
-            h('div', null, h('dt', null, 'To pass'), h('dd', null, `${se.pass} of 20, with ${cap(FOCUS[ag])} at 3 or more`))),
+            h('div', null, h('dt', null, 'Scores you on'), h('dd', null, plainJudges(who && who.judges ? who.judges : 'Customer, Answers'))),
+            h('div', null, h('dt', null, 'To pass'), h('dd', null, `${se.pass} of 20 points, with at least 3 for ${PLAIN[FOCUS[ag]] || FOCUS[ag]}`))),
           start,
           h('p', { class: 'ac-small' }, why),
           h('p', { class: 'ac-fair' }, icon('shield', 14), h('span', null, 'Type it yourself. Pasting is off, and rounds that look copied, AI-written or auto-typed don’t count.')),
@@ -527,17 +528,24 @@
         when);
     }));
     body.append(
+      h('section', { class: 'card ac-rewards-intro' },
+        h('h3', null, 'How rewards work'),
+        h('ul', { class: 'ac-rules' },
+          h('li', null, 'Finish a block of 5 levels, then check in at a meeting to collect that block’s reward, called an Edge.'),
+          h('li', null, 'An Edge is a one-time power for a live pitch night (Mini Tank, Demo Day, Shark Gauntlet, Grand Finale). Hold up to 3 and use one per night.'),
+          h('li', null, 'Edges change the rules for you on the night. They never change the sharks’ scores.'))),
       h('section', { class: 'card' }, list),
-      h('div', { class: 'two-col ac-rules-grid' },
-        h('section', { class: 'card' }, h('h3', null, 'The Crown and the boards'),
-          h('ul', { class: 'ac-rules' }, C.crown.map(c => h('li', null, h('b', null, c[0]), ' (' + c[1] + '): ' + c[2])))),
-        h('section', { class: 'card' }, h('h3', null, 'How Edges work'),
-          h('ul', { class: 'ac-rules' },
-            h('li', null, 'Single use. Hold up to 3. Use one per live night: Mini Tank, Demo Day, Shark Gauntlet and the Grand Finale.'),
-            h('li', null, 'Unused Edges expire at the Grand Finale. Every Edge used shows on the screen.'),
-            h('li', null, 'Edges change the live-night rules for you. They never change what the sharks score.'),
-            h('li', null, `Your bites wallet for investing: ${WALLET[p.rank]} notes as a ${p.rank}.`)))));
+      h('details', { class: 'card ac-more-rules' },
+        h('summary', null, 'Full rules: the Crown, the boards and investing'),
+        h('ul', { class: 'ac-rules' }, C.crown.map(c => h('li', null, h('b', null, c[0]), ' (' + c[1] + '): ' + c[2]))),
+        h('ul', { class: 'ac-rules' },
+          h('li', null, 'Unused Edges expire at the Grand Finale. Every Edge used shows on the screen.'),
+          h('li', null, `Bites you can invest at live nights: ${WALLET[p.rank]} as a ${p.rank}.`))));
   }
+
+  // The five scoring areas in plain words, for the level page.
+  const PLAIN = { clear: 'how clear you are', customer: 'knowing your customer', numbers: 'your numbers', persuasion: 'how convincing you are', answers: 'how well you answer' };
+  const plainJudges = j => String(j).split(/\s*,\s*/).map(x => PLAIN[x.toLowerCase()] || x.toLowerCase()).join(' and ').replace(/^./, c => c.toUpperCase());
 
   // ---------------- shark round ----------------
   const CATS = [['clear', 'Clear'], ['customer', 'Customer'], ['numbers', 'Numbers'], ['persuasion', 'Persuasion'], ['answers', 'Answers']];

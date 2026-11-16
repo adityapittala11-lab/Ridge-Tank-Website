@@ -924,3 +924,14 @@ html[data-look="v3"][data-theme="light"] .mini-board li.me, html[data-look="v3"]
 html[data-look="v3"][data-theme="light"] .podium-slot.me { background: linear-gradient(180deg, rgb(20 105 74 / 0.1), transparent), var(--glass); }
 html[data-look="v3"] .you-tag { background: var(--g-300); color: var(--pine-ink, #0b2419); }
 html[data-look="v3"][data-theme="light"] .you-tag { color: var(--paper, #f2ece0); }
+
+/* level page: numbered steps 1 Learn, 2 Build, 3 Pitch it */
+.ac-step { display: inline-grid; place-items: center; width: 26px; height: 26px; margin-right: 10px; background: var(--g-300); color: var(--pine-ink, #0b2419); font: 400 15px/1 var(--font-poster, Anton, sans-serif); vertical-align: 2px; }
+html[data-theme="light"] .ac-step { color: var(--paper, #f2ece0); }
+.ac-shark > .ac-h { margin: 0 0 14px; }
+/* rewards: the detailed rules fold away */
+.ac-rewards-intro { margin-bottom: 18px; }
+.ac-rewards-intro h3 { margin: 0 0 10px; }
+.ac-more-rules { margin-top: 18px; }
+.ac-more-rules summary { cursor: pointer; font-weight: 600; padding: 2px 0; }
+.ac-more-rules[open] summary { margin-bottom: 12px; }

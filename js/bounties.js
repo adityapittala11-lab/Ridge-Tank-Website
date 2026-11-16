@@ -44,7 +44,7 @@
   RT.views.bounties = function (root, t) {
     let tab = t.tab;
     const seg = segmented({
-      items: [{ value: 'open', label: 'Open' }, { value: 'forms', label: 'Forms' }, { value: 'mine', label: 'My claims' }, { value: 'submission', label: 'Submission' }],
+      items: [{ value: 'open', label: 'Open' }, { value: 'mine', label: 'My claims' }, { value: 'forms', label: 'Join the crew' }, { value: 'submission', label: 'Meeting photo' }],
       value: tab, ariaLabel: 'Bounties', onChange: v => RT.go('bounties' + (v === 'open' ? '' : '/' + v))
     });
     root.appendChild(RT.pageHead('Bounties', 'Finish a challenge, earn bonus Bites. Officers check each one before the Bites land.', seg));
@@ -72,7 +72,7 @@
       const latest = info.mine[0];
       let foot;
       if (info.open) {
-        foot = h('button', { class: 'btn btn-primary btn-block', type: 'button', onclick: () => claimModal(b) }, 'Claim it');
+        foot = h('button', { class: 'btn btn-ghost btn-block', type: 'button', onclick: () => claimModal(b) }, 'Claim it');
       } else if (latest && info.mineDone) {
         const st = STATUS[latest.status];
         foot = h('div', { class: 'bounty-status' }, h('span', { class: 'status-pill ' + st.cls }, st.label + (latest.status === 'approved' ? ' +' + latest.points_awarded : '')),
@@ -93,7 +93,7 @@
     function drawMine() {
       const claims = S.myClaims;
       if (!claims.length) {
-        body.appendChild(h('div', { class: 'card empty' }, icon('check', 26, 'muted'), h('h3', null, 'Nothing claimed yet'),
+        body.appendChild(h('div', { class: 'card empty' }, icon('target', 26, 'muted'), h('h3', null, 'Nothing claimed yet'),
           h('p', { class: 'muted' }, 'Claim a bounty and it shows up here while the officers check it.'),
           h('button', { class: 'btn btn-primary', type: 'button', onclick: () => RT.go('bounties') }, 'See open bounties')));
         return;
