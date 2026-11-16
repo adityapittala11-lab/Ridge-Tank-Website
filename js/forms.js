@@ -51,11 +51,11 @@
       box.appendChild(h('div', { class: 'card forms-hero' },
         h('span', { class: 'eyebrow' }, 'Crew applications'),
         h('h2', { class: 'h2' }, 'Join the Ridge Tank crew'),
-        h('p', { class: 'muted' }, `Each team takes only ${cfg.seats || 3} people.` + (cfg.closes ? ` Applications close ${cfg.closes}.` : '')),
+        h('p', { class: 'muted' }, `Each team takes only ${cfg.seats || 3} people.` + (cfg.closes ? ((cfg.closesOn && RT.localDateISO() > cfg.closesOn) ? ` Applications closed ${cfg.closes}.` : ` Applications close ${cfg.closes}.`) : '')),
         cfg.deal ? h('div', { class: 'forms-deal' }, icon('flame', 16), h('span', null, cfg.deal)) : null));
 
       if (mine && !editing) { box.appendChild(statusCard()); return; }
-      if (!cfg.open) { box.appendChild(h('div', { class: 'card empty' }, icon('clock', 26, 'muted'), h('h3', null, 'Applications are closed'), h('p', { class: 'muted' }, 'Watch Updates for the next round.'))); return; }
+      if (!cfg.open || (cfg.closesOn && RT.localDateISO() > cfg.closesOn)) { box.appendChild(h('div', { class: 'card empty' }, icon('clock', 26, 'muted'), h('h3', null, 'Applications are closed'), h('p', { class: 'muted' }, 'Watch Updates for the next round.'))); return; }
       box.appendChild(teamPicker());
       box.appendChild(form());
     }
@@ -238,6 +238,16 @@
   };
 
   // ---------------- Home: red meeting countdown ----------------
+  // The meeting from settings (RT_CONFIG.countdown), shaped like a calendar meeting, when the calendar doesn't
+  // already have one that day. Every page that lists meetings adds it, so they never disagree.
+  RT.configMeeting = function () {
+    const c = (window.RT_CONFIG && window.RT_CONFIG.countdown) || {};
+    const today = RT.localDateISO();
+    if (!c.date || c.date < today) return null;
+    if ((S.meetings || []).some(m => String(m.meeting_date).slice(0, 10) === c.date)) return null;
+    return { id: 'config-meeting', kind: 'meeting', meeting_date: c.date, name: c.text || 'Meeting', location: c.place || '', time_label: c.time || '', fromConfig: true };
+  };
+  RT.allMeetings = () => (S.meetings || []).concat(RT.configMeeting() ? [RT.configMeeting()] : []);
   RT.meetingBanner = function () {
     const c = (window.RT_CONFIG && window.RT_CONFIG.countdown) || {};
     const today = RT.localDateISO();
@@ -254,7 +264,7 @@
     return h('a', { class: 'countdown-banner reveal', href: '#/updates/calendar', role: 'status', 'aria-label': `${big} until the next meeting` },
       h('div', { class: 'cd-num' }, h('span', { class: 'cd-big mono' }, big), h('span', { class: 'cd-sub' }, days === 0 ? 'Meeting day' : 'until the next meeting')),
       h('div', { class: 'cd-info' },
-        h('span', { class: 'cd-eyebrow' }, icon('megaphone', 14), 'Big announcement'),
+        h('span', { class: 'cd-eyebrow' }, icon('calendar', 14), 'Next meeting'),
         h('strong', { class: 'cd-what' }, what),
         h('span', { class: 'cd-when' }, [when, time, place].filter(Boolean).join(' · ')),
         h('span', { class: 'cd-cta small' }, 'Bring a friend. Walk in, no sign-up.')));

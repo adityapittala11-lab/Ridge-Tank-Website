@@ -421,7 +421,9 @@
           h('div', null, h('span', { class: 'card-label' }, 'Receipt'), h('h2', { class: 'sp-receipt-h' }, lvl.price.replace(' once', ''))),
           h('span', { class: 'sp-receipt-stamp ' + (paid ? 'is-paid' : 'is-due') }, status)),
         h('dl', { class: 'sp-receipt-rows' }, rows.map(r => [h('dt', null, r[0]), h('dd', null, r[1])])),
-        !paid && acct.level !== 'inkind'
+        !paid && acct.level !== 'inkind' && !(pay.configured && approved)
+          ? h('div', { class: 'sp-receipt-pay' }, h('p', { class: 'muted small' }, approved ? 'Card payments aren’t switched on yet. We’ll email you an invoice.' : 'We’ll email you once your sponsorship is approved.'), h('a', { class: 'btn btn-ghost btn-lg', href: 'mailto:' + cfg.contact }, 'Email us'))
+        : !paid && acct.level !== 'inkind'
           ? h('div', { class: 'sp-receipt-pay' }, h('p', { class: 'muted small' }, lvl.pay), h('button', { class: 'btn btn-primary btn-lg', type: 'button', onclick: () => RT.go('sponsor/dashboard/payments') }, icon('card', 16), 'Pay ' + lvl.price.replace(' once', '')))
           : h('p', { class: 'sp-receipt-thanks' }, paid ? 'Thank you. You’re backing the next founders.' : lvl.pay)));
       if (todo.length) pane.appendChild(h('section', { class: 'card sp-todo' },

@@ -128,7 +128,7 @@
 
   function renderWeek(el) {
     const today = RT.localDateISO();
-    const m = S.meetings.filter(x => x.meeting_date >= today).sort((a, b) => (a.meeting_date < b.meeting_date ? -1 : 1))[0];
+    const m = (RT.allMeetings ? RT.allMeetings() : S.meetings).filter(x => String(x.meeting_date).slice(0, 10) >= today).sort((a, b) => (a.meeting_date < b.meeting_date ? -1 : 1))[0];
     const a = S.announcements[0];
     clear(el).append(h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'This week'),
       h('a', { class: 'link-sm', href: '#/updates' }, 'Updates & calendar', icon('chevronRight', 14))));
@@ -138,7 +138,7 @@
       const when = days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : `In ${days} days`;
       rows.push(h('li', null, h('span', { class: 'tl-icon' }, icon('calendar', 16)),
         h('div', { class: 'grow min0' }, h('div', { class: 'ellipsis' }, (m.name || 'Meeting') + ' · ' + when),
-          h('div', { class: 'muted small ellipsis' }, fmtDate(m.meeting_date, { weekday: 'long', month: 'short', day: 'numeric' }) + (m.location ? ' · ' + m.location : '')))));
+          h('div', { class: 'muted small ellipsis' }, fmtDate(m.meeting_date, { weekday: 'long', month: 'short', day: 'numeric' }) + (m.time_label ? ' · ' + m.time_label : '') + (m.location ? ' · ' + m.location : '')))));
     }
     if (a) {
       rows.push(h('li', null, h('span', { class: 'tl-icon' + (a.pinned ? ' burg' : '') }, icon(a.pinned ? 'pin' : 'megaphone', 16)),

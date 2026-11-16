@@ -616,7 +616,7 @@
     R = { spec, msgs: [], answers: [], turns: 0, busy: false, done: false, verdict: null, saved: null, sampleIx: 0, timer: null,
       tel: [], stats: spec.draftStats ? Object.assign(newStats(), spec.draftStats) : newStats(), pastes: 0, leaves: 0, lastLeave: 0 };
     const wrap = h('div', { class: 'ac-round-wrap', role: 'presentation' });
-    wrap.addEventListener('click', e => { if (e.target === wrap) closeRound(); });
+    wrap.addEventListener('click', e => { if (e.target === wrap) askClose(); });
     R.wrap = wrap;
     (document.getElementById('modal-root') || document.body).appendChild(wrap);
     document.body.classList.add('modal-open');
@@ -625,6 +625,12 @@
     document.addEventListener('visibilitychange', onLeave);
     drawRound();
     say(spec.opener[0], spec.opener[1]);
+  }
+  // Leaving mid-round throws the answers away, so ask first.
+  function askClose() {
+    if (!R) return;
+    if (R.turns > 0 && !R.verdict && !R.done && !window.confirm('Leave this round? Your answers so far will be lost.')) return;
+    closeRound();
   }
   function closeRound() {
     if (!R) return;
@@ -648,7 +654,7 @@
   }
   function onKey(e) {
     if (!R) return;
-    if (e.key === 'Escape') { e.stopPropagation(); closeRound(); }
+    if (e.key === 'Escape') { e.stopPropagation(); askClose(); }
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) send();
   }
 
