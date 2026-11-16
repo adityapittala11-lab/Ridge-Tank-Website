@@ -471,7 +471,7 @@
         if (grid) grid.parentNode.insertBefore(label('Your numbers'), grid);
         const head = root.querySelector('.page-head');
         // Back wave, then the fin, then the front water: the surface passes in front of the fin's base, so it cuts through the water.
-        if (head) head.after(h('div', { class: 'dash-water', 'aria-hidden': 'true' }, h('div', { class: 'dw-back' }), h('div', { class: 'dash-swimmer' }, fin('dw-fin')), h('div', { class: 'dw-front' })));
+        if (head) head.after(h('div', { class: 'dash-water', 'aria-hidden': 'true' }, h('div', { class: 'dw-back' }), h('div', { class: 'dw-clip' }, h('div', { class: 'dash-swimmer' }, fin('dw-fin'))), h('div', { class: 'dw-front' })));
       }
       const main = root.querySelector('.points-card .stand-main');
       if (main && !main.querySelector('.my-shark')) {
