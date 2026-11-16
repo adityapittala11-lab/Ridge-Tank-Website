@@ -196,9 +196,8 @@
         h('span', { class: 'muted small' }, 'Already backing us'),
         h('strong', null, 'Lund Mortgage Team'), h('strong', null, 'Sylvan Learning')),
       h('div', { class: 'sp-hero-stats' },
-        stat('49', 'students at meeting one'),
-        stat('~$2', 'per student'),
-        stat('1', 'meeting, fully funded')));
+        stat(String((RT_CONFIG.crowd && RT_CONFIG.crowd.count) || 40) + ((RT_CONFIG.crowd && RT_CONFIG.crowd.countSuffix) || ''), 'students at meeting one'),
+        stat('~$2', 'per student')));
 
     const perks = h('section', { class: 'sp-perks reveal', style: { '--i': 1 } },
       cfg.perks.map(p => h('div', { class: 'card sp-perk' }, h('span', { class: 'sp-perk-ico' }, icon(p.icon, 20)), h('h3', null, p.title), h('p', { class: 'muted' }, p.text))));

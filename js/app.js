@@ -39,6 +39,7 @@
     }
     if (!S.user) {
       if (b === 'login' || b === 'signup') return { key: 'auth', mode: b };
+      if (b === 'about') return { key: 'landing' };
       if (MEMBER_ROUTES.has(b) || b === 'admin' || b === 'welcome') return { key: 'auth', mode: 'login' };
       return { key: 'landing' };
     }
