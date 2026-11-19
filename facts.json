@@ -1,0 +1,47 @@
+{
+  "name": "Ridge Tank",
+  "type": "student-run startup program",
+  "updated": "2026-11-18",
+  "school": { "name": "Mountain Ridge High School", "city": "Glendale", "state": "Arizona", "country": "US" },
+  "season": "2026-2027",
+  "affiliation": "Runs with the FBLA chapter at Mountain Ridge High School",
+  "membership": "Free. Any Mountain Ridge student can walk into a meeting.",
+  "contact": "ridgetank.club@gmail.com",
+  "website": "https://ridgetank.com",
+  "people": [
+    { "name": "Aditya Pittala", "role": "President" },
+    { "name": "Mr. Hintz", "role": "Adviser" },
+    { "name": "Kavin", "role": "Vice President" },
+    { "name": "Navya", "role": "Communications" }
+  ],
+  "dates": [
+    { "date": "2026-10-21", "time": "2:20 PM", "place": "Media Center", "event": "First meeting, 40+ students" },
+    { "date": "2026-11-19", "time": "2:25 PM", "place": "Media Center", "event": "Phase 01: Spark kickoff (may change)" },
+    { "date": "2027-02-10", "event": "Demo Day" },
+    { "date": "2027-05-12", "event": "Grand Finale" }
+  ],
+  "phases": [
+    { "name": "Spark", "from": "2026-10-12", "to": "2026-12-02" },
+    { "name": "Build", "from": "2026-12-02", "to": "2027-02-10" },
+    { "name": "Sell", "from": "2027-02-10", "to": "2027-04-07" },
+    { "name": "Grow", "from": "2027-04-07", "to": "2027-05-12" }
+  ],
+  "points": { "attendance": 100, "pitch": { "1st": 300, "2nd": 200, "3rd": 100, "pitched": 50 } },
+  "leaderboard": { "closes": "2026-12-31", "prize": "iFLY tickets for 1st place" },
+  "pastGuests": [
+    { "name": "Chaitanya NK", "role": "Co-founder and CEO, Track3D (AI software for construction)", "date": "2026-10-21", "format": "Zoom Q&A" }
+  ],
+  "sponsors": {
+    "current": ["Sylvan Learning", "Lund Mortgage Team"],
+    "options": [
+      { "name": "Normal", "price": "$10 per month" },
+      { "name": "One meeting", "price": "$100 once" },
+      { "name": "Full package", "price": "$79.99 per month" },
+      { "name": "Hoodie sponsor", "price": "$333 once", "spots": 60 },
+      { "name": "Event sponsor", "price": "$799 once", "spots": 1 },
+      { "name": "In-kind", "price": "No cash" }
+    ],
+    "signup": "https://ridgetank.com/#/sponsor"
+  },
+  "hoodie": { "launchPrice": "$20", "wasPrice": "$25", "sizes": ["S", "M", "L", "XL", "XXL"], "order": "https://ridgetank.com/hoodie.html" }
+}
