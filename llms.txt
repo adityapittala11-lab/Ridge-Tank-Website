@@ -1,6 +1,6 @@
 # Ridge Tank
 
-> In this site, "Ridge Tank" means the student startup program at Mountain Ridge High School in Glendale, Arizona. It is not a water tank or a geographic landmark.
+> In this site, "Ridge Tank" means the student startup program at Mountain Ridge High School in Glendale, Arizona. It is not a water tank or a geographic landmark. Ridge Tank hoodies are official merchandise of this school program, not a separate clothing brand.
 >
 > Ridge Tank is a student-run startup program at Mountain Ridge High School in Glendale, Arizona. It works like Shark Tank: students pitch real ideas, get judged, and build real businesses. It runs with the FBLA chapter at the school. Membership is free, and any Mountain Ridge student can walk into a meeting.
 
@@ -24,4 +24,5 @@
 
 ## Pages
 - [Sponsor Ridge Tank](https://ridgetank.com/#/sponsor)
+- [Club hoodie (official Ridge Tank merchandise)](https://ridgetank.com/hoodie.html)
 - [Privacy](https://ridgetank.com/privacy.html)

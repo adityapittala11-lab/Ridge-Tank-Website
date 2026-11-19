@@ -115,6 +115,11 @@
         "price": "$79.99 per month"
       },
       {
+        "name": "Hoodie sponsor",
+        "price": "$333 once",
+        "spots": 60
+      },
+      {
         "name": "Event sponsor",
         "price": "$799 once",
         "spots": 1
@@ -134,5 +139,18 @@
       "format": "Zoom, about 30 minutes"
     }
   ],
-  "disambiguation": "In this site, \"Ridge Tank\" means the student startup program at Mountain Ridge High School in Glendale, Arizona. It is not a water tank or a geographic landmark."
+  "disambiguation": "It is not a water tank or a geographic landmark. Ridge Tank hoodies are official merchandise of this school program, not a separate clothing brand.",
+  "hoodie": {
+    "launchPrice": "$20",
+    "wasPrice": "$25",
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "order": "https://ridgetank.com/hoodie.html",
+    "note": "Official Ridge Tank student program merchandise"
+  }
 }
