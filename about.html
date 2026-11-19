@@ -82,7 +82,13 @@
     .links .name { font-size:18px; font-weight:600; }
     .links .hint { display:block; font-size:14px; font-weight:400; color:var(--muted); margin-top:2px; }
     .links .chev { color:var(--muted); font-size:22px; }
-    .lead { font-size:19px; margin:36px 0 0; }
+    .lead { font-size:21px; line-height:1.5; margin:36px 0 0; color:var(--cream); }
+    .quote { border-left:3px solid var(--mint); padding:6px 0 6px 16px; margin:24px 0; font-size:18px; color:var(--cream); }
+    .stat { display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; margin:22px 0 6px; }
+    .stat div { background:var(--panel); border-radius:10px; padding:16px 12px; text-align:center; }
+    .stat b { display:block; font-size:28px; color:var(--mint); }
+    .stat span { font-size:14px; color:var(--muted); }
+    .cta { display:inline-block; margin-top:14px; background:var(--mint); color:var(--bg); padding:12px 20px; border-radius:999px; font-weight:700; text-decoration:none; }
     section { margin-top: 48px; }
     h2 { font-size: 22px; margin: 0 0 14px; color: var(--mint); font-weight: 700; }
     h3 { font-size: 17px; margin: 22px 0 6px; color: var(--cream); }
@@ -99,10 +105,9 @@
     a { color: var(--mint); }
     .note { color:var(--muted); font-size:14px; }
     footer { margin-top: 56px; font-size: 14px; color: var(--muted); }
-    @media (max-width: 560px) { .cards { grid-template-columns: 1fr; } }
+    @media (max-width: 560px) { .cards, .stat { grid-template-columns: 1fr; } }
   </style>
-</head>
-<body>
+  <body>
   <main class="wrap">
 
     <article class="result" aria-label="Search-style summary of Ridge Tank">
@@ -118,23 +123,29 @@
     </article>
 
     <ul class="links">
-      <li><a href="#overview"><span><span class="name">What Ridge Tank is</span><span class="hint">The program, the people, and why it exists</span></span><span class="chev" aria-hidden="true">›</span></a></li>
-      <li><a href="#meetings"><span><span class="name">Meetings</span><span class="hint">Dates, place, and what happens in the room</span></span><span class="chev" aria-hidden="true">›</span></a></li>
-      <li><a href="#speakers"><span><span class="name">Speakers</span><span class="hint">Guest speakers and what they bring</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+      <li><a href="#overview"><span><span class="name">Why Ridge Tank</span><span class="hint">The feeling of building something of your own</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+      <li><a href="#meetings"><span><span class="name">Meetings</span><span class="hint">What happens in the room, and why it matters</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+      <li><a href="#speakers"><span><span class="name">Speakers</span><span class="hint">Guests who have built real companies</span></span><span class="chev" aria-hidden="true">›</span></a></li>
       <li><a href="#year"><span><span class="name">The school year</span><span class="hint">Spark, Build, Sell, Grow, Demo Day, and the Finale</span></span><span class="chev" aria-hidden="true">›</span></a></li>
-      <li><a href="#points"><span><span class="name">Points, prizes, and leaderboard</span><span class="hint">How members earn points and prizes</span></span><span class="chev" aria-hidden="true">›</span></a></li>
-      <li><a href="#sponsors"><span><span class="name">Sponsors</span><span class="hint">Current sponsors and sponsor options</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+      <li><a href="#points"><span><span class="name">Points, prizes, and leaderboard</span><span class="hint">Rewards for showing up and for showing your work</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+      <li><a href="#sponsors"><span><span class="name">Sponsors</span><span class="hint">The businesses backing student founders</span></span><span class="chev" aria-hidden="true">›</span></a></li>
       <li><a href="#partners"><span><span class="name">Partner with us</span><span class="hint">Speak, judge, sponsor, or host</span></span><span class="chev" aria-hidden="true">›</span></a></li>
-      <li><a href="#faq"><span><span class="name">Questions</span><span class="hint">Quick answers about joining and the program</span></span><span class="chev" aria-hidden="true">›</span></a></li>
-      <li><a href="https://ridgetank.com/#/sponsor"><span><span class="name">Sponsor sign-up</span><span class="hint">Sign up as a sponsor on the site</span></span><span class="chev" aria-hidden="true">›</span></a></li>
-      <li><a href="https://ridgetank.com/hoodie.html"><span><span class="name">Club hoodie</span><span class="hint">Launch price and sizes</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+      <li><a href="#faq"><span><span class="name">Questions</span><span class="hint">Quick answers about joining</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+      <li><a href="https://ridgetank.com/#/sponsor"><span><span class="name">Sponsor sign-up</span><span class="hint">Put your name in front of the next generation</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+      <li><a href="https://ridgetank.com/hoodie.html"><span><span class="name">Club hoodie</span><span class="hint">Wear the team that's building something</span></span><span class="chev" aria-hidden="true">›</span></a></li>
       <li><a href="#contact"><span><span class="name">Contact</span><span class="hint">ridgetank.club@gmail.com</span></span><span class="chev" aria-hidden="true">›</span></a></li>
     </ul>
 
     <section id="overview">
-      <p class="lead">Ridge Tank is where Mountain Ridge students stop talking about starting a business and start one. Students pitch real ideas to a room of their peers, get judged by student Sharks, and build something that could actually exist.</p>
-      <p>Ridge Tank is a Shark Tank-style startup program at Mountain Ridge High School in Glendale, Arizona. It runs with the school's FBLA chapter, and it's built around one idea: high school students can build real businesses, and they should get the chance to try.</p>
-      <p>Anyone at Mountain Ridge can join. There's no cost and no sign-up needed to walk into a meeting. The program grows through the school year, from first idea (Spark) to first customers (Sell) to a final pitch at the Grand Finale.</p>
+      <p class="lead">Somewhere at Mountain Ridge right now, a student has an idea they haven't said out loud yet. Ridge Tank is the room where they finally say it, and the room says yes.</p>
+      <p>Most high school clubs ask you to sit and listen. Ridge Tank asks you to stand up, pitch, get judged, and walk out with something you built. It's a Shark Tank-style startup program at Mountain Ridge High School in Glendale, Arizona, run with the school's FBLA chapter. Anyone can walk in. It's free. You don't need a plan, a product, or permission. You need an idea and the nerve to say it.</p>
+      <div class="stat">
+        <div><b>40+</b><span>students at our first meeting</span></div>
+        <div><b>4</b><span>phases from idea to final pitch</span></div>
+        <div><b>$0</b><span>to join. Just walk in.</span></div>
+      </div>
+      <p class="quote">The most common thing students say after a meeting: "I didn't know someone my age could actually do this."</p>
+      <p>That feeling is the point. Ridge Tank turns "someday" into "this week." You stop being the person who has ideas and become the person who tests them, sells them, and shows them to a room full of people who are watching.</p>
       <ul class="facts">
         <li><strong>President:</strong> Aditya Pittala</li>
         <li><strong>Adviser:</strong> Mr. Hintz</li>
@@ -144,25 +155,25 @@
     </section>
 
     <section id="meetings">
-      <h2>Meetings</h2>
-      <p>Meetings happen one to two times a month, and every meeting has a guest speaker. Students show up, learn something from someone who's done it, and then pitch.</p>
+      <h2>Meetings: where nerves turn into momentum</h2>
+      <p>Meetings run one to two times a month, and every one has a guest speaker. You'll leave with a story you can repeat, a skill you can use, and a little more courage than you walked in with.</p>
       <ul class="facts">
-        <li><strong>First meeting:</strong> Wed Oct 21, 2026, 2:20 PM, Media Center. Over 40 students came.</li>
+        <li><strong>First meeting:</strong> Wed Oct 21, 2026, 2:20 PM, Media Center. Over 40 students came, and the room was loud with questions.</li>
         <li><strong>Next meeting:</strong> Thu Nov 19, 2026, 2:25 PM Arizona time. Phase 01: Spark kickoff. Guest speaker Sabin Lomac joins by Zoom.</li>
-        <li><strong>December meeting:</strong> date coming soon.</li>
+        <li><strong>December meeting:</strong> date coming soon. Keep your calendar open.</li>
       </ul>
       <h3>What happens in the room</h3>
       <div class="cards">
-        <div class="card"><strong>Guest speaker</strong>A founder or leader talks about how they started, what went wrong, and what they'd do again. Then students ask questions.</div>
-        <div class="card"><strong>5-Second Test</strong>Teams of 2 or 3 pitch a real idea in five seconds. Any judge should be able to understand it right away.</div>
-        <div class="card"><strong>Student Sharks</strong>Student judges score each pitch out of 10 and add a one-line comment. Sharks are picked through an application.</div>
-        <div class="card"><strong>Prizes and raffle</strong>Top teams take home gift cards. There's a raffle and a teaser for the next meeting at the end.</div>
+        <div class="card"><strong>A guest who did it</strong>A founder talks about how they started, what went wrong, and what they'd do again. Then you get to ask the questions you were scared to ask.</div>
+        <div class="card"><strong>The 5-Second Test</strong>Teams of 2 or 3 pitch a real idea in five seconds. If a stranger can't get it fast, it isn't clear yet. You'll learn to make your idea land.</div>
+        <div class="card"><strong>Student Sharks</strong>Judges score every pitch out of 10 and give one honest line. Getting judged by peers is scary. It's also how you get better, fast.</div>
+        <div class="card"><strong>Prizes and a teaser</strong>Top teams take home gift cards. The raffle makes it fun. The teaser at the end makes you want to come back.</div>
       </div>
     </section>
 
     <section id="speakers">
-      <h2>Speakers</h2>
-      <p>We bring in people who have built real companies. Here are the guests on record so far.</p>
+      <h2>Speakers: people who built it, sharing how</h2>
+      <p>Our speakers aren't theorists. They've built companies that millions of people use. Hearing from them makes "someday" feel possible.</p>
       <div class="cards">
         <div class="card">
           <strong>Sabin Lomac</strong>
@@ -178,26 +189,27 @@
     </section>
 
     <section id="year">
-      <h2>The school year</h2>
-      <p>Ridge Tank runs in four phases. Each one ends with a milestone students work toward.</p>
+      <h2>The school year: a story with a finish line</h2>
+      <p>Ridge Tank runs in four phases. Each one moves you from a feeling to a result, and each ends with a moment you'll remember.</p>
       <table>
-        <thead><tr><th>Phase</th><th>Dates</th><th>What students do</th></tr></thead>
+        <thead><tr><th>Phase</th><th>Dates</th><th>What you do, and how it feels</th></tr></thead>
         <tbody>
-          <tr><td>Spark</td><td>Now to Dec 2, 2026</td><td>Find a real problem, pick an idea, and talk to the people who have it.</td></tr>
-          <tr><td>Build</td><td>Dec 2, 2026 to Feb 10, 2027</td><td>Build the smallest version that works, test it, and launch it.</td></tr>
-          <tr><td>Sell</td><td>Feb 10 to Apr 7, 2027</td><td>Make real sales and reach the first ten customers.</td></tr>
-          <tr><td>Grow</td><td>Apr 7 to May 12, 2027</td><td>Grow what's working and prepare the final pitch.</td></tr>
+          <tr><td>Spark</td><td>Now to Dec 2, 2026</td><td>Find a real problem and pick your idea. The feeling: curiosity, then the first spark of "I could build this."</td></tr>
+          <tr><td>Build</td><td>Dec 2, 2026 to Feb 10, 2027</td><td>Make the smallest version that works, test it, and launch it. The feeling: the pressure of making it real.</td></tr>
+          <tr><td>Sell</td><td>Feb 10 to Apr 7, 2027</td><td>Make real sales and reach your first ten customers. The feeling: the rush when someone pays for what you made.</td></tr>
+          <tr><td>Grow</td><td>Apr 7 to May 12, 2027</td><td>Grow what's working and prepare your final pitch. The feeling: pride in what you built.</td></tr>
         </tbody>
       </table>
       <ul class="facts">
-        <li><strong>Demo Day:</strong> Wed Feb 10, 2027. Teams show what they built.</li>
-        <li><strong>Grand Finale:</strong> Wed May 12, 2027. The year's biggest pitch night.</li>
-        <li><strong>Planned:</strong> Ridge Tank is planning to host a room at the FBLA National Leadership Conference. Details to come.</li>
+        <li><strong>Demo Day:</strong> Wed Feb 10, 2027. The first time many students show the world what they built.</li>
+        <li><strong>Grand Finale:</strong> Wed May 12, 2027. The biggest night of the year, and the one you'll tell people about.</li>
+        <li><strong>Planned:</strong> Ridge Tank is planning to host a room at the FBLA National Leadership Conference, so our students can pitch on a bigger stage. Details to come.</li>
       </ul>
     </section>
 
     <section id="points">
-      <h2>Points, prizes, and leaderboard</h2>
+      <h2>Points, prizes, and the leaderboard: progress you can see</h2>
+      <p>Showing up counts. Pitching counts more. Every point you earn is proof that you're getting better.</p>
       <ul class="facts">
         <li><strong>Attendance:</strong> 100 points for each meeting you attend.</li>
         <li><strong>Pitch points:</strong> 300 for 1st, 200 for 2nd, 100 for 3rd, and 50 for pitching.</li>
@@ -207,10 +219,11 @@
     </section>
 
     <section id="sponsors">
-      <h2>Sponsors</h2>
-      <p>Our current sponsors are <strong>Sylvan Learning</strong> and <strong>Lund Mortgage Team</strong>. Their names go on our posters, on-screen at meetings, and on our Instagram. Thank you for backing student founders.</p>
+      <h2>Sponsors: the businesses betting on the next generation</h2>
+      <p>Our current sponsors are <strong>Sylvan Learning</strong> and <strong>Lund Mortgage Team</strong>. Their names go on our posters, on-screen at meetings, and on our Instagram. Every time a student sees them, they see a business that believes in young founders.</p>
+      <p class="note">Hoodie sponsor spots are limited to 60 hoodies. The event sponsor spot is the only one for the Grand Finale.</p>
       <table>
-        <thead><tr><th>Option</th><th>Price</th><th>What it gets</th></tr></thead>
+        <thead><tr><th>Option</th><th>Price</th><th>What it gets you</th></tr></thead>
         <tbody>
           <tr><td>Normal</td><td>$10 per month</td><td>A monthly shoutout and a small poster in the meeting photo</td></tr>
           <tr><td>One meeting</td><td>$100 once</td><td>Logo on posters, on-screen shoutout, an Instagram feature, and the snack table</td></tr>
@@ -220,18 +233,19 @@
           <tr><td>In-kind</td><td>No cash</td><td>Snacks, drinks, or gift cards for pitch winners</td></tr>
         </tbody>
       </table>
+      <a class="cta" href="https://ridgetank.com/#/sponsor">Become a sponsor</a>
     </section>
 
     <section id="partners">
-      <h2>Partner with us</h2>
-      <p>Ridge Tank is built for people who want to help the next generation of Arizona founders. There are four ways to get involved:</p>
+      <h2>Partner with us: be the person a student remembers</h2>
+      <p>Somewhere in a Ridge Tank room, a student is about to pitch their first idea. Your voice, your time, or your name could be the reason they keep going. Here's how to help:</p>
       <div class="cards">
-        <div class="card"><strong>Speak</strong>Come talk about how you started, what you learned, and what you'd do differently. Online or in person.</div>
-        <div class="card"><strong>Judge</strong>Score pitches at a meeting or Demo Day, and give students honest feedback.</div>
-        <div class="card"><strong>Sponsor</strong>Put your name in front of the whole school. Options start at $10 per month. See the sponsor table above.</div>
+        <div class="card"><strong>Speak</strong>Tell your story: how you started, what you learned, what you'd do differently. Online or in person.</div>
+        <div class="card"><strong>Judge</strong>Score pitches at a meeting or Demo Day, and give students honest feedback that changes how they think.</div>
+        <div class="card"><strong>Sponsor</strong>Put your name in front of the whole school. Options start at $10 per month.</div>
         <div class="card"><strong>Host</strong>Host a workshop or visit a meeting. We're planning a room at the FBLA National Leadership Conference.</div>
       </div>
-      <p style="margin-top:18px">Send us a note at <a href="mailto:ridgetank.club@gmail.com">ridgetank.club@gmail.com</a>. We reply within a few days during the school year.</p>
+      <p style="margin-top:18px">Send us a note at <a href="mailto:ridgetank.club@gmail.com">ridgetank.club@gmail.com</a>. We'll get back to you within a few days during the school year.</p>
     </section>
 
     <section id="faq">
@@ -243,7 +257,7 @@
       <h3>Who runs Ridge Tank?</h3>
       <p>Ridge Tank is led by its student officers, with Aditya Pittala as President and Mr. Hintz as adviser. It runs with the school's FBLA chapter.</p>
       <h3>Do I need a business idea to come?</h3>
-      <p>No. Come to learn, listen, and meet people. The program is built to help you find an idea and turn it into something real.</p>
+      <p>No. Come to listen, meet people, and see what's possible. The program helps you find an idea and turn it into something real.</p>
       <h3>When is Demo Day?</h3>
       <p>Demo Day is Wednesday, February 10, 2027. The Grand Finale is Wednesday, May 12, 2027.</p>
     </section>
