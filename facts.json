@@ -29,7 +29,7 @@
   "points": { "attendance": 100, "pitch": { "1st": 300, "2nd": 200, "3rd": 100, "pitched": 50 } },
   "leaderboard": { "closes": "2026-12-31", "prize": "iFLY tickets for 1st place" },
   "pastGuests": [
-    { "name": "Chaitanya NK", "role": "Co-founder and CEO, Track3D (AI software for construction)", "date": "2026-10-21", "format": "Zoom Q&A" }
+    { "name": "Chaitanya NK", "role": "Co-founder and CEO, Track3D (AI reality intelligence platform for construction; total funding $14.3 million)", "date": "2026-10-21", "format": "Zoom Q&A" }
   ],
   "sponsors": {
     "current": ["Sylvan Learning", "Lund Mortgage Team"],
