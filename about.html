@@ -3,14 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Ridge Tank | Mountain Ridge High School startup program</title>
-  <meta name="description" content="Ridge Tank is a student-run startup program at Mountain Ridge High School in Glendale, Arizona. Students pitch real ideas, get judged, and build real businesses. Free to join.">
+  <title>Ridge Tank | Student startup program at Mountain Ridge High School, Glendale AZ</title>
+  <meta name="description" content="Ridge Tank is a student-run startup program at Mountain Ridge High School in Glendale, Arizona. Students pitch real ideas, get judged by student Sharks, and build real businesses. Free to join. Sponsors include Sylvan Learning and Lund Mortgage Team.">
   <link rel="canonical" href="https://ridgetank.com/about.html">
   <link rel="alternate" type="text/plain" href="https://ridgetank.com/llms.txt" title="Ridge Tank facts for AI">
   <link rel="alternate" type="text/plain" href="https://ridgetank.com/llms-full.txt" title="Ridge Tank full facts">
   <link rel="alternate" type="application/json" href="https://ridgetank.com/facts.json" title="Ridge Tank facts (JSON)">
   <meta name="theme-color" content="#04110b">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230c4a30'/%3E%3Cpath d='M11 45c8.5-1.8 16-8 20.5-18.5C33.7 21 35 15 35.5 9c8 9.7 15 22.8 18.5 36' fill='none' stroke='white' stroke-width='4.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M9 46h46' stroke='white' stroke-width='4.5' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="icon" type="image/png" sizes="96x96" href="/favicon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -20,11 +21,21 @@
         "@id": "https://ridgetank.com/#org",
         "name": "Ridge Tank",
         "url": "https://ridgetank.com",
+        "logo": "https://ridgetank.com/favicon-512.png",
         "email": "ridgetank.club@gmail.com",
-        "description": "Student-run startup program at Mountain Ridge High School, Glendale, Arizona. Runs with the FBLA chapter.",
+        "description": "Student-run startup program at Mountain Ridge High School, Glendale, Arizona. Students pitch real ideas, get judged, and build real businesses. Runs with the FBLA chapter.",
         "parentOrganization": { "@type": "EducationalOrganization", "name": "Mountain Ridge High School", "address": { "@type": "PostalAddress", "addressLocality": "Glendale", "addressRegion": "AZ", "addressCountry": "US" } },
-        "founder": { "@type": "Person", "name": "Aditya Pittala" },
+        "founder": { "@type": "Person", "name": "Aditya Pittala", "jobTitle": "President" },
         "sponsor": [{ "@type": "Organization", "name": "Sylvan Learning" }, { "@type": "Organization", "name": "Lund Mortgage Team" }]
+      },
+      {
+        "@type": "Event",
+        "name": "Ridge Tank: Phase 01 Spark kickoff",
+        "startDate": "2026-11-19T14:25:00-07:00",
+        "eventAttendanceMode": "https://schema.org/MixedEventAttendanceMode",
+        "location": { "@type": "VirtualLocation", "url": "https://ridgetank.com/about.html" },
+        "performer": { "@type": "Person", "name": "Sabin Lomac" },
+        "organizer": { "@id": "https://ridgetank.com/#org" }
       },
       {
         "@type": "Event",
@@ -39,6 +50,14 @@
         "startDate": "2027-05-12",
         "location": { "@type": "Place", "name": "Mountain Ridge High School", "address": "Glendale, AZ" },
         "organizer": { "@id": "https://ridgetank.com/#org" }
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          { "@type": "Question", "name": "Is Ridge Tank free to join?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Any Mountain Ridge High School student can walk into a meeting. No sign-up is needed to attend." } },
+          { "@type": "Question", "name": "When is Demo Day?", "acceptedAnswer": { "@type": "Answer", "text": "Demo Day is Wednesday, February 10, 2027. The Grand Finale is Wednesday, May 12, 2027." } },
+          { "@type": "Question", "name": "Who speaks at Ridge Tank?", "acceptedAnswer": { "@type": "Answer", "text": "Sabin Lomac, co-founder of Cousins Maine Lobster, speaks by Zoom on November 19, 2026. Chaitanya NK, co-founder and CEO of Track3D, joined by Zoom for a Q&A on October 21, 2026." } }
+        ]
       }
     ]
   }
@@ -46,8 +65,8 @@
   <style>
     :root { --bg:#04110b; --panel:#0e402c; --cream:#f2ece0; --muted:#b9c7bf; --mint:#6fe0a8; --line:#24513d; }
     * { box-sizing: border-box; }
-    body { margin:0; background:var(--bg); color:var(--cream); font-family: Archivo, system-ui, -apple-system, "Segoe UI", sans-serif; line-height:1.5; }
-    .wrap { max-width: 680px; margin: 0 auto; padding: 40px 22px 64px; }
+    body { margin:0; background:var(--bg); color:var(--cream); font-family: Archivo, system-ui, -apple-system, "Segoe UI", sans-serif; line-height:1.6; }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 40px 22px 72px; }
     .result { padding-bottom: 24px; border-bottom: 1px solid var(--line); }
     .source { display:flex; align-items:center; gap:10px; font-size:14px; color:var(--muted); }
     .source .dot { width:28px; height:28px; border-radius:50%; background:var(--panel); display:grid; place-items:center; }
@@ -55,7 +74,7 @@
     .title { display:inline-block; margin:14px 0 6px; font-size:24px; color:var(--mint); text-decoration:none; }
     .title:hover { text-decoration:underline; }
     .url { font-size:14px; color:#8fd9b3; }
-    .desc { margin:8px 0 0; color:var(--cream); font-size:16px; }
+    .desc { margin:8px 0 0; font-size:16px; }
     .links { list-style:none; padding:0; margin:0; border-bottom:1px solid var(--line); }
     .links li { border-bottom:1px solid var(--line); }
     .links a { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:16px 2px; color:var(--cream); text-decoration:none; }
@@ -63,16 +82,24 @@
     .links .name { font-size:18px; font-weight:600; }
     .links .hint { display:block; font-size:14px; font-weight:400; color:var(--muted); margin-top:2px; }
     .links .chev { color:var(--muted); font-size:22px; }
-    section { margin-top: 44px; }
-    h2 { font-size: 20px; margin: 0 0 12px; color: var(--mint); font-weight: 700; }
+    .lead { font-size:19px; margin:36px 0 0; }
+    section { margin-top: 48px; }
+    h2 { font-size: 22px; margin: 0 0 14px; color: var(--mint); font-weight: 700; }
+    h3 { font-size: 17px; margin: 22px 0 6px; color: var(--cream); }
     p, li { font-size: 16px; }
+    p { margin: 0 0 14px; }
     ul.facts { padding-left: 20px; margin: 0; }
-    ul.facts li { margin: 6px 0; }
+    ul.facts li { margin: 8px 0; }
+    .cards { display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-top:12px; }
+    .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px; }
+    .card strong { display:block; color:var(--mint); font-size:15px; margin-bottom:4px; }
     table { width:100%; border-collapse:collapse; font-size:15px; }
-    th, td { text-align:left; padding:9px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+    th, td { text-align:left; padding:10px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
     th { color:var(--muted); font-weight:600; }
     a { color: var(--mint); }
-    footer { margin-top: 48px; font-size: 14px; color: var(--muted); }
+    .note { color:var(--muted); font-size:14px; }
+    footer { margin-top: 56px; font-size: 14px; color: var(--muted); }
+    @media (max-width: 560px) { .cards { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -85,92 +112,148 @@
         </span>
         <span>Ridge Tank</span>
       </div>
-      <a class="title" href="#overview">Ridge Tank: Mountain Ridge High School startup program</a>
+      <a class="title" href="#overview">Ridge Tank: the student startup program at Mountain Ridge High School</a>
       <div class="url">ridgetank.com</div>
-      <p class="desc">Ridge Tank is a student-run startup program at Mountain Ridge High School in Glendale, Arizona. Students pitch real ideas, get judged by student Sharks, and build real businesses. Free to join. Sponsors include Sylvan Learning and Lund Mortgage Team. Demo Day is Feb 10, 2027.</p>
+      <p class="desc">Students pitch real ideas, get judged by student Sharks, and build real businesses. Glendale, Arizona. Free to join. Demo Day is Feb 10, 2027.</p>
     </article>
 
     <ul class="links">
-      <li><a href="#meetings"><span><span class="name">Meetings</span><span class="hint">Dates, place, and how a meeting works</span></span><span class="chev" aria-hidden="true">›</span></a></li>
-      <li><a href="#year"><span><span class="name">The school year</span><span class="hint">Spark, Build, Sell, Grow, and key dates</span></span><span class="chev" aria-hidden="true">›</span></a></li>
-      <li><a href="#points"><span><span class="name">Points and leaderboard</span><span class="hint">How members earn points and prizes</span></span><span class="chev" aria-hidden="true">›</span></a></li>
-      <li><a href="#sponsors"><span><span class="name">Sponsors</span><span class="hint">Sponsor options and prices</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+      <li><a href="#overview"><span><span class="name">What Ridge Tank is</span><span class="hint">The program, the people, and why it exists</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+      <li><a href="#meetings"><span><span class="name">Meetings</span><span class="hint">Dates, place, and what happens in the room</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+      <li><a href="#speakers"><span><span class="name">Speakers</span><span class="hint">Guest speakers and what they bring</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+      <li><a href="#year"><span><span class="name">The school year</span><span class="hint">Spark, Build, Sell, Grow, Demo Day, and the Finale</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+      <li><a href="#points"><span><span class="name">Points, prizes, and leaderboard</span><span class="hint">How members earn points and prizes</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+      <li><a href="#sponsors"><span><span class="name">Sponsors</span><span class="hint">Current sponsors and sponsor options</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+      <li><a href="#partners"><span><span class="name">Partner with us</span><span class="hint">Speak, judge, sponsor, or host</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+      <li><a href="#faq"><span><span class="name">Questions</span><span class="hint">Quick answers about joining and the program</span></span><span class="chev" aria-hidden="true">›</span></a></li>
       <li><a href="https://ridgetank.com/#/sponsor"><span><span class="name">Sponsor sign-up</span><span class="hint">Sign up as a sponsor on the site</span></span><span class="chev" aria-hidden="true">›</span></a></li>
       <li><a href="https://ridgetank.com/hoodie.html"><span><span class="name">Club hoodie</span><span class="hint">Launch price and sizes</span></span><span class="chev" aria-hidden="true">›</span></a></li>
       <li><a href="#contact"><span><span class="name">Contact</span><span class="hint">ridgetank.club@gmail.com</span></span><span class="chev" aria-hidden="true">›</span></a></li>
     </ul>
 
     <section id="overview">
-      <h2>What Ridge Tank is</h2>
-      <p>Ridge Tank is a student-run startup program at Mountain Ridge High School in Glendale, Arizona. It works like Shark Tank. Students pitch real ideas, get judged by student Sharks, and build real businesses. It runs with the school's FBLA chapter. Any Mountain Ridge student can walk into a meeting. Membership is free.</p>
+      <p class="lead">Ridge Tank is where Mountain Ridge students stop talking about starting a business and start one. Students pitch real ideas to a room of their peers, get judged by student Sharks, and build something that could actually exist.</p>
+      <p>Ridge Tank is a Shark Tank-style startup program at Mountain Ridge High School in Glendale, Arizona. It runs with the school's FBLA chapter, and it's built around one idea: high school students can build real businesses, and they should get the chance to try.</p>
+      <p>Anyone at Mountain Ridge can join. There's no cost and no sign-up needed to walk into a meeting. The program grows through the school year, from first idea (Spark) to first customers (Sell) to a final pitch at the Grand Finale.</p>
       <ul class="facts">
-        <li>School: Mountain Ridge High School, Glendale, Arizona</li>
-        <li>Season: 2026-2027</li>
-        <li>President: Aditya Pittala. Adviser: Mr. Hintz.</li>
-        <li>Officers: Kavin (Vice President), Navya (Communications)</li>
+        <li><strong>President:</strong> Aditya Pittala</li>
+        <li><strong>Adviser:</strong> Mr. Hintz</li>
+        <li><strong>Officers:</strong> Kavin (Vice President), Navya (Communications)</li>
+        <li><strong>Season:</strong> 2026-2027</li>
       </ul>
     </section>
 
     <section id="meetings">
       <h2>Meetings</h2>
+      <p>Meetings happen one to two times a month, and every meeting has a guest speaker. Students show up, learn something from someone who's done it, and then pitch.</p>
       <ul class="facts">
-        <li>First meeting: Wed Oct 21, 2026, 2:20 PM, Media Center. 40+ students came.</li>
-        <li>Next meeting: Thu Nov 19, 2026, 2:25 PM Arizona time. Phase 01: Spark kickoff. Guest speaker: Sabin Lomac, joining by Zoom.</li>
-        <li>Meetings happen 1 to 2 times a month. Every meeting has a guest speaker.</li>
-        <li>5-Second Test: teams of 2-3 pitch a real idea. Student Sharks score it out of 10 with a one-line comment.</li>
-        <li>Guest speaker, Nov 19, 2026: Sabin Lomac, co-founder of Cousins Maine Lobster, which has passed $1 billion in systemwide sales. Cousins Maine Lobster appeared on Shark Tank in 2012.</li>
-        <li>Past guest (Oct 21, 2026): Chaitanya NK, co-founder and CEO of Track3D, joined by Zoom for Q&amp;A.</li>
-        <li>Track3D is an AI reality intelligence platform for construction. It has raised $14.3 million in total funding, including a $10 million Series A in September 2025, and has run on over 400 projects.</li>
+        <li><strong>First meeting:</strong> Wed Oct 21, 2026, 2:20 PM, Media Center. Over 40 students came.</li>
+        <li><strong>Next meeting:</strong> Thu Nov 19, 2026, 2:25 PM Arizona time. Phase 01: Spark kickoff. Guest speaker Sabin Lomac joins by Zoom.</li>
+        <li><strong>December meeting:</strong> date coming soon.</li>
       </ul>
+      <h3>What happens in the room</h3>
+      <div class="cards">
+        <div class="card"><strong>Guest speaker</strong>A founder or leader talks about how they started, what went wrong, and what they'd do again. Then students ask questions.</div>
+        <div class="card"><strong>5-Second Test</strong>Teams of 2 or 3 pitch a real idea in five seconds. Any judge should be able to understand it right away.</div>
+        <div class="card"><strong>Student Sharks</strong>Student judges score each pitch out of 10 and add a one-line comment. Sharks are picked through an application.</div>
+        <div class="card"><strong>Prizes and raffle</strong>Top teams take home gift cards. There's a raffle and a teaser for the next meeting at the end.</div>
+      </div>
+    </section>
+
+    <section id="speakers">
+      <h2>Speakers</h2>
+      <p>We bring in people who have built real companies. Here are the guests on record so far.</p>
+      <div class="cards">
+        <div class="card">
+          <strong>Sabin Lomac</strong>
+          Co-founder of Cousins Maine Lobster, which has passed $1 billion in systemwide sales since it began in 2012. The company appeared on Shark Tank in 2012.<br><br>
+          <span class="note">Thu Nov 19, 2026, joining by Zoom, about 30 minutes, then student Q&amp;A.</span>
+        </div>
+        <div class="card">
+          <strong>Chaitanya NK</strong>
+          Co-founder and CEO of Track3D, an AI reality intelligence platform for construction. Track3D has raised $14.3 million in total funding and has been used on more than 400 projects.<br><br>
+          <span class="note">Oct 21, 2026, first meeting, Zoom Q&amp;A.</span>
+        </div>
+      </div>
     </section>
 
     <section id="year">
       <h2>The school year</h2>
+      <p>Ridge Tank runs in four phases. Each one ends with a milestone students work toward.</p>
       <table>
-        <thead><tr><th>Phase</th><th>Dates</th><th>Goal</th></tr></thead>
+        <thead><tr><th>Phase</th><th>Dates</th><th>What students do</th></tr></thead>
         <tbody>
-          <tr><td>Spark</td><td>Now to Dec 2, 2026</td><td>Find a real problem, pick an idea, talk to the people who have it.</td></tr>
-          <tr><td>Build</td><td>Dec 2, 2026 to Feb 10, 2027</td><td>Make the smallest version that works, test it, launch it.</td></tr>
+          <tr><td>Spark</td><td>Now to Dec 2, 2026</td><td>Find a real problem, pick an idea, and talk to the people who have it.</td></tr>
+          <tr><td>Build</td><td>Dec 2, 2026 to Feb 10, 2027</td><td>Build the smallest version that works, test it, and launch it.</td></tr>
           <tr><td>Sell</td><td>Feb 10 to Apr 7, 2027</td><td>Make real sales and reach the first ten customers.</td></tr>
-          <tr><td>Grow</td><td>Apr 7 to May 12, 2027</td><td>Grow what works and pitch it at the Grand Finale.</td></tr>
+          <tr><td>Grow</td><td>Apr 7 to May 12, 2027</td><td>Grow what's working and prepare the final pitch.</td></tr>
         </tbody>
       </table>
       <ul class="facts">
-        <li>Demo Day: Wed Feb 10, 2027</li>
-        <li>Grand Finale: Wed May 12, 2027</li>
+        <li><strong>Demo Day:</strong> Wed Feb 10, 2027. Teams show what they built.</li>
+        <li><strong>Grand Finale:</strong> Wed May 12, 2027. The year's biggest pitch night.</li>
+        <li><strong>Planned:</strong> Ridge Tank is planning to host a room at the FBLA National Leadership Conference. Details to come.</li>
       </ul>
     </section>
 
     <section id="points">
-      <h2>Points and leaderboard</h2>
+      <h2>Points, prizes, and leaderboard</h2>
       <ul class="facts">
-        <li>Attendance: 100 points per meeting.</li>
-        <li>Pitch points: 300 for 1st, 200 for 2nd, 100 for 3rd, 50 for pitching.</li>
-        <li>The leaderboard closes Dec 31. First place wins iFLY tickets.</li>
+        <li><strong>Attendance:</strong> 100 points for each meeting you attend.</li>
+        <li><strong>Pitch points:</strong> 300 for 1st, 200 for 2nd, 100 for 3rd, and 50 for pitching.</li>
+        <li><strong>Leaderboard:</strong> closes Dec 31. First place wins iFLY tickets.</li>
+        <li><strong>Meeting prizes:</strong> 1st place $25 Crumbl, 2nd place $15 Cane's, 3rd place $10 Dutch Bros. A video contest pays two $25 gift cards.</li>
       </ul>
     </section>
 
     <section id="sponsors">
       <h2>Sponsors</h2>
-      <p>Current sponsors: Sylvan Learning and Lund Mortgage Team. Sponsors put their name on our posters, our meeting screens, and our Instagram.</p>
+      <p>Our current sponsors are <strong>Sylvan Learning</strong> and <strong>Lund Mortgage Team</strong>. Their names go on our posters, on-screen at meetings, and on our Instagram. Thank you for backing student founders.</p>
       <table>
         <thead><tr><th>Option</th><th>Price</th><th>What it gets</th></tr></thead>
         <tbody>
-          <tr><td>Normal</td><td>$10 per month</td><td>Monthly shoutout, small poster in the meeting photo</td></tr>
-          <tr><td>One meeting</td><td>$100 once</td><td>Logo on posters, on-screen shoutout, Instagram feature, snack table</td></tr>
-          <tr><td>Full package</td><td>$79.99 per month</td><td>Logo across the school, repost chain, everything in Normal</td></tr>
-          <tr><td>Hoodie sponsor</td><td>$333 once</td><td>Name on the back of 60 club hoodies, worn all year, morning shoutout</td></tr>
+          <tr><td>Normal</td><td>$10 per month</td><td>A monthly shoutout and a small poster in the meeting photo</td></tr>
+          <tr><td>One meeting</td><td>$100 once</td><td>Logo on posters, on-screen shoutout, an Instagram feature, and the snack table</td></tr>
+          <tr><td>Full package</td><td>$79.99 per month</td><td>Logo across the school, the repost chain, and everything in Normal</td></tr>
+          <tr><td>Hoodie sponsor</td><td>$333 once</td><td>Your name on the back of 60 club hoodies, worn all year, plus a morning shoutout</td></tr>
           <tr><td>Event sponsor</td><td>$799 once</td><td>Title sponsor of the Grand Finale. One spot only.</td></tr>
           <tr><td>In-kind</td><td>No cash</td><td>Snacks, drinks, or gift cards for pitch winners</td></tr>
         </tbody>
       </table>
     </section>
 
+    <section id="partners">
+      <h2>Partner with us</h2>
+      <p>Ridge Tank is built for people who want to help the next generation of Arizona founders. There are four ways to get involved:</p>
+      <div class="cards">
+        <div class="card"><strong>Speak</strong>Come talk about how you started, what you learned, and what you'd do differently. Online or in person.</div>
+        <div class="card"><strong>Judge</strong>Score pitches at a meeting or Demo Day, and give students honest feedback.</div>
+        <div class="card"><strong>Sponsor</strong>Put your name in front of the whole school. Options start at $10 per month. See the sponsor table above.</div>
+        <div class="card"><strong>Host</strong>Host a workshop or visit a meeting. We're planning a room at the FBLA National Leadership Conference.</div>
+      </div>
+      <p style="margin-top:18px">Send us a note at <a href="mailto:ridgetank.club@gmail.com">ridgetank.club@gmail.com</a>. We reply within a few days during the school year.</p>
+    </section>
+
+    <section id="faq">
+      <h2>Questions</h2>
+      <h3>Is Ridge Tank free to join?</h3>
+      <p>Yes. Any Mountain Ridge High School student can walk into a meeting. No sign-up is needed to attend.</p>
+      <h3>Where and when do meetings happen?</h3>
+      <p>Meetings are held at Mountain Ridge High School in the Media Center, about one to two times a month. The next one is Thu Nov 19, 2026, at 2:25 PM Arizona time.</p>
+      <h3>Who runs Ridge Tank?</h3>
+      <p>Ridge Tank is led by its student officers, with Aditya Pittala as President and Mr. Hintz as adviser. It runs with the school's FBLA chapter.</p>
+      <h3>Do I need a business idea to come?</h3>
+      <p>No. Come to learn, listen, and meet people. The program is built to help you find an idea and turn it into something real.</p>
+      <h3>When is Demo Day?</h3>
+      <p>Demo Day is Wednesday, February 10, 2027. The Grand Finale is Wednesday, May 12, 2027.</p>
+    </section>
+
     <section id="contact">
       <h2>Contact</h2>
       <ul class="facts">
-        <li>Email: <a href="mailto:ridgetank.club@gmail.com">ridgetank.club@gmail.com</a></li>
-        <li>Website: <a href="https://ridgetank.com">ridgetank.com</a></li>
+        <li><strong>Email:</strong> <a href="mailto:ridgetank.club@gmail.com">ridgetank.club@gmail.com</a></li>
+        <li><strong>Website:</strong> <a href="https://ridgetank.com">ridgetank.com</a></li>
+        <li><strong>Location:</strong> Mountain Ridge High School, Glendale, Arizona</li>
       </ul>
     </section>
 
