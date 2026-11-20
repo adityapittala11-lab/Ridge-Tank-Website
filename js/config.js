@@ -71,7 +71,6 @@ window.RT_CONFIG = {
   sponsor: {
     contact: 'ridgetank.club@gmail.com',
     meetings: [
-      { value: '2026-11-19', label: 'Thu, Nov 19', note: 'Phase 01: Spark kickoff' },
       { value: 'december', label: 'December meeting', note: 'Date coming soon' },
       { value: '2027-02-10', label: 'Wed, Feb 10, 2027', note: 'Demo Day' },
       { value: 'any', label: 'Any meeting', note: 'We’ll pick one with you' }
@@ -115,27 +114,27 @@ window.RT_CONFIG = {
   // Opening animation timing in milliseconds.
   // Sign-up incentive shown on the landing page for people who aren't members yet. Set to null to hide it.
   promo: {
-    title: 'Next meeting · Thu, Nov 19',
+    title: 'Next meeting · December',
     text: 'Any MRHS student can join. Just walk in. Bring a friend and you both get candy.'
   },
 
   // Shown in the FAQ. Update after each meeting is scheduled.
-  nextMeeting: 'Thursday, November 19',
+  nextMeeting: 'December (date coming soon)',
 
   // Red countdown banner on Home. The calendar's next meeting wins if there is one; this is the fallback.
   // Set date to '' to hide the banner.
-  countdown: { date: '2026-11-19', time: '2:25 PM', place: 'Media Center', text: 'Phase 01: Spark kickoff' },
+  countdown: { date: '', time: '2:25 PM', place: 'Media Center', text: 'December meeting' },
 
   // The first-meeting photo on the landing page, the sign-up page and the sponsor page. show: false hides it everywhere.
   // Keep "count" true: it is the number of students who came.
   crowd: {
     show: true,
-    photo: 'marketing/meeting-one.jpg', photoSmall: 'marketing/meeting-one-900.jpg',
-    alt: 'Ridge Tank members standing together in the Media Center after the first meeting',
-    caption: 'Oct 21, 2026. Meeting one, in the Media Center.',
-    count: 40, countSuffix: '+',
-    title: 'showed up to meeting one.',
-    text: 'No sign-up, no cost. They walked in and spent the hour asking a real startup CEO anything they wanted. The next meeting kicks off Spark.'
+    photo: 'marketing/meeting-two.jpg', photoSmall: 'marketing/meeting-two-900.jpg',
+    alt: 'Ridge Tank members standing together in the Media Center after the second meeting, holding sponsor signs',
+    caption: 'Nov 19, 2026. Meeting two, Phase 01: Spark.',
+    count: 60, countSuffix: '+',
+    title: 'showed up to meeting two.',
+    text: 'Up from 40 at meeting one. Shark Tank founder Sabin Lomac (Cousins Maine Lobster) spoke, then teams pitched real ideas and our Sharks picked the top three.'
   },
 
   // The year, shown on the landing page. Dates are yyyy-mm-dd; the phase that contains today is marked "Now".
@@ -162,7 +161,7 @@ window.RT_CONFIG = {
   },
 
   // Three short facts under the Join button. Keep them true.
-  proof: ['40+ students at the first meeting', '40 Academy levels, from idea to first sale', 'Free to join'],
+  proof: ['60+ students at our last meeting', '40 Academy levels, from idea to first sale', 'Free to join'],
   // The line under the phases. Set to '' to hide it.
   leaderboardPrize: 'The leaderboard closes Dec 31. First place wins iFLY tickets.',
 
