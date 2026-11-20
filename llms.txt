@@ -21,11 +21,11 @@
 - Past guest: Chaitanya NK, co-founder and CEO of Track3D (total funding $14.3 million)
 
 ## Full facts
-- [About Ridge Tank (full facts, plain HTML)](https://ridgetank.com/about.html)
-- [Full facts, plain text](https://ridgetank.com/llms-full.txt)
-- [Structured facts (JSON)](https://ridgetank.com/facts.json)
+- [About Ridge Tank (full facts, plain HTML)](https://www.ridgetank.com/about.html)
+- [Full facts, plain text](https://www.ridgetank.com/llms-full.txt)
+- [Structured facts (JSON)](https://www.ridgetank.com/facts.json)
 
 ## Pages
-- [Sponsor Ridge Tank](https://ridgetank.com/#/sponsor)
-- [Club hoodie (official Ridge Tank merchandise)](https://ridgetank.com/hoodie.html)
-- [Privacy](https://ridgetank.com/privacy.html)
+- [Sponsor Ridge Tank](https://www.ridgetank.com/#/sponsor)
+- [Club hoodie (official Ridge Tank merchandise)](https://www.ridgetank.com/hoodie.html)
+- [Privacy](https://www.ridgetank.com/privacy.html)

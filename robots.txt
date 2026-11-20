@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://ridgetank.com/sitemap.xml
+Sitemap: https://www.ridgetank.com/sitemap.xml
