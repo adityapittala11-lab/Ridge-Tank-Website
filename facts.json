@@ -1,7 +1,7 @@
 {
   "name": "Ridge Tank",
   "type": "student-run startup program",
-  "updated": "2026-11-18",
+  "updated": "2026-11-20",
   "school": {
     "name": "Mountain Ridge High School",
     "city": "Glendale",
@@ -99,7 +99,8 @@
   "sponsors": {
     "current": [
       "Sylvan Learning",
-      "Lund Mortgage Team"
+      "Lund Mortgage Team",
+      "Ramsey Auto Center"
     ],
     "options": [
       {
@@ -116,8 +117,7 @@
       },
       {
         "name": "Hoodie sponsor",
-        "price": "$333 once",
-        "spots": 60
+        "price": "$333 once"
       },
       {
         "name": "Event sponsor",
@@ -152,5 +152,12 @@
     ],
     "order": "https://ridgetank.com/hoodie.html",
     "note": "Official Ridge Tank student program merchandise"
-  }
+  },
+  "also_known_as": [
+    "RidgeTank",
+    "Ridge-Tank",
+    "Ridge Tank MRHS"
+  ],
+  "instagram": "https://www.instagram.com/ridge.tank/",
+  "not_affiliated_with": "ABC's Shark Tank"
 }

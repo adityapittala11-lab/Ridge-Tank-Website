@@ -133,10 +133,11 @@
     // with bubbles rising inside the letters. The water climbs as you scroll down (js/tank.js).
     const title = V3
       ? h('h1', { class: 'hero-title', 'aria-label': 'Ridge Tank' },
-        h('span', { class: 'ht-line', 'aria-hidden': 'true' }, 'Ridge'),
+        h('span', { class: 'ht-line', 'aria-hidden': 'true' }, 'Ridge'), ' ',
+        // The water copies draw "Tank" with CSS (content: attr(data-text)) so the heading's real text stays "Ridge Tank".
         h('span', { class: 'ht-line ht-tank', 'aria-hidden': 'true' }, 'Tank',
-          h('span', { class: 'ht-water ht-water-back' }, 'Tank'),
-          h('span', { class: 'ht-water ht-water-front' }, 'Tank')))
+          h('span', { class: 'ht-water ht-water-back', 'data-text': 'Tank' }),
+          h('span', { class: 'ht-water ht-water-front', 'data-text': 'Tank' })))
       : h('h1', { class: 'hero-title' }, 'Ridge', h('br'), 'Tank');
     const tk = ticket();
     if (tk && V3) { tk.dataset.px = '0.05'; tk.dataset.swing = '1'; }
@@ -400,7 +401,7 @@
       fin('nudge-fin'),
       h('p', { class: 'nudge-text' },
         m ? (m.days === 0 ? h('strong', null, 'Meeting today') : h('strong', null, h('span', { class: 'nudge-pre' }, 'Next meeting '), m.short)) : h('strong', null, 'Ridge Tank'),
-        m ? h('span', null, [m.time, m.place].filter(Boolean).join(', ')) : h('span', null, 'Any MRHS student can join.')),
+        m ? h('span', null, [m.time, m.place].filter(Boolean).join(', ')) : h('span', null, 'Free to join.')),
       h('a', { class: 'btn btn-primary', href: '#/signup' }, 'Join Ridge Tank'),
       h('button', { class: 'nudge-close', type: 'button', 'aria-label': 'Hide this bar' }, icon('x', 18)));
     bar.querySelector('.nudge-close').addEventListener('click', () => {

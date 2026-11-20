@@ -53,6 +53,17 @@
     return { key: 'home' };
   }
 
+  // Each page gets its own browser-tab title, so tabs, history and search results don't all say the same thing.
+  const BASE_TITLE = 'Ridge Tank | Student Startup Program at Mountain Ridge High School, Glendale AZ';
+  const TITLES = { sponsor: 'Sponsor Ridge Tank', home: 'Home', academy: 'Tank Academy', leaderboard: 'Leaderboard', bounties: 'Bounties',
+    updates: 'Updates & Calendar', chat: 'Chat', profile: 'Your Profile', admin: 'Officer Tools', welcome: 'Welcome', reset: 'Reset Password', about: 'About & FAQ' };
+  function pageTitle(t) {
+    if (t.key === 'landing') return BASE_TITLE;
+    if (t.key === 'auth') return (t.mode === 'signup' ? 'Join Ridge Tank' : 'Log In') + ' | Ridge Tank';
+    if (t.key === 'sponsor' && t.sub === 'dashboard') return 'Sponsor Dashboard | Ridge Tank';
+    return (TITLES[t.key] || 'Ridge Tank') + ' | Ridge Tank, Mountain Ridge High School';
+  }
+
   function canonical(t) {
     if (t.key === 'landing') return '#/';
     if (t.key === 'sponsor') return t.sub === 'dashboard' ? '#/sponsor/dashboard' + (t.tab !== 'overview' ? '/' + t.tab : '') : '#/sponsor' + (t.mode === 'login' ? '/login' : '');
@@ -83,6 +94,7 @@
     if (spDash !== !!RT._spDash) { RT._spDash = spDash; if (!S.user) renderShell(); }
     updateNav(t.key);
     showFooter(t.key);
+    document.title = pageTitle(t);
     if (window.RTMesh) window.RTMesh.setDim(MESH_DIM[t.key] ?? 0.6);
 
     if (current && current.key === t.key && current.handle && current.handle.update) {
@@ -444,7 +456,8 @@
     const links = anim(0.2, 'f-links', h('nav', { 'aria-label': 'Footer' }, footerLinks().map(footerLink)));
 
     const bar = anim(0.3, 'f-bar',
-      h('span', null, `© ${new Date().getFullYear()} Ridge Tank · ${cfg.school}`),
+      h('span', null, `© ${new Date().getFullYear()} Ridge Tank · ${cfg.school} · `, h('a', { href: 'mailto:ridgetank.club@gmail.com' }, 'ridgetank.club@gmail.com'),
+        h('br'), h('small', { class: 'muted' }, 'A student club. Not affiliated with ABC’s Shark Tank.')),
       h('a', { class: 'f-top', href: '#/', onclick: e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' }); } },
         'Back to top', icon('arrowUp', 14)));
 

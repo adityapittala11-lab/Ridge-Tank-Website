@@ -155,6 +155,7 @@ dl, dd { margin: 0; }
   transition: opacity 0.8s var(--ease), transform 0.8s var(--ease);
 }
 #intro .intro-caption.show { opacity: 1; transform: none; }
+#intro .intro-caption::before { content: attr(data-text); }
 #intro .intro-skip {
   position: absolute;
   right: 20px;

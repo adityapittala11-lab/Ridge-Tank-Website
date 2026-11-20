@@ -194,9 +194,9 @@
         h('span', { class: 'muted small' }, 'Your $100 pays for the food, prizes and activities at one full meeting.')),
       h('div', { class: 'sp-backed' },
         h('span', { class: 'muted small' }, 'Already backing us'),
-        h('strong', null, 'Lund Mortgage Team'), h('strong', null, 'Sylvan Learning')),
+        h('strong', null, 'Lund Mortgage Team'), h('strong', null, 'Sylvan Learning'), h('strong', null, 'Ramsey Auto Center')),
       h('div', { class: 'sp-hero-stats' },
-        stat(String((RT_CONFIG.crowd && RT_CONFIG.crowd.count) || 40) + ((RT_CONFIG.crowd && RT_CONFIG.crowd.countSuffix) || ''), 'students at meeting one'),
+        stat(String((RT_CONFIG.crowd && RT_CONFIG.crowd.count) || 40) + ((RT_CONFIG.crowd && RT_CONFIG.crowd.countSuffix) || ''), 'students at our last meeting'),
         stat('~$2', 'per student')));
 
     const perks = h('section', { class: 'sp-perks reveal', style: { '--i': 1 } },

@@ -62,10 +62,11 @@ window.RT_CONFIG = {
   // ignoring each block's open date. false = levels open on their dates (Season 1 starts Oct 12).
   academy: { openNow: true },
 
-  // Footer social icons. Add real accounts only, e.g.
-  // { label: 'Instagram', icon: 'instagram', href: 'https://instagram.com/yourclub' }
-  // (other icon names: 'mail', 'link'). Leave empty to hide the row.
-  social: [],
+  // Footer social icons. Add real accounts only (icon names: 'instagram', 'mail', 'link'). Leave empty to hide the row.
+  social: [
+    { label: 'Ridge Tank on Instagram', icon: 'instagram', href: 'https://www.instagram.com/ridge.tank/' },
+    { label: 'Email Ridge Tank', icon: 'mail', href: 'mailto:ridgetank.club@gmail.com' }
+  ],
 
   // Sponsor sign-up (#/sponsor). Change the meetings as dates get approved. "value" must stay short, lowercase, no spaces.
   sponsor: {
@@ -129,12 +130,12 @@ window.RT_CONFIG = {
   // "video" plays (muted, looping) in place of the photo on the landing page only. Keep "count" true: it is the number of students who came.
   crowd: {
     show: true,
-    photo: 'marketing/meeting-two.jpg', photoSmall: 'marketing/meeting-two-900.jpg',
+    photo: 'marketing/meeting-two.jpg', photoSmall: 'marketing/meeting-two.jpg',
     video: 'marketing/meeting-two-crowd.mp4', poster: 'marketing/meeting-two-crowd.jpg',
     alt: 'The Media Center packed with Ridge Tank members at the second meeting',
     caption: 'Nov 19, 2026. Meeting two, Phase 01: Spark.',
     count: 60, countSuffix: '+',
-    title: 'showed up to meeting two.',
+    title: 'innovators at meeting two.',
     text: 'Up from 40 at meeting one. A Shark Tank founder called in, teams pitched real ideas to our Sharks, and the top three walked out with $60+ in prizes.'
   },
 
