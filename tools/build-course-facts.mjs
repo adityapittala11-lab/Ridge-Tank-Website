@@ -1,4 +1,4 @@
-// Packs the few course facts the server needs to score a round (pass marks, XP, focus, example answers)
+// Packs the few course facts the server needs to score a round (pass marks, Bites, focus, example answers)
 // into api/_course-facts.js, so scoring and saving happen on the server where nobody can change them.
 // Run after editing js/course-data.js:  node tools/build-course-facts.mjs
 import fs from 'node:fs';
@@ -13,13 +13,17 @@ const C = box.window.RT_COURSE;
 
 // Same rules as js/academy.js.
 const FOCUS = { Nurse: 'clear', Tiger: 'customer', Hammerhead: 'numbers', Mako: 'persuasion', 'Great White': 'answers', Cam: 'customer', Rex: 'answers', Sully: 'numbers', Dana: 'persuasion' };
-const seasonOf = n => (n <= 10 ? 1 : n <= 20 ? 2 : n <= 30 ? 3 : 4);
+// Levels are keyed by the number members see (1-80); rounds are saved under each level's id, so LEVELS is keyed by id.
+const TOTAL = Object.keys(C.levels).length;
+const PER_SEASON = TOTAL / 4;
+const seasonOf = n => Math.min(4, Math.ceil(n / PER_SEASON));
 const mainAgent = n => { const a = C.levels[n].agent; return a === 'All five' ? 'Great White' : a.split(' + ')[0]; };
 
 const LEVELS = {};
-for (let n = 1; n <= 40; n++) {
+for (let n = 1; n <= TOTAL; n++) {
   const s = C.seasons[seasonOf(n)], sc = C.scripts[n];
-  LEVELS[n] = { pass: s.pass, xp: s.xp, focus: FOCUS[mainAgent(n)], needed: sc.mode === 'grill' ? sc.lines.length + 1 : sc.lines.length };
+  // "xp" is the Bites a first pass earns (the name stayed the same so older code keeps reading it).
+  LEVELS[C.levels[n].id] = { pass: s.pass, xp: s.bites, focus: FOCUS[mainAgent(n)], needed: sc.mode === 'grill' ? sc.lines.length + 1 : sc.lines.length };
 }
 const WEEKLY = C.challenges.map(c => {
   const ag = c.agent === 'All five' ? 'Great White' : c.agent;

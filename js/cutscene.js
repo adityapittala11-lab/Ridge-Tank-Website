@@ -1,7 +1,8 @@
 // Level-complete cutscenes: a short, full-screen scene for each coach shark, drawn live on a canvas.
 // Each coach gets its own scene (the Great White breaches, the Tiger hits a bait ball, and so on). Scenes that are not
 // built yet fall back to the older animation in js/cinematic.js. The scene grows with the level (more spray, more shake).
-// RT.levelCinematic(level, stars, { name, color }) -> true if something played. Tap or press a key to skip.
+// RT.levelCinematic(level, stars, { name, color }, total) -> true if something played. Tap or press a key to skip.
+// The last level of each season (every quarter of the course: 20, 40, 60, 80) gets the Megalodon.
 // RT.playCutscene(key, level, stars, coach) plays one scene directly (handy for testing).
 (function () {
   const RT = window.RT;
@@ -1505,7 +1506,7 @@
   const BY_COACH = { 'Great White': 'greatwhite', Tiger: 'tiger', Mako: 'mako', Hammerhead: 'hammer', Nurse: 'nurse', Rex: 'rex', Cam: 'cam', Dana: 'dana' };
   const STAR = '<svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z" fill="currentColor"/></svg>';
 
-  function play(key, level, stars, coach) {
+  function play(key, level, stars, coach, total) {
     const scene = SCENES[key];
     if (!scene) return false;
     const wrap = document.createElement('div');
@@ -1527,7 +1528,7 @@
     const lite = document.documentElement.classList.contains('tank-lite');
     const size = () => { dpr = lite ? 1 : Math.min(window.devicePixelRatio || 1, 1.5); W = window.innerWidth; H = window.innerHeight; canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr); };
     size();
-    const k = clamp(level / 40, 0, 1);
+    const k = clamp(level / (total || 80), 0, 1); // how far through the course: the scene grows with it
     const S = { parts: [], shake: 0, lowfx: lite };
     let slowN = 0, frames = 0;
     scene.setup(S, W, H, k, coach || {});
@@ -1555,11 +1556,13 @@
   }
 
   const older = RT.levelCinematic;
-  RT.levelCinematic = function (level, stars, coach) {
+  RT.levelCinematic = function (level, stars, coach, total) {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
-    const key = (([10, 20, 30, 40].includes(level) && SCENES.megalodon) ? 'megalodon' : BY_COACH[coach && coach.name]);
-    if (key && SCENES[key]) return play(key, level, stars, coach);
-    return older ? older(level, stars, coach) : false;
+    total = total || 80;
+    const seasonEnd = level % (total / 4) === 0;
+    const key = ((seasonEnd && SCENES.megalodon) ? 'megalodon' : BY_COACH[coach && coach.name]);
+    if (key && SCENES[key]) return play(key, level, stars, coach, total);
+    return older ? older(level, stars, coach, total) : false;
   };
   RT.playCutscene = (key, level, stars, coach) => play(key, level || 1, stars || 3, coach || {});
   // Preview helper: renders a scene off-screen at a fixed frame rate and returns JPEG frames (title card drawn in).
@@ -1567,7 +1570,7 @@
     const scene = SCENES[key]; if (!scene) return [];
     opt = opt || {}; const W = opt.W || 900, H = opt.H || 540, fps = opt.fps || 30, every = opt.every || 2;
     const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const ctx = cv.getContext('2d');
-    const k = clamp(level / 40, 0, 1), S = { parts: [], shake: 0, lowfx: !!opt.lowfx }; scene.setup(S, W, H, k, coach || {});
+    const k = clamp(level / (opt.total || 80), 0, 1), S = { parts: [], shake: 0, lowfx: !!opt.lowfx }; scene.setup(S, W, H, k, coach || {});
     const out = [], dt = 1 / fps, n = Math.ceil(scene.dur * fps);
     for (let i = 0; i <= n; i++) {
       const t = i * dt;

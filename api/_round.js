@@ -7,7 +7,9 @@ import { check } from './_integrity.js';
 import { LEVELS, WEEKLY } from './_course-facts.js';
 
 const CATS = ['clear', 'customer', 'numbers', 'persuasion', 'answers'];
-const STAR_XP = [0, 0, 25, 60];
+// Bites for a first pass: the level's Bites (by season) plus a bonus for 2 or 3 stars. A weekly challenge is 15.
+const STAR_XP = [0, 0, 10, 25];
+const WEEKLY_BITES = 15;
 function bad(msg, status = 400) { const e = new Error(msg); e.status = status; return e; }
 
 // Backup scoring when the AI can't be reached. Same simple rules the page used to run.
@@ -18,7 +20,7 @@ function ruleScores(answers) {
   return {
     clear: 1 + (w >= 25) + (w >= 60) + (w / sent <= 22),
     customer: 1 + /(student|freshm|9th|10th|11th|12th|customer|parent|teacher|friend|people|buyer|kids)/i.test(all) + (digits >= 1) + /(where|hang|lunch|chat|table|group|online|school)/i.test(all) + /last time|tell me about|walk me through|what did you do|how much/i.test(all),
-    numbers: (digits >= 1) + (digits >= 3) + money + /(cost|price|profit|margin|break|revenue|percent)/i.test(all),
+    numbers: Math.min(4, 1 + (digits >= 1) + (digits >= 3) + money + /(cost|price|profit|margin|break|revenue|percent)/i.test(all)),
     persuasion: 1 + /\?|what if|imagine|picture|last (tuesday|week)/i.test(all) + /(buy|join|try|ask|invest|\$)/i.test(all) + (w >= 18 && w <= 140),
     answers: 1 + (avg >= 14) + !/(idk|dunno|not sure|i guess)/i.test(all) + answers.every(a => words(a) >= 6)
   };
@@ -30,7 +32,7 @@ function tally(facts, kind, c) {
   const fv = c[facts.focus], passed = total >= facts.pass && fv >= 3;
   let stars = 0;
   if (passed) { stars = 1; if (total >= facts.pass + 3) stars = 2; if (total >= 18 && fv === 4) stars = 3; }
-  const xp = passed ? (kind === 'level' ? facts.xp + STAR_XP[stars] : 40) : 0;
+  const xp = passed ? (kind === 'level' ? facts.xp + STAR_XP[stars] : WEEKLY_BITES) : 0;
   return { c, total, passed, stars, xp };
 }
 
@@ -44,6 +46,7 @@ export async function scoreRound(userId, body, key) {
   const answers = transcript.filter(m => m && m.student).map(m => String(m.text || '').trim().slice(0, 1200)).filter(Boolean);
 
   // Cheat code: an answer of exactly "Krishna" instantly passes the round with full marks. For testing and demos.
+  // It unlocks the next level but earns no Bites: Academy Bites count on the leaderboard (db/240_academy_bites.sql skips these rounds).
   if (answers.some(a => a.toLowerCase() === 'krishna')) {
     await ensureSchema();
     const pool = getPool();
@@ -54,7 +57,7 @@ export async function scoreRound(userId, body, key) {
     const r = await pool.query(
       'insert into public.course_rounds (member_id, kind, item, score, stars, passed, breakdown, flagged, flags) values ($1,$2,$3,$4,$5,$6,$7,$8,$9) returning *',
       [me.rows[0].id, kind, item, v.total, 3, true, Object.assign({ ai: false, cheat: true }, v.c), false, null]);
-    return { row: r.rows[0], scores: v.c, total: v.total, passed: true, stars: 3, xp: v.xp, ai: false,
+    return { row: r.rows[0], scores: v.c, total: v.total, passed: true, stars: 3, xp: 0, cheat: true, ai: false,
       keep: 'Instant pass (cheat code).', fix: [], closer: 'Blessed by Krishna.', held: false, reasons: [], flagged: false };
   }
 

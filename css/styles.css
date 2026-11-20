@@ -1693,6 +1693,10 @@ body.lb-open { overflow: hidden; }
 .ac-sbar li.done i { background: var(--g-400); }
 .ac-sbar li.cur i { background: none; box-shadow: inset 0 0 0 1.5px var(--g-400); }
 .ac-sbar li.cur { color: var(--ink); font-weight: 600; }
+/* 20 levels a season: thinner steps, and only every fifth number is shown */
+.ac-sbar ol.ac-sbar-20 { grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 3px; }
+.ac-sbar ol.ac-sbar-20 li { font-size: 11px; }
+.ac-sbar ol.ac-sbar-20 li:not(:nth-child(5n + 1)):not(.cur) { color: transparent; }
 .ac-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; }
 .ac-foot .muted b { color: var(--ink); font-weight: 600; }
 .ac-next-name { margin-top: 10px; font-weight: 600; }
@@ -1719,6 +1723,8 @@ body.lb-open { overflow: hidden; }
 .ac-blk-h b { color: var(--ink); font-weight: 600; }
 .ac-path { position: relative; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; padding: 0 0 18px; }
 .ac-path::before { content: ""; position: absolute; left: calc(100% / 12); right: calc(100% / 12); top: 22px; height: 1px; background: var(--line-2); }
+/* the first row of a ten-level block has five levels and no reward, so its line stops at the fifth */
+.ac-path.ac-path-open::before { right: 25%; }
 .ac-node { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; min-width: 0; color: inherit; }
 .ac-node:hover { color: inherit; }
 .ac-dot { position: relative; z-index: 1; width: 44px; height: 44px; border-radius: 0; display: grid; place-items: center; font: 600 15px var(--font-ui); font-variant-numeric: tabular-nums; background: var(--glass-strong); border: 1.5px solid var(--line-2); color: var(--ink-2); }
@@ -1828,7 +1834,9 @@ html[data-theme="light"] .ac-round-wrap { background: rgba(11, 36, 25, 0.45); }
 }
 @media (max-width: 720px) {
   .ac-path { grid-template-columns: 1fr; gap: 0; padding: 0 0 10px; }
-  .ac-path::before { left: 21px; right: auto; top: 22px; bottom: 34px; width: 1px; height: auto; }
+  .ac-path::before, .ac-path.ac-path-open::before { left: 21px; right: auto; top: 22px; bottom: 34px; width: 1px; height: auto; }
+  .ac-path.ac-path-open { padding-bottom: 0; }
+  .ac-path.ac-path-open::before { bottom: -22px; }
   .ac-node { flex-direction: row; align-items: center; gap: 14px; padding: 6px 0; text-align: left; }
   .ac-dot { width: 42px; height: 42px; flex: none; }
   .ac-nm { flex: 1; }

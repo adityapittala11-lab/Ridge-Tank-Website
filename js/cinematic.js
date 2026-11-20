@@ -1,8 +1,8 @@
-// The moment a level is passed for the first time. It grows with the level:
-//   levels 1-13   a school of fish rushes across the screen
-//   levels 14-27  the school, plus sharks crossing at two depths and a sweep of light
-//   levels 28-40  the Megalodon: far off first, then right across the screen, bigger the higher the level
-// RT.levelCinematic(level, stars) -> true if it played. Click or press a key to skip. Skipped for reduced motion.
+// The moment a level is passed for the first time. It grows with the level (out of 80):
+//   the first third   a school of fish rushes across the screen
+//   the middle third  the school, plus sharks crossing at two depths and a sweep of light
+//   the last 30%      the Megalodon: far off first, then right across the screen, bigger the higher the level
+// RT.levelCinematic(level, stars, coach, total) -> true if it played. Click or press a key to skip. Skipped for reduced motion.
 (function () {
   const RT = window.RT;
   if (!RT) return;
@@ -42,12 +42,13 @@
     return () => cancelAnimationFrame(raf);
   }
 
-  RT.levelCinematic = function (level, stars, coach) {
+  RT.levelCinematic = function (level, stars, coach, total) {
+    const f = level / (total || 80); // how far through the course, 0 to 1
     coach = coach || {};
     const cName = coach.name || '', cColor = coach.color || '#6fe0a8';
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
     if (document.documentElement.classList.contains('tank-lite')) return false;
-    const tier = level >= 28 ? 3 : level >= 14 ? 2 : 1;
+    const tier = f >= 0.7 ? 3 : f >= 0.35 ? 2 : 1;
     const life = tier === 3 ? 6200 : tier === 2 ? 4300 : 3300;
     const wrap = el('div', 'cine cine-t' + tier);
     wrap.setAttribute('aria-hidden', 'true');
@@ -69,7 +70,7 @@
       wrap.appendChild(s);
     }
     if (tier === 3 && RT.megalodon) {
-      const k = (level - 28) / 12; // 0 at level 28, 1 at level 40: bigger, slower, closer
+      const k = Math.min(1, Math.max(0, (f - 0.7) / 0.3)); // 0 at 70% of the course, 1 at the last level: bigger, slower, closer
       const far = el('div', 'cine-meg-far'); far.appendChild(RT.megalodon(''));
       const near = el('div', 'cine-meg'); near.appendChild(RT.megalodon(''));
       near.style.setProperty('--w', Math.round(110 + k * 70) + 'vw');

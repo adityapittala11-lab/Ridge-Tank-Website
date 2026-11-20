@@ -28,7 +28,7 @@
       if (!rows.length) { list.appendChild(h('div', { class: 'card empty' }, icon('check', 22, 'muted'), h('p', { class: 'muted' }, 'Nothing flagged. Nice.'))); return; }
       rows.forEach(r => {
         const f = r.flags || {}, held = !!f.held, b = r.breakdown || {};
-        const what = r.kind === 'level' ? 'Level ' + r.item : 'Weekly challenge ' + (r.item + 1);
+        const what = r.kind === 'level' ? 'Level ' + (RT.academyLevelNo ? RT.academyLevelNo(r.item) : r.item) : 'Weekly challenge ' + (r.item + 1);
         const approve = h('button', { class: 'btn btn-primary btn-sm', type: 'button' }, held ? 'Count it' : 'Looks fine');
         const remove = h('button', { class: 'btn btn-ghost btn-sm', type: 'button' }, 'Delete round');
         approve.addEventListener('click', () => busy(approve, async () => {

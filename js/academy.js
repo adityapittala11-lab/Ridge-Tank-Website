@@ -1,5 +1,8 @@
-// Tank Academy: the year-long course. Levels open by date in blocks of five. You pass a level by scoring well
-// in a shark round. Each block's Edge is collected by checking in at a meeting once its five levels are done.
+// Tank Academy: the year-long course. 80 levels open by date in blocks of ten. You pass a level by scoring well
+// in a shark round, and every first pass earns Bites that count toward your total, your tier and the leaderboard.
+// Each block's Edge is collected by checking in at a meeting once its ten levels are done.
+// Levels are numbered by their place in the course (1-80). Rounds are saved under each level's id (course-data.js),
+// which never changes, so progress from before the course grew still counts.
 // Progress lives in the course_rounds table (db/030_course.sql). Until that table exists,
 // rounds are kept in this browser so the course still works.
 (function () {
@@ -42,12 +45,20 @@
   const opened = (n, t) => openForAll() || !!S.isAdmin || earlyOn() || t >= blockOf(n).opens;
 
   // ---------------- course rules ----------------
-  const seasonOf = n => (n <= 10 ? 1 : n <= 20 ? 2 : n <= 30 ? 3 : 4);
+  const TOTAL = Object.keys(C.levels).length;           // 80
+  const PER_SEASON = TOTAL / 4;                          // 20
+  const POS = {};                                        // saved id -> level number on screen
+  for (const k in C.levels) POS[C.levels[k].id] = +k;
+  const idOf = n => C.levels[n].id;
+  const seasonOf = n => Math.min(4, Math.ceil(n / PER_SEASON));
   const blockOf = n => C.blocks.find(b => n >= b.a && n <= b.b);
-  const RANKS = [[40, 'Apex'], [30, 'Hunter'], [20, 'Juvenile'], [10, 'Pup'], [0, 'Newcomer']];
+  const RANKS = [[TOTAL, 'Apex'], [PER_SEASON * 3, 'Hunter'], [PER_SEASON * 2, 'Juvenile'], [PER_SEASON, 'Pup'], [0, 'Newcomer']];
   const rankOf = done => RANKS.find(r => done >= r[0])[1];
   const WALLET = { Newcomer: 2, Pup: 3, Juvenile: 5, Hunter: 8, Apex: 10 };
-  const STAR_XP = [0, 0, 25, 60];
+  // Bites for a first pass: the season's Bites plus a bonus for 2 or 3 stars (the server works out the same, api/_round.js).
+  const STAR_BITES = [0, 0, 10, 25];
+  const WEEKLY_BITES = 15;
+  const fmtBites = n => n.toLocaleString() + (n === 1 ? ' Bite' : ' Bites');
   const TRIES_PER_DAY = 3;
   const mainAgent = n => { const a = C.levels[n].agent; return a === 'All five' ? 'Great White' : a.split(' + ')[0]; };
   const agentText = n => { const a = C.levels[n].agent; return a === 'All five' ? 'all five sharks' : a; };
@@ -84,21 +95,27 @@
   // Everything the screens need, worked out from the saved rounds and today's date.
   function prog() {
     const t = today();
-    const best = {};   // level -> { stars, at } from passed rounds
+    const best = {};   // level number on screen -> { stars, at } from passed rounds
+    const paid = {};   // level number -> best stars from rounds that earn Bites (test cheat-code passes don't)
+    const weeklyPaid = {};
     const weekly = {}; // challenge index -> true
     AC.rounds.forEach(r => {
       if (!r.passed) return;
-      if (r.kind === 'weekly') { weekly[r.item] = true; return; }
-      const b = best[r.item];
-      if (!b) best[r.item] = { stars: r.stars, at: r.created_at };
+      const counts = !(r.breakdown && r.breakdown.cheat);
+      if (r.kind === 'weekly') { weekly[r.item] = true; if (counts) weeklyPaid[r.item] = true; return; }
+      const n = POS[r.item];
+      if (!n) return;
+      if (counts) paid[n] = Math.max(paid[n] || 0, r.stars || 0);
+      const b = best[n];
+      if (!b) best[n] = { stars: r.stars, at: r.created_at };
       else { if (r.stars > b.stars) b.stars = r.stars; if (r.created_at < b.at) b.at = r.created_at; }
     });
     let done = 0;
     while (best[done + 1]) done++;
-    const cur = done < 40 ? done + 1 : null;
+    const cur = done < TOTAL ? done + 1 : null;
     const curOpen = !!cur && opened(cur, t);
-    const xp = Object.keys(best).reduce((s, n) => s + C.seasons[seasonOf(+n)].xp + STAR_XP[best[n].stars], 0) + Object.keys(weekly).length * 40;
-    return { t, best, weekly, done, cur, curOpen, xp, season: cur ? seasonOf(cur) : 4, rank: rankOf(done) };
+    const bites = Object.keys(paid).reduce((s, n) => s + C.seasons[seasonOf(+n)].bites + STAR_BITES[Math.min(3, paid[n])], 0) + Object.keys(weeklyPaid).length * WEEKLY_BITES;
+    return { t, best, weekly, done, cur, curOpen, bites, season: cur ? seasonOf(cur) : 4, rank: rankOf(done) };
   }
   RT.academyProgress = () => (AC.loaded && AC.memberId === (S.me && S.me.id) ? prog() : null);
 
@@ -112,11 +129,17 @@
     const m = S.meetings.find(x => x.id === a.meeting_id);
     return m ? String(m.meeting_date).slice(0, 10) : null;
   }
-  // A block's Edge: locked until its five levels are passed, then collected at the first meeting
+  // A block's Edge: locked until its ten levels are passed, then collected at the first meeting
   // you check in to on or after both the block's gate meeting and the day you finished.
+  // Blocks used to be five levels (ids 1-5, 6-10 and so on). If you passed a block's old five before the course grew,
+  // that block's Edge still works on those five, so nobody loses an Edge they already earned.
+  const GREW = '2026-11-20';
+  const oldFive = b => { const i = C.blocks.indexOf(b), out = []; for (let id = i * 5 + 1; id <= i * 5 + 5; id++) out.push(POS[id]); return out; };
   function blockClaim(b, p) {
-    const lv = [];
+    let lv = [];
     for (let n = b.a; n <= b.b; n++) lv.push(p.best[n]);
+    const early = oldFive(b).map(n => p.best[n]);
+    if (lv.some(x => !x) && early.every(x => x && localDateISO(new Date(x.at)) < GREW)) lv = early;
     if (lv.some(x => !x)) return { state: 'locked', left: lv.filter(x => !x).length };
     const finished = lv.map(x => localDateISO(new Date(x.at))).sort().pop();
     const from = finished > b.gate ? finished : b.gate;
@@ -124,6 +147,7 @@
     return hit ? { state: 'claimed', on: hit } : { state: 'ready', from };
   }
 
+  // item is the saved id: a level's id, or a weekly challenge's index.
   function triesToday(kind, item) {
     const d = localDateISO();
     return AC.rounds.filter(r => r.kind === kind && r.item === item && localDateISO(new Date(r.created_at)) === d).length;
@@ -204,7 +228,7 @@
 
     function draw() {
       const p = prog();
-      subLine.textContent = p.cur ? `Level ${p.cur} · ${p.rank} · ${p.xp.toLocaleString()} XP` : `All 40 levels done · ${p.xp.toLocaleString()} XP`;
+      subLine.textContent = p.cur ? `Level ${p.cur} of ${TOTAL} · ${p.rank} · ${fmtBites(p.bites)} earned` : `All ${TOTAL} levels done · ${fmtBites(p.bites)} earned`;
       clear(body);
       if (S.isAdmin) body.appendChild(officerBar(p, draw));
       const m = /^level\/(\d+)$/.exec(sub);
@@ -249,27 +273,27 @@
     const year = h('section', { class: 'card ac-year' });
     for (let s = 1; s <= 4; s++) year.appendChild(seasonEl(s, p));
     body.append(grid,
-      h('div', { class: 'section-row' }, h('h2', { class: 'h2' }, 'Seasons'), h('span', { class: 'muted' }, 'Levels open five at a time. You collect each block’s Edge by checking in at a meeting.')),
+      h('div', { class: 'section-row' }, h('h2', { class: 'h2' }, 'Seasons'), h('span', { class: 'muted' }, 'Levels open ten at a time. Every level you pass earns Bites for your total, and you collect each block’s Edge by checking in at a meeting.')),
       year);
   }
 
   function nowCard(p) {
-    const n = p.cur || 40, L = C.levels[n], se = C.seasons[p.season];
+    const n = p.cur || TOTAL, L = C.levels[n], se = C.seasons[p.season];
     let label, cta, sub = null;
     if (!p.cur) {
       label = 'Course finished';
-      cta = h('p', { class: 'muted' }, 'All 40 levels done. See you at the Grand Finale.');
+      cta = h('p', { class: 'muted' }, `All ${TOTAL} levels done. See you at the Grand Finale.`);
     } else if (!p.curOpen) {
       label = 'Up next';
       cta = h('p', { class: 'muted' }, 'Opens ' + longDate(blockOf(n).opens) + '.');
     } else {
       label = `Up next in Season ${p.season}: ${se.name}`;
-      sub = h('p', { class: 'muted' }, 'With ' + agentText(n) + ' · ' + se.xp + ' XP');
+      sub = h('p', { class: 'muted' }, 'With ' + agentText(n) + ' · ' + fmtBites(se.bites));
       cta = h('a', { class: 'btn btn-primary', href: '#/academy/level/' + n }, 'Continue level ' + n);
     }
-    const first = (p.season - 1) * 10 + 1;
-    const bar = h('ol', { 'aria-hidden': 'true' });
-    for (let i = 0; i < 10; i++) {
+    const first = (p.season - 1) * PER_SEASON + 1;
+    const bar = h('ol', { 'aria-hidden': 'true', class: 'ac-sbar-' + PER_SEASON });
+    for (let i = 0; i < PER_SEASON; i++) {
       const k = first + i;
       bar.appendChild(h('li', { class: p.best[k] ? 'done' : k === p.cur && p.curOpen ? 'cur' : '' }, h('i'), String(k)));
     }
@@ -277,11 +301,11 @@
     return h('section', { class: 'card span-7 ac-now' },
       h('div', { class: 'ac-now-head' },
         h('div', { class: 'ac-lvl' }, h('span', { class: 'card-label' }, 'Level'), h('span', { class: 'big-num' }, String(n))),
-        h('div', { class: 'min0 grow' }, h('p', { class: 'card-label' }, label), h('h2', null, p.cur ? L.t : 'All 40 levels done'), sub),
+        h('div', { class: 'min0 grow' }, h('p', { class: 'card-label' }, label), h('h2', null, p.cur ? L.t : `All ${TOTAL} levels done`), sub),
         p.cur ? portrait(mainAgent(n), 64) : null),
-      h('div', { class: 'ac-sbar' }, h('p', { class: 'card-label' }, `Season ${p.season}: ${inSeason} of 10 levels done`), bar),
+      h('div', { class: 'ac-sbar' }, h('p', { class: 'card-label' }, `Season ${p.season}: ${inSeason} of ${PER_SEASON} levels done`), bar),
       h('div', { class: 'ac-foot' },
-        h('p', { class: 'muted' }, h('b', null, String(p.done)), ' of 40 levels · ', h('b', null, p.xp.toLocaleString()), ' XP · ', p.rank, ' rank'),
+        h('p', { class: 'muted' }, h('b', null, String(p.done)), ` of ${TOTAL} levels · `, h('b', null, fmtBites(p.bites)), ' earned · ', p.rank, ' rank'),
         cta));
   }
 
@@ -296,7 +320,7 @@
     if (m) {
       C.blocks.forEach(b => { const c = blockClaim(b, p); if (c.state === 'ready' && m.d >= c.from) todo.push('Check in to collect ' + rewardText(b.reward) + '.'); });
       const gate = C.blocks.find(b => b.gate === m.d);
-      if (gate && blockClaim(gate, p).state === 'locked') { let have = 0; for (let n = gate.a; n <= gate.b; n++) if (p.best[n]) have++; todo.push(`Finish levels ${gate.a} to ${gate.b} first (${have} of 5 done).`); }
+      if (gate && blockClaim(gate, p).state === 'locked') { let have = 0; for (let n = gate.a; n <= gate.b; n++) if (p.best[n]) have++; todo.push(`Finish levels ${gate.a} to ${gate.b} first (${have} of ${gate.b - gate.a + 1} done).`); }
     }
     todo.push('Check in at the door to earn your Bites.');
     el.appendChild(h('div', { class: 'ticket-todo' }, h('p', { class: 'card-label' }, 'Before you go'), h('ul', null, todo.map(t => h('li', null, t)))));
@@ -308,36 +332,44 @@
     if (!cc) return null;
     const { c, i } = cc, ag = c.agent === 'All five' ? 'Great White' : c.agent;
     const done = !!p.weekly[i], left = TRIES_PER_DAY - triesToday('weekly', i);
-    const btn = done ? h('span', { class: 'status-pill ok' }, 'Done, +40 XP')
+    const btn = done ? h('span', { class: 'status-pill ok' }, `Done, +${WEEKLY_BITES} Bites`)
       : h('button', { class: 'btn btn-ghost', type: 'button', disabled: left <= 0, onclick: () => openRound(weeklySpec(i)) }, left <= 0 ? 'No tries left today' : 'Play it');
     return h('section', { class: 'card span-12 ac-week' }, portrait(ag, 44),
       h('div', { class: 'grow min0' },
         h('p', { class: 'card-label' }, `This week’s challenge, week ${i + 1} of 30` + (c.tag ? ` (${c.tag.toLowerCase().replace(/^\w+/, w => cap(w))})` : '')),
         h('h3', null, c.title),
-        h('p', { class: 'muted small' }, `${c.agent} · 40 XP · closes ${fmtDate(addDays(c.iso, 6), { weekday: 'long', month: 'short', day: 'numeric' })} at 11:59 pm`)),
+        h('p', { class: 'muted small' }, `${c.agent} · ${WEEKLY_BITES} Bites · closes ${fmtDate(addDays(c.iso, 6), { weekday: 'long', month: 'short', day: 'numeric' })} at 11:59 pm`)),
       btn);
   }
 
   function seasonEl(s, p) {
     const se = C.seasons[s], blocks = C.blocks.filter(b => b.season === s);
     let done = 0;
-    for (let n = (s - 1) * 10 + 1; n <= s * 10; n++) if (p.best[n]) done++;
-    const status = done === 10 ? h('p', { class: 'ac-status done' }, icon('check', 15), 'Done')
-      : opened(blocks[0].a, p.t) ? h('p', { class: 'ac-status now' }, done + ' of 10 done')
+    for (let n = (s - 1) * PER_SEASON + 1; n <= s * PER_SEASON; n++) if (p.best[n]) done++;
+    const status = done === PER_SEASON ? h('p', { class: 'ac-status done' }, icon('check', 15), 'Done')
+      : opened(blocks[0].a, p.t) ? h('p', { class: 'ac-status now' }, done + ' of ' + PER_SEASON + ' done')
       : h('p', { class: 'ac-status' }, 'Opens ' + shortDate(blocks[0].opens));
     const finale = C.meetings.find(m => m.season === s && m.kind === 'event' && /Mini|Demo|Gauntlet|Finale/.test(m.title));
     const el = h('section', { class: 'ac-season reveal' },
       h('div', { class: 'ac-season-h' }, h('h3', null, `Season ${s}: ${se.name}`), status, h('p', { class: 'muted' }, se.dates + ' · ' + se.goal)));
     blocks.forEach(b => {
-      const path = h('div', { class: 'ac-path' });
-      for (let n = b.a; n <= b.b; n++) {
+      // A block is ten levels: two rows of five, with the block's reward at the end of the second row.
+      const node = n => {
         const st = lstate(n, p), L = C.levels[n];
-        path.appendChild(h('a', { class: 'ac-node ' + st, href: '#/academy/level/' + n, style: { '--n': String(n - b.a) }, 'aria-label': `Level ${n}, ${L.t}, ${st === 'ahead' ? 'open' : st}` },
+        return h('a', { class: 'ac-node ' + st, href: '#/academy/level/' + n, style: { '--n': String(n - b.a) }, 'aria-label': `Level ${n}, ${L.t}, ${st === 'ahead' ? 'open' : st}` },
           h('span', { class: 'ac-dot' }, String(n)),
           h('span', { class: 'ac-nm' }, h('span', { class: 't' }, L.t),
-            h('span', { class: 's' }, agentText(n) + ' · ' + se.xp + ' XP' + (L.mission ? ' · real-world mission' : '')),
-            st === 'done' ? h('span', { class: 'st' }, starRow(p.best[n].stars, 11)) : null)));
+            h('span', { class: 's' }, agentText(n) + ' · ' + fmtBites(se.bites) + (L.mission ? ' · real-world mission' : '')),
+            st === 'done' ? h('span', { class: 'st' }, starRow(p.best[n].stars, 11)) : null));
+      };
+      const rows = [];
+      for (let first = b.a; first <= b.b; first += 5) {
+        const row = h('div', { class: 'ac-path' });
+        for (let n = first; n <= Math.min(first + 4, b.b); n++) row.appendChild(node(n));
+        rows.push(row);
       }
+      rows.slice(0, -1).forEach(r => r.classList.add('ac-path-open'));
+      const path = rows[rows.length - 1];
       const cl = blockClaim(b, p);
       path.appendChild(h('a', { class: 'ac-node cp ' + (cl.state === 'claimed' ? 'done' : cl.state === 'ready' ? 'current' : 'locked'), href: '#/academy/edges', style: { '--n': String(b.b - b.a + 1) }, 'aria-label': 'Reward: ' + b.reward },
         h('span', { class: 'ac-dot' }, icon(cl.state === 'claimed' ? 'check' : cl.state === 'ready' ? 'award' : 'lock', cl.state === 'locked' ? 15 : 18)),
@@ -345,7 +377,7 @@
           h('span', { class: 's' }, cl.state === 'claimed' ? 'Collected ' + shortDate(cl.on) : cl.state === 'ready' ? 'Check in at a meeting to collect' : 'Reward for levels ' + b.a + ' to ' + b.b))));
       el.appendChild(h('div', { class: 'ac-blk' },
         h('p', { class: 'ac-blk-h' }, h('b', null, `Block ${b.id}: ${b.name}`), h('span', null, (openForAll() ? '' : b.opensText + ' · ') + b.claim.replace(/^Unlock at /, 'reward at '))),
-        path));
+        rows));
     });
     if (finale) el.appendChild(h('p', { class: 'ac-finale' }, h('span', { class: 'fm', 'aria-hidden': 'true' }), h('span', null, 'Season finale: ', h('b', null, finale.title), ', ' + fmtDate(finale.iso, { weekday: 'short', month: 'short', day: 'numeric' }))));
     return el;
@@ -441,7 +473,7 @@
   function drawLevel(body, n, p) {
     const L = C.levels[n], s = seasonOf(n), se = C.seasons[s], b = blockOf(n), st = lstate(n, p), ag = mainAgent(n);
     const who = C.sharks[ag] || C.roles[ag];
-    const left = TRIES_PER_DAY - triesToday('level', n);
+    const left = TRIES_PER_DAY - triesToday('level', idOf(n));
     let state = null;
     if (st === 'done') {
       const k = p.best[n].stars;
@@ -449,7 +481,7 @@
     } else if (st === 'locked') state = h('p', { class: 'ac-state off' }, icon('lock', 14), 'Opens ' + longDate(b.opens));
     else if (st === 'ahead') state = S.isAdmin ? h('p', { class: 'ac-state' }, icon('shield', 14), 'Open (officer)') : h('p', { class: 'ac-state off' }, icon('lock', 14), `Pass level ${p.cur} first`);
 
-    const draftKey = LS.draft + S.me.id + '_' + n;
+    const draftKey = LS.draft + S.me.id + '_' + idOf(n); // saved under the level's id, so an old draft stays with its level
     const draft = h('textarea', { class: 'input textarea', rows: 5, 'aria-label': 'Your build', placeholder: 'Write your piece here, in your own words. It goes straight to the shark.' }, store.get(draftKey, ''));
     // The typing numbers are saved with the draft, so a draft written over a few days still counts as typed.
     const draftStats = Object.assign(newStats(), store.get(draftKey + '_stats', {}));
@@ -470,19 +502,19 @@
 
     body.append(
       (function levelNav() {
-        const can = m => m >= 1 && m <= 40 && (S.isAdmin || lstate(m, p) !== 'locked');
+        const can = m => m >= 1 && m <= TOTAL && (S.isAdmin || lstate(m, p) !== 'locked');
         const link = (m, label, ic) => can(m)
           ? h('a', { class: 'ac-nav-btn', href: '#/academy/level/' + m, 'aria-label': label + ' level ' + m }, ic === 'l' ? icon('chevronLeft', 16) : null, ic === 'l' ? 'Prev' : 'Next', ic === 'r' ? icon('chevronRight', 16) : null)
           : h('span', { class: 'ac-nav-btn is-off', 'aria-hidden': 'true' }, ic === 'l' ? icon('chevronLeft', 16) : null, ic === 'l' ? 'Prev' : 'Next', ic === 'r' ? icon('chevronRight', 16) : null);
         return h('div', { class: 'ac-crumbs' },
           h('a', { class: 'ac-back', href: '#/academy' }, icon('chevronLeft', 16), 'Your year'),
           h('span', { class: 'muted ac-crumb-sea' }, `Season ${s}: ${se.name} / Block ${b.id}`),
-          h('div', { class: 'ac-nav' }, link(n - 1, 'Prev', 'l'), h('span', { class: 'ac-nav-now mono' }, n + ' / 40'), link(n + 1, 'Next', 'r')));
+          h('div', { class: 'ac-nav' }, link(n - 1, 'Prev', 'l'), h('span', { class: 'ac-nav-now mono' }, n + ' / ' + TOTAL), link(n + 1, 'Next', 'r')));
       })(),
       h('header', { class: 'ac-head' },
         h('span', { class: 'big-num' }, String(n)),
         h('div', { class: 'min0' }, h('h1', null, L.t),
-          h('p', { class: 'muted' }, `With ${agentText(n)} · ${se.xp} XP` + (L.mission ? ' · includes a real-world mission' : '')),
+          h('p', { class: 'muted' }, `With ${agentText(n)} · ${fmtBites(se.bites)} for passing` + (L.mission ? ' · includes a real-world mission' : '')),
           state)),
       h('div', { class: 'ac-grid' },
         h('div', { class: 'stack' },
@@ -531,7 +563,7 @@
       h('section', { class: 'card ac-rewards-intro' },
         h('h3', null, 'How rewards work'),
         h('ul', { class: 'ac-rules' },
-          h('li', null, 'Finish a block of 5 levels, then check in at a meeting to collect that block’s reward, called an Edge.'),
+          h('li', null, 'Finish a block of 10 levels, then check in at a meeting to collect that block’s reward, called an Edge.'),
           h('li', null, 'An Edge is a one-time power for a live pitch night (Mini Tank, Demo Day, Shark Gauntlet, Grand Finale). Hold up to 3 and use one per night.'),
           h('li', null, 'Edges change the rules for you on the night. They never change the sharks’ scores.'))),
       h('section', { class: 'card' }, list),
@@ -559,13 +591,14 @@
   function levelSpec(n, draft, draftStats) {
     const sc = C.scripts[n], s = seasonOf(n), ag = mainAgent(n), op = sc.opener[0];
     const lines = sc.lines.map(l => [l[0] || op, l[1]]);
-    return { kind: 'level', item: n, sub: 'Level ' + n + ': ' + C.levels[n].t, ag, mode: sc.mode, opener: sc.opener, lines,
-      needed: sc.mode === 'grill' ? lines.length + 1 : lines.length, focus: FOCUS[ag], pass: C.seasons[s].pass, xp: C.seasons[s].xp, askTag: op, draft: draft || '', draftStats: draft ? draftStats : null };
+    // item is the saved id the server stores; n is the level number on screen.
+    return { kind: 'level', item: idOf(n), n, sub: 'Level ' + n + ': ' + C.levels[n].t, ag, mode: sc.mode, opener: sc.opener, lines,
+      needed: sc.mode === 'grill' ? lines.length + 1 : lines.length, focus: FOCUS[ag], pass: C.seasons[s].pass, bites: C.seasons[s].bites, askTag: op, draft: draft || '', draftStats: draft ? draftStats : null };
   }
   function weeklySpec(i) {
     const c = C.challenges[i], ag = c.agent === 'All five' ? 'Great White' : c.agent, w = C.chat.weekly[c.agent] || C.chat.weekly.Nurse;
     return { kind: 'weekly', item: i, sub: 'Weekly challenge: ' + c.title, ag, mode: 'grill', opener: [ag, c.title + '. You have sixty seconds. Go.'],
-      lines: [[ag, w[0]], [ag, w[1]]], needed: 3, focus: FOCUS[ag], pass: C.seasons[c.season].pass, xp: 40, askTag: ag, draft: '' };
+      lines: [[ag, w[0]], [ag, w[1]]], needed: 3, focus: FOCUS[ag], pass: C.seasons[c.season].pass, bites: WEEKLY_BITES, askTag: ag, draft: '' };
   }
 
   // ---------------- AI sharks ----------------
@@ -578,7 +611,7 @@
   function charInfo(name) { const x = C.sharks[name] || C.roles[name] || {}; return { name, role: x.role || '', desc: x.desc || '' }; }
   function transcriptOf(r) { return r.msgs.map(m => (m.me ? { student: true, text: m.t } : { who: m.who, text: m.t })); }
   function roundInfo(sp) {
-    if (sp.kind === 'level') { const L = C.levels[sp.item]; return { level: 'Level ' + sp.item, title: L.t, round: L.round }; }
+    if (sp.kind === 'level') { const L = C.levels[sp.n]; return { level: 'Level ' + sp.n, title: L.t, round: L.round }; }
     const c = C.challenges[sp.item];
     return { level: 'Weekly challenge', title: c.title, round: 'A quick 60-second pitch drill: ' + c.title + '.' };
   }
@@ -734,7 +767,7 @@
     if (!R || !R.input) return;
     const sp = R.spec, last = R.msgs.filter(m => !m.me).pop(), who = last ? last.who : sp.askTag;
     let v;
-    if (R.turns === 0 && sp.kind === 'level' && sp.mode === 'grill') v = C.samples[sp.item];
+    if (R.turns === 0 && sp.kind === 'level' && sp.mode === 'grill') v = C.samples[sp.n];
     else { const pool = C.chat.samples[who] || C.chat.samples[sp.ag] || C.chat.samples.Nurse; v = pool[R.sampleIx % pool.length]; R.sampleIx++; }
     // Shown next to the box to read, never put in it. The server also rejects answers that copy an example.
     R.keep = R.input.value;
@@ -771,12 +804,12 @@
     Promise.all([scoreOnServer(payload).then(j => ({ j }), e => ({ e })), new Promise(r => setTimeout(r, 700))]).then(([{ j, e }]) => {
       if (j && j.row) AC.rounds.push(j.row);
       const v = j ? { c: j.scores, total: j.total, passed: j.passed, stars: j.stars, xp: j.xp, ai: j.ai, keep: j.keep, fix: j.fix, closer: j.closer, held: j.held, reasons: j.reasons || [] } : { error: friendly(e) };
-      v.firstPass = !!j && v.passed && (sp.kind === 'level' ? !before.best[sp.item] : !before.weekly[sp.item]);
+      v.firstPass = !!j && v.passed && (sp.kind === 'level' ? !before.best[sp.n] : !before.weekly[sp.item]);
       if (redraw) redraw();
       if (e) toast('Your round could not be saved: ' + friendly(e), 'error', 6000);
-      else if (v.firstPass) toast(sp.kind === 'level' ? `Level ${sp.item} passed. +${v.xp} XP` : 'Challenge done. +40 XP', 'success');
+      else if (v.firstPass) toast((sp.kind === 'level' ? `Level ${sp.n} passed.` : 'Challenge done.') + (v.xp ? ` +${fmtBites(v.xp)}` : ''), 'success');
       // Every pass gets the big moment across the whole screen; it grows with the level and stars the round's shark.
-      if (v.passed && !v.held && sp.kind === 'level' && RT.levelCinematic && RT.levelCinematic(sp.item, v.stars, { name: sp.ag, color: AVC[sp.ag] || '#6fe0a8' })) mine.celebrated = true;
+      if (v.passed && !v.held && sp.kind === 'level' && RT.levelCinematic && RT.levelCinematic(sp.n, v.stars, { name: sp.ag, color: AVC[sp.ag] || '#6fe0a8' }, TOTAL)) mine.celebrated = true;
       if (R !== mine) return;
       mine.busy = false; mine.verdict = v; mine.saved = !!j;
       drawRound();
@@ -817,8 +850,8 @@
     }
     const order = CATS.map(k => k[0]).sort((a, b) => v.c[b] - v.c[a]), best = order[0], worst = order.slice(-2).reverse();
     const p = prog();
-    const nextN = sp.kind === 'level' ? sp.item + 1 : null;
-    const nextOpen = v.passed && nextN && nextN <= 40 && (S.isAdmin || lstate(nextN, p) === 'current');
+    const nextN = sp.kind === 'level' ? sp.n + 1 : null;
+    const nextOpen = v.passed && nextN && nextN <= TOTAL && (S.isAdmin || lstate(nextN, p) === 'current');
     const leftNow = sp.kind === 'level' ? TRIES_PER_DAY - triesToday('level', sp.item) : TRIES_PER_DAY - triesToday('weekly', sp.item);
     const el = h('div', { class: 'ac-verdict' },
       h('div', { class: 'ac-vtop' },
@@ -826,7 +859,7 @@
         h('div', { class: 'min0' },
           h('h2', null, v.held ? 'This round didn’t count' : v.passed ? (sp.kind === 'level' ? 'Level passed' : 'Challenge done') : 'Not yet'),
           v.passed && sp.kind === 'level' ? h('p', { class: 'ac-starrow' }, starRow(v.stars, 18), v.stars + ' of 3 stars') : null,
-          h('p', { class: 'muted' }, v.held ? 'It used a try and earned no XP. An officer can review it.' : v.passed ? (v.firstPass ? `+${v.xp} XP` : 'Saved. XP only counts the first pass, but your best stars count.') : `You need ${sp.pass} and a ${cap(sp.focus)} score of 3.`))),
+          h('p', { class: 'muted' }, v.held ? 'It used a try and earned no Bites. An officer can review it.' : v.passed ? (v.firstPass && v.xp ? `+${fmtBites(v.xp)} added to your total` : v.firstPass ? 'Passed. Test passes don’t earn Bites.' : 'Saved. Bites count on your first pass, and your best stars count.') : `You need ${sp.pass} and a ${cap(sp.focus)} score of 3.`))),
       v.held ? h('div', { class: 'ac-held' }, icon('shield', 18), h('div', null, h('b', null, 'Fair play check'), h('ul', null, v.reasons.map(r => h('li', null, r))))) : null,
       h('div', { class: 'ac-cats' }, CATS.map(([k, label]) => h('div', { class: 'ac-cat' + (k === sp.focus ? ' f' : '') + (v.c[k] <= 1 ? ' low' : '') },
         h('span', { class: 'cl' }, label + (k === sp.focus ? ' (focus)' : '')),
@@ -836,12 +869,12 @@
         h('div', null, h('h4', null, 'Keep'), h('p', null, v.keep || TIPS[best][0])),
         h('div', null, h('h4', null, 'Fix next'), h('ul', null, (v.fix && v.fix.length ? v.fix : worst.map(k => TIPS[k][1])).map(t => h('li', null, t))))),
       h('div', { class: 'ac-say' }, portrait(sp.ag, 40), h('div', null, h('p', { class: 'ac-name' }, sp.ag), h('p', null, '“' + (v.closer || cl[v.passed ? 0 : 1]) + '”'))),
-      v.passed && sp.kind === 'level' && sp.item === blockOf(sp.item).b
-        ? h('p', { class: 'ac-cp' }, 'That was the last level in block ' + blockOf(sp.item).id + '. Check in at ', h('b', null, blockOf(sp.item).claim.replace(/^Unlock at /, '')), ' to collect ', h('b', null, rewardText(blockOf(sp.item).reward)), '.')
+      v.passed && sp.kind === 'level' && sp.n === blockOf(sp.n).b
+        ? h('p', { class: 'ac-cp' }, 'That was the last level in block ' + blockOf(sp.n).id + '. Check in at ', h('b', null, blockOf(sp.n).claim.replace(/^Unlock at /, '')), ' to collect ', h('b', null, rewardText(blockOf(sp.n).reward)), '.')
         : null,
       h('div', { class: 'row wrap gap-sm' },
         h('button', { class: 'btn btn-primary', type: 'button', onclick: () => { closeRound(); RT.go('academy'); } }, 'Back to your year'),
-        leftNow > 0 ? h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => openRound(sp.kind === 'level' ? levelSpec(sp.item, '') : weeklySpec(sp.item)) }, `Try again (${leftNow} left today)`) : null,
+        leftNow > 0 ? h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => openRound(sp.kind === 'level' ? levelSpec(sp.n, '') : weeklySpec(sp.item)) }, `Try again (${leftNow} left today)`) : null,
         nextOpen ? h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => { closeRound(); RT.go('academy/level/' + nextN); } }, 'Next level', icon('chevronRight', 14)) : null),
       h('p', { class: 'ac-small' }, (v.ai ? 'Scored by the AI.' : 'The AI couldn’t be reached, so this round was scored with simple rules (length, numbers, names).') + ' Only your score is saved, not what you wrote.'));
     return el;
@@ -851,16 +884,16 @@
   RT.academyHomeCard = function () {
     const el = h('section', { class: 'card ac-home' }, RT.skeleton(2));
     load().then(() => {
-      const p = prog(), n = p.cur || 40, L = C.levels[n];
-      const line = !p.cur ? 'All 40 levels done.' : p.curOpen ? `With ${agentText(n)} · ${C.seasons[seasonOf(n)].xp} XP` : 'Opens ' + longDate(blockOf(n).opens);
-      const done = Object.keys(p.best || {}).length, pct = Math.round(done / 40 * 100);
+      const p = prog(), n = p.cur || TOTAL, L = C.levels[n];
+      const line = !p.cur ? `All ${TOTAL} levels done.` : p.curOpen ? `With ${agentText(n)} · ${fmtBites(C.seasons[seasonOf(n)].bites)} for passing` : 'Opens ' + longDate(blockOf(n).opens);
+      const done = Object.keys(p.best || {}).length, pct = Math.round(done / TOTAL * 100);
       clear(el).append(
         portrait(p.cur ? mainAgent(n) : 'Great White', 76),
         h('div', { class: 'ach-body min0' },
           h('p', { class: 'card-label' }, p.cur ? 'Your next level' : 'Academy'),
           h('h3', null, p.cur ? h('span', null, h('span', { class: 'ach-n' }, String(n)), L.t) : 'Course finished'),
           h('p', { class: 'muted small' }, line),
-          h('div', { class: 'ach-prog' }, h('span', { class: 'ach-track' }, h('span', { class: 'ach-fill', style: { width: pct + '%' } })), h('span', { class: 'small muted' }, done + ' of 40 done'))),
+          h('div', { class: 'ach-prog' }, h('span', { class: 'ach-track' }, h('span', { class: 'ach-fill', style: { width: pct + '%' } })), h('span', { class: 'small muted' }, done + ' of ' + TOTAL + ' done · ' + fmtBites(p.bites)))),
         h('a', { class: 'btn btn-lg ' + (p.curOpen ? 'btn-primary' : 'btn-ghost'), href: p.curOpen ? '#/academy/level/' + n : '#/academy' }, p.curOpen ? 'Continue' : 'Open the Academy'));
     }).catch(() => { clear(el).appendChild(h('p', { class: 'muted' }, 'The Academy could not load. Try again in a moment.')); });
     return el;
@@ -872,7 +905,28 @@
     if (!missingTable(error)) throw error;
     if (!AC.loaded || AC.memberId !== S.me.id) await load();
     const p = prog();
-    return [{ member_id: S.me.id, name: S.me.name, levels: Object.keys(p.best).length, xp: p.xp }];
+    return [{ member_id: S.me.id, name: S.me.name, levels: Object.keys(p.best).length, xp: p.bites }];
   };
   RT.academyRank = rankOf;
+  // The level number members see, for a saved id (officer screens list saved rounds).
+  RT.academyLevelNo = item => POS[item] || item;
+  // Bites earned in the Academy, one item per level or weekly challenge, dated by its first pass (for Recent activity).
+  RT.academyActivity = async function () {
+    if (!S.me) return [];
+    if (!(AC.loaded && AC.memberId === S.me.id)) await load();
+    const first = {}, top = {};
+    AC.rounds.forEach(r => {
+      if (!r.passed || (r.breakdown && r.breakdown.cheat)) return;
+      const k = r.kind + ':' + r.item;
+      if (!first[k] || r.created_at < first[k].created_at) first[k] = r;
+      top[k] = Math.max(top[k] || 0, r.stars || 0);
+    });
+    return Object.keys(first).map(k => {
+      const r = first[k];
+      if (r.kind === 'weekly') return { at: r.created_at, title: 'Academy · weekly challenge done', pts: WEEKLY_BITES };
+      const n = POS[r.item];
+      if (!n) return null;
+      return { at: r.created_at, title: `Academy · Level ${n} passed`, pts: C.seasons[seasonOf(n)].bites + STAR_BITES[Math.min(3, top[k])] };
+    }).filter(Boolean);
+  };
 })();

@@ -216,7 +216,7 @@ window.RT_CONFIG = {
         rules: ['Post 1 reel every 3 days (small is fine)', 'Film every meeting', 'Help sell sponsors with real content'] }
     ],
     // Shown on the form. Keep it honest: these are the deal.
-    deal: 'Do your part on time and you earn big XP for the iFLY leaderboard. Miss it and you’re off the team. All or nothing.'
+    deal: 'Do your part on time and you earn big Bites for the iFLY leaderboard. Miss it and you’re off the team. All or nothing.'
   },
 
   intro: { form: 1700, hold: 1900, disperse: 2000 },

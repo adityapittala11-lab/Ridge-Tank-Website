@@ -119,7 +119,7 @@
     const items = S.bounties.filter(b => RT.bountyInfo(b).open).slice(0, 3);
     clear(el).append(h('div', { class: 'card-head' }, h('span', { class: 'card-label' }, 'Earn extra Bites'),
       h('a', { class: 'link-sm', href: '#/bounties' }, 'All bounties', icon('chevronRight', 14))));
-    if (!items.length) { el.appendChild(h('p', { class: 'muted' }, 'No open bounties right now. New ones will show up here.')); return; }
+    if (!items.length) { el.appendChild(h('p', { class: 'muted' }, 'No open bounties right now. ', h('a', { href: '#/academy' }, 'Pass your next Academy level'), ' to earn Bites.')); return; }
     el.appendChild(h('ul', { class: 'timeline' }, items.map(b => h('li', null,
       h('span', { class: 'tl-icon burg' }, icon('target', 16)),
       h('div', { class: 'grow min0' }, h('div', { class: 'ellipsis' }, b.title), h('div', { class: 'muted small ellipsis' }, RT.bountyMeta(b))),
@@ -150,7 +150,7 @@
   }
 
   function renderActivity(el, d) {
-    const items = [];
+    const items = (d.academy || []).map(x => Object.assign({ icon: 'map' }, x));
     d.attendance.forEach(a => {
       const m = meetingById(a.meeting_id);
       items.push({ at: a.tapped_at || (m && m.meeting_date), icon: 'check', title: 'Checked in' + (m ? ' · ' + (m.name || 'Meeting') : ''), pts: Number(a.points_awarded) || 0 });
@@ -182,7 +182,7 @@
     const sub = h('span', null, 'Season ' + cfg.season.replace('-', '–'));
     root.appendChild(RT.pageHead('Leaderboard', sub, tools));
 
-    // Points board (meetings, pitches, bounties) or the Academy board (levels passed, then XP).
+    // Bites board (meetings, pitches, bounties and Academy levels) or the Academy board (levels passed, then Academy Bites).
     let mode = 'points';
     let acRows = null;
     if (RT.academyBoard) {
@@ -233,7 +233,7 @@
       let r = acRows;
       if (gradeFilter !== 'all' && grades) r = r.filter(x => grades.get(x.member_id) === gradeFilter);
       if (q) r = r.filter(x => String(x.name).toLowerCase().includes(q));
-      sub.textContent = `Academy · ranked by levels passed, then XP`;
+      sub.textContent = `Academy · ranked by levels passed, then Bites earned in the Academy`;
       if (!r.length) { list.appendChild(h('div', { class: 'empty' }, h('p', { class: 'muted' }, acRows.length ? 'No one matches that.' : 'No one has passed a level yet.'))); return; }
       r.forEach((x, i) => {
         const me = x.member_id === S.me.id;
@@ -242,7 +242,7 @@
           avatar(x.name, 36),
           h('div', { class: 'grow min0' }, h('div', { class: 'ellipsis name' }, x.name, me ? h('span', { class: 'you-tag' }, 'You') : null)),
           h('span', { class: 'muted small nowrap' }, RT.academyRank(x.levels) + ' · ' + x.levels + (x.levels === 1 ? ' level' : ' levels')),
-          h('span', { class: 'pts mono' }, String(x.xp), h('span', { class: 'muted' }, ' XP'))));
+          h('span', { class: 'pts mono' }, String(x.xp), h('span', { class: 'muted' }, ' Bites'))));
       });
     }
 
@@ -367,6 +367,8 @@
 
       renderBadges(badgesWrap, d.progress);
       renderActivity(activityCard, d);
+      // Academy levels earn Bites too; add them to Recent activity once the Academy rounds load.
+      if (RT.academyActivity) RT.academyActivity().then(list => { if (list.length) renderActivity(activityCard, Object.assign({}, d, { academy: list })); }).catch(() => {});
     }).catch(e => toast(friendly(e), 'error'));
 
     function statRow(label, value) { return h('div', { class: 'stat-row' }, h('dt', { class: 'muted' }, label), h('dd', { class: 'mono' }, String(value))); }

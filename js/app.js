@@ -524,7 +524,7 @@
 
     const steps = [
       ['Show up and check in', 'Come to a meeting and check in at the door. That earns you 100 Bites, the program’s money.'],
-      ['Learn and pitch', 'Tank Academy’s AI sharks coach you from your first idea to a full pitch. Then pitch in the Tank and invest your Bites in the ideas you believe in.'],
+      ['Learn and pitch', 'Tank Academy’s 80 levels and AI sharks coach you from your first idea to a full pitch, and every level you pass earns Bites. Then pitch in the Tank and invest your Bites in the ideas you believe in.'],
       ['Climb the leaderboard', 'Bites move you up four tiers and unlock badges. Whoever finishes the year on top is King of the Tank.']
     ];
     const how = h('section', { class: 'section', id: 'how' },
@@ -557,7 +557,7 @@
       ['Why do you want my phone number?', 'Only to add you to the program group chat (iMessage or WhatsApp) for meeting updates. Only officers can see it.'],
       ['When is the next meeting?', cfg.nextMeeting + '. Just walk in, and we’ll show you how everything works.'],
       ['Is there a reward for bringing a friend?', 'Yes. Bring a friend and you both get candy.'],
-      ['What are Bites?', 'Bites are the program’s money. You earn 100 every time you check in at a meeting, and more for pitching and for bounties. You can invest them, and your Bites plus your winnings make up your net worth.'],
+      ['What are Bites?', 'Bites are the program’s money. You earn 100 every time you check in at a meeting, and more for pitching, bounties and every Tank Academy level you pass. You can invest them, and your Bites plus your winnings make up your net worth.'],
       ['How do I check in?', 'An officer checks you in at the door when you walk into a meeting. You earn 100 Bites each time.'],
       ['How do pitching and investing work?', 'Teams pitch in the Tank. During the meeting you put your Bites into the pitches you believe in. First place pays 3x, second 2x, third 1.5x, and a pitch that flops pays half. You don’t have to pitch to invest.'],
       ['What are bounties?', 'Side challenges the officers post for extra Bites, like bringing a friend. Tap “I did it” and an officer checks it.'],
