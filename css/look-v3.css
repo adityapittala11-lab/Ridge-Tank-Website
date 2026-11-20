@@ -279,6 +279,9 @@ html[data-look="v3"] .print::before {
   box-shadow: 0 5px 6px rgba(0, 0, 0, 0.45);
 }
 html[data-look="v3"] .crowd-photo { transform-origin: 50% 0; transform: translateY(var(--py, 0px)) rotate(var(--tilt, 0deg)); }
+html[data-look="v3"] .founder-media, html[data-look="v3"] .wall { transform-origin: 50% 0; transform: translateY(var(--py, 0px)) rotate(var(--tilt, 0deg)); }
+html[data-look="v3"] .founder { gap: 84px; }
+html[data-look="v3"] .founder-copy { gap: 20px; }
 html[data-look="v3"] .crowd-photo.rv { opacity: 0; rotate: -9deg; translate: 0 54px; transition: opacity 0.6s var(--ease), rotate 1.2s cubic-bezier(0.2, 1.5, 0.35, 1), translate 1s var(--ease); }
 html[data-look="v3"] .crowd-photo.rv.in { opacity: 1; rotate: -1.6deg; translate: 0 0; }
 
@@ -581,7 +584,7 @@ html[data-look="v3"] .auth-photo { margin-top: 22px; width: min(440px, 100%); ro
 @media (max-width: 899px) {
   html[data-look="v3"] .section { padding-top: 104px; }
   html[data-look="v3"] .section-head { margin-bottom: 34px; }
-  html[data-look="v3"] .crowd, html[data-look="v3"] .mystery, html[data-look="v3"] .hoodie { gap: 40px; }
+  html[data-look="v3"] .crowd, html[data-look="v3"] .founder, html[data-look="v3"] .mystery, html[data-look="v3"] .hoodie { gap: 40px; }
   html[data-look="v3"] .mystery, html[data-look="v3"] .hoodie { padding-bottom: 80px; }
   html[data-look="v3"] .phase, html[data-look="v3"] .phase + .phase { padding: 28px 0; }
   html[data-look="v3"] .how-list { gap: 36px; }

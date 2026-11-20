@@ -222,7 +222,8 @@
   // What rises into view. Things matched by the same line come in one after another.
   const RISE = [
     '.crowd-photo', '.crowd-copy > *',
-    '#pitches .section-head', '.clip', '.pitch-print',
+    '.founder-copy > *', '.founder-media',
+    '#pitches .section-head', '.clip', '.wall', '.pitch-print',
     '#year .section-head', '.year-track', '.phase', '.prize-line',
     '.mystery-mark .q', '.mystery-copy > *',
     '#how .section-head', '.how-list li',

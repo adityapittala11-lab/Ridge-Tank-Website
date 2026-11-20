@@ -61,12 +61,34 @@
   // Just the fin, for anything riding along a waterline.
   const fin = cls => svg(cls, '0 0 64 44', '<path fill="currentColor" d="M2 44C18 40 30 26 34 0C44 12 54 28 62 44Z"/>');
 
-  // A photo shown as a print pinned to the wall (the first-meeting photo).
-  function print(cls, caption) {
+  // A muted clip that loops while it is on screen and pauses when it is not.
+  // People who ask for less motion get the poster frame and a play control instead.
+  const CALM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function loopVideo(src, poster, label, cls) {
+    const v = h('video', { class: cls || null, src: src, poster: poster || null, muted: true, loop: true, playsinline: true,
+      preload: CALM ? 'none' : 'metadata', 'aria-label': label || null });
+    v.setAttribute('muted', '');
+    if (CALM) { v.controls = true; return v; }
+    if (!('IntersectionObserver' in window)) { v.autoplay = true; return v; }
+    const io = new IntersectionObserver((entries) => entries.forEach((e) => {
+      if (!v.isConnected) { io.disconnect(); return; }
+      if (e.isIntersecting) v.play().catch(() => {}); else v.pause();
+    }), { threshold: 0.2 });
+    io.observe(v);
+    return v;
+  }
+
+  // A photo shown as a print pinned to the wall (the meeting photo). With motion = true it shows the meeting video instead.
+  function print(cls, caption, motion) {
     const c = cfg.crowd || {};
-    const img = h('img', { src: c.photo, alt: c.alt || 'Ridge Tank members at the first meeting', width: 1600, height: 1188, loading: 'lazy', decoding: 'async' });
-    if (c.photoSmall) { img.srcset = c.photoSmall + ' 900w, ' + c.photo + ' 1600w'; img.sizes = '(max-width: 899px) 92vw, 620px'; }
-    return h('figure', { class: 'print ' + cls }, img, caption ? h('figcaption', null, caption) : null);
+    let media;
+    if (motion && c.video) {
+      media = loopVideo(c.video, c.poster || c.photo, c.alt || 'Ridge Tank members at a meeting', 'print-video');
+    } else {
+      media = h('img', { src: c.photo, alt: c.alt || 'Ridge Tank members at a meeting', width: 1600, height: 1188, loading: 'lazy', decoding: 'async' });
+      if (c.photoSmall) { media.srcset = c.photoSmall + ' 900w, ' + c.photo + ' 1600w'; media.sizes = '(max-width: 899px) 92vw, 620px'; }
+    }
+    return h('figure', { class: 'print ' + cls }, media, caption ? h('figcaption', null, caption) : null);
   }
 
   // ---------- the next meeting, as a ticket ----------
@@ -133,11 +155,11 @@
         h('div', { class: 'wl-clip' }, h('div', { class: 'wl-swimmer' }, fin('wl-fin')))) : null);
   }
 
-  // ---------- the first meeting, in one photo ----------
+  // ---------- the last meeting, in one moving photo ----------
   function crowd() {
     const c = cfg.crowd;
     if (!c || !c.show || !c.photo) return null;
-    const pic = print('crowd-photo', c.caption);
+    const pic = print('crowd-photo', c.caption, true);
     const num = h('span', null, String(c.count) + (c.countSuffix || ''));
     if (V3) {
       pic.dataset.px = '0.04'; pic.dataset.swing = '0.7';
@@ -292,10 +314,27 @@
     setTimeout(() => name.focus(), 120);
   }
 
-  // ---------- pitches and photos from the first meeting ----------
+  // ---------- the guest from the last meeting ----------
+  function founder() {
+    const c = cfg.founder;
+    if (!c || !c.show) return null;
+    const media = h('figure', { class: 'print founder-media' },
+      loopVideo(c.video, c.poster, c.alt, 'print-video'), c.caption ? h('figcaption', null, c.caption) : null);
+    if (V3) { media.dataset.px = '-0.03'; media.dataset.swing = '-0.6'; }
+    return h('section', { class: 'section in founder', id: 'founder' },
+      h('div', { class: 'founder-copy' },
+        h('p', { class: 'founder-num' }, c.big, h('span', { class: 'founder-num-label' }, c.bigLabel)),
+        h('h2', { class: 'section-title' }, c.title),
+        h('p', { class: 'section-sub' }, c.text),
+        (c.facts || []).length ? h('ul', { class: 'founder-facts' }, c.facts.map(f => h('li', null, h('strong', null, f[0]), h('span', null, f[1])))) : null,
+        c.lesson ? h('p', { class: 'founder-lesson' }, c.lesson) : null),
+      media);
+  }
+
+  // ---------- pitches from the last meeting: one wall of clips playing at once, and two pinned photos ----------
   function pitches() {
     const c = cfg.pitches;
-    if (!c || !c.show || !(c.clips || []).length) return null;
+    if (!c || !c.show || !(c.wall || (c.clips || []).length)) return null;
     const clip = (x, i) => {
       const v = h('video', { src: x.src, poster: x.poster, preload: 'none', playsinline: true, 'aria-label': x.label });
       const play = h('button', { class: 'clip-play', type: 'button', 'aria-label': 'Play ' + x.label }, fin('clip-fin'), h('span', null, 'Play'));
@@ -307,6 +346,16 @@
       if (V3) box.dataset.swing = String(0.5 + i * 0.12);
       return box;
     };
+    let lead;
+    if (c.wall) {
+      const tall = window.matchMedia('(max-width: 720px)').matches;
+      lead = h('figure', { class: 'print wall' },
+        loopVideo(tall ? c.wall.tall : c.wall.wide, tall ? c.wall.tallPoster : c.wall.widePoster, c.wall.label, 'print-video'),
+        c.wall.caption ? h('figcaption', null, c.wall.caption) : null);
+      if (V3) lead.dataset.swing = '0.35';
+    } else {
+      lead = h('div', { class: 'clip-row' }, c.clips.map(clip));
+    }
     const photos = (c.photos || []).map((p, i) => {
       const f = h('figure', { class: 'print pitch-print' }, h('img', { src: p.src, alt: p.alt || '', loading: 'lazy', decoding: 'async' }), p.caption ? h('figcaption', null, p.caption) : null);
       if (V3) { f.dataset.swing = i ? '-0.5' : '0.6'; f.dataset.px = i ? '-0.03' : '0.04'; }
@@ -314,8 +363,8 @@
     });
     return h('section', { class: 'section in pitches', id: 'pitches' },
       h('div', { class: 'section-head' }, h('h2', { class: 'section-title' }, c.title), h('p', { class: 'section-sub' }, c.text)),
-      h('div', { class: 'pitch-wall' },
-        h('div', { class: 'clip-row' }, c.clips.map(clip)),
+      h('div', { class: 'pitch-wall' + (c.wall ? ' has-wall' : '') },
+        lead,
         photos.length ? h('div', { class: 'pitch-prints' }, photos) : null));
   }
 
@@ -363,7 +412,7 @@
 
   // ---------- v3: the depth gauge down the right side. Each mark is a section; tap one to dive to it. ----------
   function depthGauge(root) {
-    const stops = [['.hero2', 'Surface'], ['#crowd', 'Meeting one'], ['#pitches', 'Pitches'], ['#year', 'The year'], ['#mystery', 'Mystery'], ['#how', 'How it works'],
+    const stops = [['.hero2', 'Surface'], ['#crowd', 'Meeting two'], ['#founder', 'Sabin Lomac'], ['#pitches', 'Pitches'], ['#year', 'The year'], ['#mystery', 'Mystery'], ['#how', 'How it works'],
       ['#hoodie', 'Hoodie'], ['#tiers', 'Tiers'], ['#faq', 'Questions']]
       .map(([sel, label]) => ({ el: root.querySelector(sel), label })).filter(s => s.el);
     const nav = h('nav', { class: 'depth', 'aria-label': 'Jump to a section' },
@@ -391,6 +440,7 @@
     if (oldHero) oldHero.replaceWith(hero());
     else if (how) put(ticket('ticket-inline'), how); // members reach this page as "About": they still see the next meeting
     put(crowd(), how);
+    put(founder(), how);
     put(pitches(), how);
     put(phases(), how);
     put(mystery(), how);

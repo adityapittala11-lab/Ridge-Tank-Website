@@ -125,16 +125,35 @@ window.RT_CONFIG = {
   // Set date to '' to hide the banner.
   countdown: { date: '', time: '2:25 PM', place: 'Media Center', text: 'December meeting' },
 
-  // The first-meeting photo on the landing page, the sign-up page and the sponsor page. show: false hides it everywhere.
-  // Keep "count" true: it is the number of students who came.
+  // The meeting photo on the landing page, the sign-up page and the sponsor page. show: false hides it everywhere.
+  // "video" plays (muted, looping) in place of the photo on the landing page only. Keep "count" true: it is the number of students who came.
   crowd: {
     show: true,
     photo: 'marketing/meeting-two.jpg', photoSmall: 'marketing/meeting-two-900.jpg',
-    alt: 'Ridge Tank members standing together in the Media Center after the second meeting, holding sponsor signs',
+    video: 'marketing/meeting-two-crowd.mp4', poster: 'marketing/meeting-two-crowd.jpg',
+    alt: 'The Media Center packed with Ridge Tank members at the second meeting',
     caption: 'Nov 19, 2026. Meeting two, Phase 01: Spark.',
     count: 60, countSuffix: '+',
     title: 'showed up to meeting two.',
-    text: 'Up from 40 at meeting one. Shark Tank founder Sabin Lomac (Cousins Maine Lobster) spoke, then teams pitched real ideas and our Sharks picked the top three.'
+    text: 'Up from 40 at meeting one. A Shark Tank founder called in, teams pitched real ideas to our Sharks, and the top three walked out with $60+ in prizes.'
+  },
+
+  // The guest who came to the last meeting. Keep every number true (sources in llms-full.txt). show: false hides it.
+  founder: {
+    show: true,
+    video: 'marketing/sabin-on-screen.mp4', poster: 'marketing/sabin-on-screen.jpg',
+    alt: 'Sabin Lomac on both big screens in the Media Center while members watch',
+    caption: 'Sabin Lomac on the big screens at meeting two.',
+    big: '$1B+',
+    bigLabel: 'in sales at Cousins Maine Lobster, the company he co-founded',
+    title: 'A Shark Tank founder came to Ridge Tank.',
+    text: 'Sabin Lomac and his cousin Jim Tselikis started Cousins Maine Lobster in 2012 with one food truck in Los Angeles. They pitched it on Shark Tank, Barbara Corcoran invested, and it grew into a national brand. On Nov 19, Sabin called into meeting two and talked with our members for 10 minutes.',
+    facts: [
+      ['$55K', 'Barbara Corcoran’s Shark Tank deal in 2012'],
+      ['85+', 'trucks and restaurants across the U.S.'],
+      ['10 min', 'live with our members on Nov 19']
+    ],
+    lesson: 'His big lesson for us: pick a partner who’s your opposite, not your reflection.'
   },
 
   // The year, shown on the landing page. Dates are yyyy-mm-dd; the phase that contains today is marked "Now".
@@ -144,24 +163,27 @@ window.RT_CONFIG = {
     { name: 'Sell', from: '2027-02-10', to: '2027-04-07', when: 'Feb 10 to Apr 7', text: 'Make real sales and get to your first ten customers.' },
     { name: 'Grow', from: '2027-04-07', to: '2027-05-12', when: 'Apr 7 to May 12', text: 'Grow what works, then pitch it at the Grand Finale on May 12.' }
   ],
-  // Clips and photos from the first meeting, shown under the group photo. show: false hides the whole section.
+  // Pitches from the last meeting, shown under the guest. "wall" is one video of many pitches playing at once
+  // (wide for computers, tall for phones). "clips" (one video each) is used only when there is no wall. show: false hides the section.
   pitches: {
     show: true,
-    title: 'Real pitches. First meeting.',
-    text: 'Nobody rehearsed. They had an idea, stood up, and pitched it to the room.',
-    clips: [
-      { src: 'marketing/pitch-1.mp4', poster: 'marketing/pitch-1.jpg', label: 'Pitch 1' },
-      { src: 'marketing/pitch-2.mp4', poster: 'marketing/pitch-2.jpg', label: 'Pitch 2' },
-      { src: 'marketing/pitch-3.mp4', poster: 'marketing/pitch-3.jpg', label: 'Pitch 3' }
-    ],
+    title: 'Every pitch. All at once.',
+    text: 'At meeting two, teams stood up with a real idea and a mic and pitched it to our student Sharks. The Sharks picked the top three.',
+    wall: {
+      wide: 'marketing/pitch-wall-wide.mp4', widePoster: 'marketing/pitch-wall-wide.jpg',
+      tall: 'marketing/pitch-wall-tall.mp4', tallPoster: 'marketing/pitch-wall-tall.jpg',
+      label: 'Twelve clips of members pitching at meeting two, playing at the same time',
+      caption: 'Nov 19, 2026. Meeting two pitches, all playing at once.'
+    },
+    clips: [],
     photos: [
-      { src: 'marketing/meeting-room.jpg', alt: 'The Media Center during the first meeting, with the guest speaker on both screens', caption: 'A startup CEO on the big screens, taking questions.' },
-      { src: 'marketing/meeting-candid.jpg', alt: 'Two members working out a pitch on a phone', caption: 'Working out the pitch, two minutes before going up.' }
+      { src: 'marketing/meeting-two-spark.jpg', alt: 'A member with a mic kicking off Phase 01: Spark', caption: 'Phase 01: Spark.' },
+      { src: 'marketing/meeting-two-snacks.jpg', alt: 'Members around the snack table at meeting two', caption: 'Shark Bait. Gone in about five minutes.' }
     ]
   },
 
   // Three short facts under the Join button. Keep them true.
-  proof: ['60+ students at our last meeting', '40 Academy levels, from idea to first sale', 'Free to join'],
+  proof: ['60+ students at our last meeting', 'A Shark Tank founder spoke at meeting two', 'Free to join'],
   // The line under the phases. Set to '' to hide it.
   leaderboardPrize: 'The leaderboard closes Dec 31. First place wins iFLY tickets.',
 
