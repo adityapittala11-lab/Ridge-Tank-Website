@@ -210,7 +210,7 @@
     });
     const card = h('section', { class: 'card sp-form-card reveal', style: { '--i': 2 }, id: 'sponsor-form' }, seg, formHost);
     root.append(hero, perks, card,
-      h('p', { class: 'muted small center sp-foot' }, 'Questions? Email ', h('a', { href: 'mailto:' + cfg.contact }, cfg.contact), '. Payments are handled securely by Stripe, and our students never handle cash.'));
+      h('p', { class: 'muted small center sp-foot' }, 'Questions? Email ', h('a', { href: 'mailto:' + cfg.contact }, cfg.contact), '. Payments are handled securely by Stripe, and our students never handle cash. ', h('a', { href: 'terms.html' }, 'Sponsor terms & refunds'), '.'));
 
     // Back from Stripe after the pay-first sign-up (not logged in yet): confirm the payment with Stripe now,
     // so the dashboard already says PAID the first time they open it.
@@ -558,7 +558,7 @@
         m.addEventListener('click', () => busy(m, async () => { try { const out = await call('portal'); location.href = out.url; } catch (ex) { toast(ex.message, 'error'); } }));
         pane.appendChild(h('div', { class: 'row' }, m));
       }
-      pane.appendChild(h('p', { class: 'muted small' }, 'Payments are handled securely by Stripe. We never see or store your card.'));
+      pane.appendChild(h('p', { class: 'muted small' }, 'Payments are handled securely by Stripe. We never see or store your card. ', h('a', { href: 'terms.html' }, 'Refund policy'), '.'));
       if (pay.payments.length) {
         pane.appendChild(h('section', { class: 'card stack-sm' }, h('span', { class: 'card-label' }, 'Payment history'),
           h('ul', { class: 'sp-history' }, pay.payments.map(x => h('li', null, h('span', null, KIND[x.kind] || 'Payment'), h('span', { class: 'muted small' }, fmtDate(x.created_at, { month: 'short', day: 'numeric', year: 'numeric' })), h('strong', null, money(x.amount_cents)))))));

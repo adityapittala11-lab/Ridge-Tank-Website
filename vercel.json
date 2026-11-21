@@ -10,7 +10,9 @@
     { "source": "/faq", "destination": "/about.html#faq", "permanent": false },
     { "source": "/about", "destination": "/about.html", "permanent": true },
     { "source": "/hoodie", "destination": "/hoodie.html", "permanent": true },
-    { "source": "/privacy", "destination": "/privacy.html", "permanent": true }
+    { "source": "/privacy", "destination": "/privacy.html", "permanent": true },
+    { "source": "/terms", "destination": "/terms.html", "permanent": true },
+    { "source": "/refunds", "destination": "/terms.html", "permanent": true }
   ],
   "headers": [
     {

@@ -424,14 +424,14 @@
 
   // One short row of links. The main bar already covers every page, so the footer doesn't repeat it.
   function footerLinks() {
-    if (!S.user && /^#\/sponsor\/dashboard/.test(location.hash)) return [{ label: 'Sponsor page', href: '#/sponsor' }, { label: 'Privacy', href: 'privacy.html' }];
+    if (!S.user && /^#\/sponsor\/dashboard/.test(location.hash)) return [{ label: 'Sponsor page', href: '#/sponsor' }, { label: 'Privacy', href: 'privacy.html' }, { label: 'Refunds', href: 'terms.html' }];
     if (!S.user) return [
       { label: 'How it works', jump: 'how' },
       { label: 'FAQ', jump: 'faq' },
       { label: 'Log in', href: '#/login' },
       { label: 'Sponsors', href: '#/sponsor' },
       { label: 'Privacy', href: 'privacy.html' }];
-    return [{ label: 'Sponsors', href: '#/sponsor' }, { label: 'Privacy', href: 'privacy.html' }];
+    return [{ label: 'Sponsors', href: '#/sponsor' }, { label: 'Privacy', href: 'privacy.html' }, { label: 'Refunds', href: 'terms.html' }];
   }
 
   function footerLink(l) {
