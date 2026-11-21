@@ -196,7 +196,7 @@ window.RT_CONFIG = {
     was: 25, percentOff: 20, priceNote: 'Launch price',
     orders: true,              // true = the "Get the hoodie" button opens the order form (paid by card through Stripe)
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-    perks: ['Front row at events', 'Skip the line at the door', 'One extra raffle entry']
+    perks: ['Front row at events', 'Skip the line at the door', 'A shoutout at the meeting']
   },
 
   // The mystery event teaser (a cream block with burgundy question marks; when, where and what are blacked out). Fill in "reveal" (like 'Revealed Dec 2') once there is a date. show: false hides it.
