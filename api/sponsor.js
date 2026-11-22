@@ -29,7 +29,7 @@ const ok = data => ({ data, error: null });
 const STRIPE = () => String(process.env.STRIPE_API_BASE || 'https://api.stripe.com');
 const stripeKey = () => process.env.STRIPE_SECRET_KEY || '';
 const MONTHLY = { basic: 1000, full: 7999 };
-const ONCE = { meeting: 10000, hoodie: 33300, event: 79900 };
+const ONCE = { meeting: 20000, hoodie: 33300, event: 79900 };
 const NAMES = {
   deposit: 'Meeting partner: first half', balance: 'Meeting partner: final half',
   meeting: 'Ridge Tank meeting sponsor', hoodie: 'Ridge Tank hoodie sponsor (name on 60 hoodies)', event: 'Ridge Tank Finale event sponsor',

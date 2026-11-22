@@ -80,7 +80,7 @@ window.RT_CONFIG = {
     // Spots for hoodie and event are counted on the server (api/sponsor.js, SPOTS).
     categories: [
       { value: 'normal', label: 'Normal sponsor', price: '$10 / month', text: 'A small way to stay in front of students every month.', plans: ['basic'], icon: 'coins' },
-      { value: 'meeting', label: 'Meeting sponsor', price: 'From $100', text: 'Power a meeting, or go all in with the Full package.', plans: ['meeting', 'full'], icon: 'megaphone', badge: 'Most popular' },
+      { value: 'meeting', label: 'Meeting sponsor', price: 'From $200', text: 'Power a meeting, or go all in with the Full package.', plans: ['meeting', 'full'], icon: 'megaphone', badge: 'Most popular' },
       { value: 'hoodie', label: 'Hoodie sponsor', price: '$333 once', text: 'Your name on the back of 60 Ridge Tank hoodies, plus a shoutout on the school announcements.', plans: ['hoodie'], icon: 'award', spots: true },
       { value: 'event', label: 'Event sponsor', price: '$799 once', text: 'Title sponsor of our Finale, plus a shoutout on the school announcements.', plans: ['event'], icon: 'flame', spots: true }
     ],
