@@ -19,7 +19,7 @@ const LEVELS = new Set(['meeting', 'inkind', 'basic', 'full', 'hoodie', 'event']
 const PICKABLE = new Set(['meeting', 'basic', 'full', 'hoodie', 'event']); // in-kind is set up by email, not picked on the site
 // Limited spots. "reserved" = businesses that said yes by email, matched by their email's domain. Their spot is
 // counted as taken right away, and not counted a second time when they pay on the site.
-export const SPOTS = { hoodie: { total: 6, reserved: ['ramseyautocenter.com'] }, event: { total: 1, reserved: [] } };
+export const SPOTS = { hoodie: { total: 5, reserved: ['ramseyautocenter.com', 'nestinthedesert.com'] }, event: { total: 1, reserved: [] } };
 const MEETING = /^[a-z0-9-]{1,40}$/;
 const MAX_LOGO = 700000; // characters of the data: address, about 500 KB of picture
 
