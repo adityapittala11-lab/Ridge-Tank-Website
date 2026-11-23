@@ -44,13 +44,13 @@ PAST GUESTS
 - Track3D: AI reality intelligence platform for construction. Total funding $14.3 million (includes a $10 million Series A, Sept 2025). Used on over 400 projects.
 
 SPONSORS
-Current sponsors: Sylvan Learning, Lund Mortgage Team, Ramsey Auto Center.
-Sponsor options (prices in USD):
-- Normal: $10 per month. Monthly shoutout, small poster in the meeting photo.
-- One meeting: $100 once. Logo on posters, on-screen shoutout, Instagram feature, snack table named for the sponsor.
-- Full package: $79.99 per month. Logo across the school, repost chain, everything in Normal.
-- Hoodie sponsor: $333 once. Name on the back of 60 club hoodies, worn all year. Shoutout on morning announcements.
-- Event sponsor: $799 once. Title sponsor of the Grand Finale. Only one spot.
+Current sponsors: Sylvan Learning, Lund Mortgage Team, Ramsey Auto Center, Breakthrough Smash Room, Nest in the Desert.
+Sponsor packages (one-time, USD, paid by card through Stripe; each includes everything in the tier before it):
+- Community Partner: $150. Sponsor slide at one meeting, Instagram story thank-you, website sponsor wall, photos.
+- Meeting Partner: $250. Logo on meeting posters, on-screen shoutout, Instagram feed post, snack table named for the sponsor.
+- Title Partner: $333. The only sponsor at that meeting, meeting "presented by" the sponsor, 60-second intro to students, morning announcement shoutout.
+- Apparel Partner: $750. Logo on the back of 60 club hoodies worn all year, homepage feature for the school year, one Title Partner meeting included.
+- Finale Presenting Partner: from $750. "Ridge Tank Finale, presented by" the sponsor, stage screen and posters, a booth, an award named after them. One spot only.
 - In-kind: snacks, drinks, or gift cards for pitch winners (email us).
 Sponsor sign-up: https://www.ridgetank.com/#/sponsor
 Sponsor questions: ridgetank.club@gmail.com

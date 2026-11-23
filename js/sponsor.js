@@ -57,6 +57,8 @@
   const levelOf = v => cfg.levels.find(x => x.value === v) || cfg.levels[0];
   const catOf = level => cfg.categories.find(c => c.value === levelOf(level).cat) || cfg.categories[0];
   const catByValue = v => cfg.categories.find(c => c.value === v) || cfg.categories[0];
+  const perMeeting = v => ['partial', 'meeting', 'exclusive'].includes(v); // tiers tied to one meeting
+  const DEFAULT_TIER = 'exclusive';
   const spotTag = (c, spots) => {
     const sp = c.spots && spots && spots[c.value];
     if (!sp) return null;
@@ -185,22 +187,51 @@
   // ---------------- public page: pitch + sign up / log in ----------------
   function publicPage(root, t) {
     const go = () => { const f = document.getElementById('sponsor-form'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+    const toTiers = () => { const f = document.getElementById('sponsor-tiers'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
     const hero = h('section', { class: 'sp-hero reveal' },
       h('span', { class: 'sp-kicker mono' }, icon('fin', 14), 'Sponsor Ridge Tank'),
       h('h1', { class: 'sp-title' }, 'Be the name they remember when they start their first company.'),
       h('p', { class: 'sp-lead' }, 'In a few years, these students will be hiring, building and buying. Ridge Tank is where Mountain Ridge High School students build real startups and pitch them Shark Tank-style. Back them now, and your business grows up with them.'),
       h('div', { class: 'sp-cta-row' },
-        h('button', { class: 'btn btn-primary btn-lg', type: 'button', onclick: go }, 'Sponsor a meeting for $200'),
-        h('span', { class: 'muted small' }, 'Your $200 pays for the food, prizes and activities at one full meeting.')),
+        h('button', { class: 'btn btn-primary btn-lg', type: 'button', onclick: toTiers }, 'See sponsorship packages'),
+        h('span', { class: 'muted small' }, 'From $150. One payment by card, no contracts.')),
       h('div', { class: 'sp-backed' },
         h('span', { class: 'muted small' }, 'Already backing us'),
-        h('strong', null, 'Lund Mortgage Team'), h('strong', null, 'Sylvan Learning'), h('strong', null, 'Ramsey Auto Center')),
+        h('strong', null, 'Lund Mortgage Team'), h('strong', null, 'Sylvan Learning'), h('strong', null, 'Ramsey Auto Center'), h('strong', null, 'Breakthrough Smash Room'), h('strong', null, 'Nest in the Desert')),
       h('div', { class: 'sp-hero-stats' },
         stat(String((RT_CONFIG.crowd && RT_CONFIG.crowd.count) || 40) + ((RT_CONFIG.crowd && RT_CONFIG.crowd.countSuffix) || ''), 'students at our last meeting'),
         stat('~$2', 'per student')));
 
-    const perks = h('section', { class: 'sp-perks reveal', style: { '--i': 1 } },
-      cfg.perks.map(p => h('div', { class: 'card sp-perk' }, h('span', { class: 'sp-perk-ico' }, icon(p.icon, 20)), h('h3', null, p.title), h('p', { class: 'muted' }, p.text))));
+    // The 5 sponsorship tiers, side by side. "Choose" picks that tier in the sign-up form below.
+    const tierGrid = h('div', { class: 'sp-tiers' });
+    const paintTiers = spots => {
+      clear(tierGrid).append(...cfg.categories.map(c => {
+        const l = levelOf(c.plans[0]);
+        const sp = c.spots && spots && spots[c.value];
+        const out = !!(sp && !sp.left);
+        const choose = h('button', { class: 'btn ' + (c.badge ? 'btn-primary' : 'btn-ghost') + ' btn-block', type: 'button', disabled: out },
+          out ? 'Sold out' : 'Choose ' + (c.short || c.label));
+        choose.addEventListener('click', () => { RT.sponsorTier = c.value; show('signup'); go(); });
+        return h('article', { class: 'sp-tier' + (c.badge ? ' featured' : '') + (out ? ' out' : '') },
+          c.badge ? h('span', { class: 'sp-badge mono' }, c.badge) : null,
+          h('span', { class: 'sp-cat-ico' }, icon(c.icon, 20)),
+          h('h3', { class: 'sp-tier-name' }, c.label),
+          h('div', { class: 'sp-tier-price' }, l.big || c.price.replace('From ', ''), h('span', { class: 'sp-tier-once' }, ' one time')),
+          h('span', { class: 'sp-tier-per small' }, l.per || ''),
+          h('p', { class: 'muted small sp-tier-text' }, c.text),
+          l.plus ? h('span', { class: 'sp-plus small' }, l.plus + ':') : null,
+          h('ul', { class: 'sp-gets small' }, (l.gets || []).map(g => h('li', null, icon('check', 13, 'accent'), g))),
+          spotTag(c, spots),
+          choose);
+      }));
+    };
+    paintTiers(null);
+    const perks = h('section', { class: 'sp-pricing reveal', id: 'sponsor-tiers', style: { '--i': 1 } },
+      h('div', { class: 'sp-pricing-head' },
+        h('h2', { class: 'h2' }, 'Pick how you want to show up'),
+        h('p', { class: 'muted' }, 'Every tier is a single payment by card through Stripe. Each one includes everything in the tier before it.')),
+      tierGrid,
+      h('p', { class: 'sp-inkind muted small' }, icon('info', 14), cfg.inkindNote));
 
     const formHost = h('div');
     const seg = segmented({
@@ -224,7 +255,7 @@
     if (t.confirmed === '1') toast('Email confirmed. Log in to open your dashboard.', 'success', 5000);
     if (t.confirmed === 'expired') toast('That link expired. Log in and we’ll help you send a new one.', 'error', 5000);
     show(seg.getValue());
-    loadSpots();
+    loadSpots().then(sp => { if (sp) paintTiers(sp); });
 
     function show(m) {
       seg.setValue(m);
@@ -271,7 +302,7 @@
       const site = input({ type: 'url', placeholder: 'yourbusiness.com', autocomplete: 'url', maxlength: 200 });
       // Built when the step is first shown, so the spots count has had time to load.
       let picker = null;
-      const level = { getValue: () => picker ? picker.getValue() : 'meeting', el: () => picker || (picker = categoryCards('meeting', spotsCache)) };
+      const level = { getValue: () => picker ? picker.getValue() : (RT.sponsorTier || DEFAULT_TIER), el: () => picker || (picker = categoryCards(RT.sponsorTier || DEFAULT_TIER, spotsCache)) };
       const meeting = meetingCards(cfg.meetings[0].value);
       const isMeeting = () => level.getValue() === 'meeting';
       const logo = logoPicker(null);
@@ -406,12 +437,12 @@
       const todo = [];
       if (!acct.logo) todo.push({ t: 'Add your logo', n: 'It goes on the posters.', go: 'profile' });
       if (!acct.phone) todo.push({ t: 'Add a phone number', n: 'So we can reach you on meeting day.', go: 'profile' });
-      if (c.value === 'meeting' && (!acct.meeting || acct.meeting === 'any')) todo.push({ t: 'Pick your meeting', n: 'Choose which one we feature you at.', go: 'profile' });
+      if (perMeeting(c.value) && (!acct.meeting || acct.meeting === 'any')) todo.push({ t: 'Pick your meeting', n: 'Choose which one we feature you at.', go: 'profile' });
       if (acct.message) pane.appendChild(h('div', { class: 'card sp-message' }, h('span', { class: 'card-label' }, 'Message from Ridge Tank'), h('p', null, acct.message)));
       const rows = [
         ['Sponsorship', c.label],
         ['Plan', lvl.label],
-        c.value === 'meeting' ? ['Meeting', meetingLabel(acct.meeting)] : null,
+        perMeeting(c.value) ? ['Meeting', meetingLabel(acct.meeting)] : null,
         ['Amount', lvl.price]
       ].filter(Boolean);
       const status = acct.level === 'inkind' ? 'In-kind' : paid ? 'Paid' : 'Payment due';
@@ -444,10 +475,10 @@
       const site = input({ type: 'url', value: acct.website || '', maxlength: 200, placeholder: 'yourbusiness.com' });
       const startCat = catOf(acct.level).value;
       const meetingField = h('div', { class: 'field' }, h('span', { class: 'label' }, 'Which meeting'));
-      const level = categoryCards(startCat, (acct.pay || {}).spots, v => { meetingField.hidden = v !== 'meeting'; });
+      const level = categoryCards(startCat, (acct.pay || {}).spots, v => { meetingField.hidden = !perMeeting(v); });
       const meeting = meetingCards(acct.meeting);
       meetingField.appendChild(meeting);
-      meetingField.hidden = startCat !== 'meeting';
+      meetingField.hidden = !perMeeting(startCat);
       const logo = logoPicker(acct.logo);
       const err = errLine();
       const save = h('button', { class: 'btn btn-primary', type: 'submit' }, 'Save changes');
@@ -491,7 +522,7 @@
     }
 
     const money = c => '$' + (c / 100).toFixed(c % 100 ? 2 : 0);
-    const KIND = { deposit: 'First half', balance: 'Final half', monthly: 'Monthly payment', meeting: 'Meeting sponsor', hoodie: 'Hoodie sponsor', event: 'Event sponsor' };
+    const KIND = { deposit: 'First half', balance: 'Final half', monthly: 'Monthly payment', partial: 'Community Partner', meeting: 'Meeting Partner', exclusive: 'Title Partner', hoodie: 'Apparel Partner', event: 'Finale Presenting Partner' };
     function paymentsPane(pane) {
       const pay = acct.pay || { configured: false, payments: [], options: [] };
       const cat = catOf(acct.level);
@@ -536,7 +567,7 @@
           else if (acct.subscribed && !current) action = h('span', { class: 'muted small' }, 'Use “Manage billing” to change your monthly plan first.');
           else {
             const btn = h('button', { class: 'btn btn-primary btn-block', type: 'button' }, icon('card', 16),
-              opt && opt.kind === 'balance' ? 'Pay final $50' : l.monthly ? 'Start · ' + l.price : 'Pay ' + l.price.replace(' once', ''));
+              opt && opt.kind === 'balance' ? 'Pay final $50' : l.monthly ? 'Start · ' + l.price : 'Pay ' + (opt && opt.cents ? money(opt.cents) : l.price.replace(' once', '')));
             btn.addEventListener('click', () => opt ? toStripe(opt.kind, btn) : choose(id, btn));
             action = btn;
           }
@@ -545,6 +576,7 @@
             h('strong', { class: 'sp-plan-name' }, l.label),
             h('span', { class: 'sp-plan-price' }, l.big || l.price, l.unit ? h('span', { class: 'sp-plan-unit' }, ' ' + l.unit) : null),
             h('span', { class: 'sp-plan-per small' }, l.per || ''),
+            l.plus ? h('span', { class: 'sp-plus small' }, l.plus + ':') : null,
             h('ul', { class: 'sp-gets small' }, (l.gets || []).map(g => h('li', null, icon('check', 13, 'accent'), g))),
             h('span', { class: 'sp-pay small' }, l.pay),
             action));
@@ -687,7 +719,7 @@
         h('div', { class: 'min0 grow stack-sm' },
           h('div', { class: 'row wrap' }, h('strong', { class: 'sp-admin-name' }, x.business), statusPill(x.status), x.email_confirmed ? null : h('span', { class: 'tag sm muted' }, 'email not confirmed')),
           h('div', { class: 'muted small' }, x.contact_name, ' · ', h('a', { href: 'mailto:' + x.email }, x.email), x.phone ? ' · ' + x.phone : '', x.website ? [' · ', h('a', { href: x.website, target: '_blank', rel: 'noopener noreferrer' }, x.website.replace(/^https?:\/\//, ''))] : ''),
-          h('div', { class: 'small' }, h('span', { class: 'accent' }, catOf(x.level).label + ': ' + lvl.label + ' · ' + lvl.price), catOf(x.level).value === 'meeting' ? ' · ' + meetingLabel(x.meeting) : '', ' · signed up ', RT.timeAgo(x.created_at)),
+          h('div', { class: 'small' }, h('span', { class: 'accent' }, catOf(x.level).label + ': ' + lvl.label + ' · ' + lvl.price), perMeeting(catOf(x.level).value) ? ' · ' + meetingLabel(x.meeting) : '', ' · signed up ', RT.timeAgo(x.created_at)),
           payLine(x),
           x.pitch_note ? h('p', { class: 'small sp-quote' }, '“' + x.pitch_note + '”') : null,
           x.message ? h('p', { class: 'small muted' }, 'They see: ' + x.message) : null,
@@ -702,7 +734,7 @@
       const planKind = lvl.monthly ? 'monthly' : x.level;
       const planCents = lvl.cents || 0;
       const list = h('div', { class: 'stack-sm' }, RT.skeleton(2));
-      const kind = h('select', { class: 'input' }, ['meeting', 'hoodie', 'event', 'deposit', 'balance', 'monthly', 'manual'].map(k => h('option', { value: k, selected: k === planKind }, k)));
+      const kind = h('select', { class: 'input' }, ['partial', 'meeting', 'exclusive', 'hoodie', 'event', 'deposit', 'balance', 'monthly', 'manual'].map(k => h('option', { value: k, selected: k === planKind }, k)));
       const amount = h('input', { class: 'input', type: 'number', min: 1, step: '0.01', value: (planCents / 100).toFixed(2) });
       const ref = h('input', { class: 'input', type: 'text', maxlength: 120, placeholder: 'Stripe id (cs_… or ch_…) or check number. Leave empty to auto-make one.' });
       const add = h('button', { class: 'btn btn-primary', type: 'button' }, icon('plus', 14), 'Record payment');

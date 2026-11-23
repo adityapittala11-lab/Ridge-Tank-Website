@@ -5,7 +5,7 @@ returns text language plpgsql volatile security definer set search_path = public
 declare v_ref text := nullif(trim(p_ref), '');
 begin
   if not public.is_admin() then raise exception 'Officers only.' using errcode = '42501'; end if;
-  if p_kind not in ('deposit', 'balance', 'meeting', 'hoodie', 'event', 'monthly', 'manual') then raise exception 'Unknown payment kind.'; end if;
+  if p_kind not in ('deposit', 'balance', 'partial', 'meeting', 'exclusive', 'hoodie', 'event', 'monthly', 'manual') then raise exception 'Unknown payment kind.'; end if;
   if p_cents is null or p_cents <= 0 or p_cents > 500000 then raise exception 'Enter an amount between $0.01 and $5,000.'; end if;
   if v_ref is null then v_ref := 'manual_' || gen_random_uuid()::text; end if;
   if not exists (select 1 from sponsor_portal.accounts where id = p_id) then raise exception 'No such sponsor.'; end if;

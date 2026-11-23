@@ -100,28 +100,32 @@
     "current": [
       "Sylvan Learning",
       "Lund Mortgage Team",
-      "Ramsey Auto Center"
+      "Ramsey Auto Center",
+      "Breakthrough Smash Room",
+      "Nest in the Desert"
     ],
     "options": [
       {
-        "name": "Normal",
-        "price": "$10 per month"
+        "name": "Community Partner",
+        "price": "$150 once"
       },
       {
-        "name": "One meeting",
-        "price": "$100 once"
+        "name": "Meeting Partner",
+        "price": "$250 once"
       },
       {
-        "name": "Full package",
-        "price": "$79.99 per month"
+        "name": "Title Partner",
+        "price": "$333 once",
+        "note": "exclusive: the only sponsor at that meeting"
       },
       {
-        "name": "Hoodie sponsor",
-        "price": "$333 once"
+        "name": "Apparel Partner",
+        "price": "$750 once",
+        "note": "logo on 60 club hoodies"
       },
       {
-        "name": "Event sponsor",
-        "price": "$799 once",
+        "name": "Finale Presenting Partner",
+        "price": "from $750",
         "spots": 1
       },
       {

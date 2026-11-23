@@ -15,8 +15,9 @@ import { jsonBody } from './_shared.js';
 const TOKEN_HOURS = 24 * 30;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LOGO = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
-const LEVELS = new Set(['meeting', 'inkind', 'basic', 'full', 'hoodie', 'event']);
-const PICKABLE = new Set(['meeting', 'basic', 'full', 'hoodie', 'event']); // in-kind is set up by email, not picked on the site
+const LEVELS = new Set(['partial', 'meeting', 'exclusive', 'inkind', 'basic', 'full', 'hoodie', 'event']);
+// The 5 tiers sponsors can pick (Nov 23, 2026). basic/full (monthly) are legacy: kept for old accounts, no longer offered.
+const PICKABLE = new Set(['partial', 'meeting', 'exclusive', 'hoodie', 'event']); // in-kind is set up by email, not picked on the site
 // Limited spots. "reserved" = businesses that said yes by email, matched by their email's domain. Their spot is
 // counted as taken right away, and not counted a second time when they pay on the site.
 export const SPOTS = { hoodie: { total: 5, reserved: ['ramseyautocenter.com', 'nestinthedesert.com'] }, event: { total: 1, reserved: [] } };
@@ -29,10 +30,22 @@ const ok = data => ({ data, error: null });
 const STRIPE = () => String(process.env.STRIPE_API_BASE || 'https://api.stripe.com');
 const stripeKey = () => process.env.STRIPE_SECRET_KEY || '';
 const MONTHLY = { basic: 1000, full: 7999 };
-const ONCE = { meeting: 20000, hoodie: 33300, event: 79900 };
+const ONCE = { partial: 15000, meeting: 25000, exclusive: 33300, hoodie: 75000, event: 75000 };
+// Businesses that said yes by email at an older price keep that price (matched by email, then by email domain).
+const PRICE_LOCK = {
+  'lihnlawgroup.com': { hoodie: 33300 },
+  'pronaturallandscape@outlook.com': { hoodie: 33300 }
+};
+function priceFor(a, kind) {
+  const email = String(a.email || '').toLowerCase();
+  const lock = PRICE_LOCK[email] || PRICE_LOCK[email.split('@')[1] || ''];
+  return (lock && lock[kind]) || ONCE[kind];
+}
 const NAMES = {
   deposit: 'Meeting partner: first half', balance: 'Meeting partner: final half',
-  meeting: 'Ridge Tank meeting sponsor', hoodie: 'Ridge Tank hoodie sponsor (name on 60 hoodies)', event: 'Ridge Tank Finale event sponsor',
+  partial: 'Ridge Tank Community Partner (one meeting)', meeting: 'Ridge Tank Meeting Partner (one meeting)',
+  exclusive: 'Ridge Tank Title Partner (exclusive meeting sponsor)', hoodie: 'Ridge Tank Apparel Partner (logo on 60 hoodies)',
+  event: 'Ridge Tank Finale Presenting Partner',
   monthly: { basic: 'Ridge Tank Normal sponsor (monthly)', full: 'Ridge Tank Full package sponsor (monthly)' }
 };
 
@@ -71,7 +84,7 @@ async function stripeGet(path, params) {
 }
 
 const UUID = /^[0-9a-f-]{36}$/i;
-const ONE_TIME_KINDS = ['deposit', 'balance', 'meeting', 'hoodie', 'event'];
+const ONE_TIME_KINDS = ['deposit', 'balance', 'partial', 'meeting', 'exclusive', 'hoodie', 'event'];
 
 // Writes what ONE Stripe Checkout session says into our payments table. Idempotent: a session is keyed by its id,
 // so seeing it twice (webhook + this) never counts twice. A fully refunded session is removed, so the dashboard
@@ -132,6 +145,11 @@ async function checkoutUrl(req, a, opt, backPath) {
     customer: a.stripe_customer || '',
     customer_email: a.stripe_customer ? '' : a.email,
     client_reference_id: a.id,
+    'payment_intent_data[description]': monthly ? '' : NAMES[opt.kind],
+    'payment_intent_data[receipt_email]': monthly ? '' : a.email,
+    'payment_intent_data[metadata][account_id]': monthly ? '' : a.id,
+    'payment_intent_data[metadata][kind]': monthly ? '' : opt.kind,
+    billing_address_collection: 'auto',
     'metadata[account_id]': a.id,
     'metadata[kind]': opt.kind,
     'subscription_data[metadata][account_id]': monthly ? a.id : '',
@@ -154,7 +172,7 @@ async function paymentInfo(client, a) {
     } else if (ONCE[a.level]) {
       if (!kinds.has(a.level)) {
         if (spots[a.level] && spots[a.level].left <= 0) soldOut = true;
-        else options.push({ kind: a.level, cents: ONCE[a.level] });
+        else options.push({ kind: a.level, cents: priceFor(a, a.level) });
       }
     } else if (MONTHLY[a.level] && !a.stripe_subscription) options.push({ kind: 'monthly', cents: MONTHLY[a.level] });
   }

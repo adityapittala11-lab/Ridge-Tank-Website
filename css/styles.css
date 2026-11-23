@@ -2008,6 +2008,31 @@ html[data-theme="light"] .ac-round-wrap { background: rgba(11, 36, 25, 0.45); }
 .sp-hero-stats { display: flex; flex-wrap: wrap; gap: 28px; margin-top: 26px; }
 .sp-stat { display: flex; flex-direction: column; gap: 2px; padding-left: 14px; border-left: 2px solid var(--b-400); }
 .sp-stat-n { font: 700 28px/1.1 var(--font-display); letter-spacing: -0.03em; }
+/* Sponsor tiers (pricing table) */
+.sp-pricing { margin-bottom: 30px; }
+.sp-pricing-head { max-width: 640px; margin: 0 0 18px; }
+.sp-pricing-head .h2 { margin: 0 0 6px; }
+.sp-tiers { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; align-items: stretch; padding-top: 14px; }
+.sp-tier { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 22px 16px 16px; background: rgb(var(--tint) / 0.03); border: 1px solid var(--line-2); transition: border-color 0.2s, transform 0.25s var(--ease), box-shadow 0.25s; }
+.sp-tier:hover { border-color: rgb(var(--tint) / 0.3); }
+.sp-tier.featured { transform: translateY(-10px); border-color: rgba(63, 191, 127, 0.6); background: linear-gradient(180deg, rgba(63, 191, 127, 0.13), rgba(63, 191, 127, 0.03)); box-shadow: 0 18px 50px -24px rgba(63, 191, 127, 0.55); }
+.sp-tier.out { opacity: 0.55; }
+.sp-tier-name { margin: 6px 0 0; font: 650 17px/1.2 var(--font-display); }
+.sp-tier-price { font: 750 30px/1.05 var(--font-display); letter-spacing: -0.03em; color: var(--ink); }
+.sp-tier-once { font: 500 13px/1 var(--font-ui); letter-spacing: 0; color: var(--ink-2); }
+.sp-tier-per { color: var(--g-300); min-height: 2.4em; }
+.sp-tier-text { margin: 0; min-height: 3.6em; }
+.sp-plus { display: block; margin-top: 4px; font-weight: 600; color: var(--ink-2); }
+.sp-tier .sp-gets { flex: 1; align-content: start; gap: 8px; margin: 4px 0 14px; }
+.sp-tier .btn { white-space: normal; }
+.sp-tier .btn { margin-top: auto; }
+@media (max-width: 1100px) { .sp-tiers { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 720px) {
+  .sp-tiers { grid-template-columns: 1fr; }
+  .sp-tier.featured { order: -1; transform: none; }
+  .sp-tier-per, .sp-tier-text { min-height: 0; }
+}
+.sp-cats { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)) !important; }
 .sp-perks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 26px; }
 .sp-perk { display: flex; flex-direction: column; gap: 8px; }
 .sp-perk h3 { font-size: 17px; }
