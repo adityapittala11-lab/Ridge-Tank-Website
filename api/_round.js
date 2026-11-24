@@ -45,9 +45,9 @@ export async function scoreRound(userId, body, key) {
   const transcript = Array.isArray(body.transcript) ? body.transcript : [];
   const answers = transcript.filter(m => m && m.student).map(m => String(m.text || '').trim().slice(0, 1200)).filter(Boolean);
 
-  // Cheat code: an answer of exactly "Krishna" instantly passes the round with full marks. For testing and demos.
+  // Cheat code: an answer of exactly "Raghu" instantly passes the round with full marks. For testing and demos.
   // It unlocks the next level but earns no Bites: Academy Bites count on the leaderboard (db/240_academy_bites.sql skips these rounds).
-  if (answers.some(a => a.toLowerCase() === 'krishna')) {
+  if (answers.some(a => a.toLowerCase() === 'raghu')) {
     await ensureSchema();
     const pool = getPool();
     const me = await pool.query('select id from public.members where user_id = $1 limit 1', [userId]);
@@ -58,7 +58,7 @@ export async function scoreRound(userId, body, key) {
       'insert into public.course_rounds (member_id, kind, item, score, stars, passed, breakdown, flagged, flags) values ($1,$2,$3,$4,$5,$6,$7,$8,$9) returning *',
       [me.rows[0].id, kind, item, v.total, 3, true, Object.assign({ ai: false, cheat: true }, v.c), false, null]);
     return { row: r.rows[0], scores: v.c, total: v.total, passed: true, stars: 3, xp: 0, cheat: true, ai: false,
-      keep: 'Instant pass (cheat code).', fix: [], closer: 'Blessed by Krishna.', held: false, reasons: [], flagged: false };
+      keep: 'Instant pass (cheat code).', fix: [], closer: 'Blessed by Raghu.', held: false, reasons: [], flagged: false };
   }
 
   if (answers.length < facts.needed) throw bad('Finish the round first.');
