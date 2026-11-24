@@ -58,7 +58,7 @@
   const catOf = level => cfg.categories.find(c => c.value === levelOf(level).cat) || cfg.categories[0];
   const catByValue = v => cfg.categories.find(c => c.value === v) || cfg.categories[0];
   const perMeeting = v => ['partial', 'meeting', 'exclusive'].includes(v); // tiers tied to one meeting
-  const DEFAULT_TIER = 'exclusive';
+  const DEFAULT_TIER = 'hoodie';
   const spotTag = (c, spots) => {
     const sp = c.spots && spots && spots[c.value];
     if (!sp) return null;
