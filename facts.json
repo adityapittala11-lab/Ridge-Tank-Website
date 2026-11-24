@@ -120,6 +120,11 @@
       },
       {
         "name": "Event Sponsor",
+        "price": "$750 once",
+        "note": "everything in Hoodie Sponsor, plus the only sponsor at one meeting"
+      },
+      {
+        "name": "Finale Sponsor",
         "price": "from $750",
         "spots": 1
       },

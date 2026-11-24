@@ -76,13 +76,14 @@ window.RT_CONFIG = {
       { value: '2027-02-10', label: 'Wed, Feb 10, 2027', note: 'Demo Day' },
       { value: 'any', label: 'Any meeting', note: 'We’ll pick one with you' }
     ],
-    // The 5 sponsor tiers (Nov 24, 2026: hoodie = $333, Event Sponsor from $750). A sponsor picks one when they sign up and pays once by card (Stripe).
+    // The 5 sponsor tiers (Nov 24, 2026: Hoodie $333, Event $750, Finale $750+). A sponsor picks one when they sign up and pays once by card (Stripe).
     // Prices must match ONCE in api/sponsor.js. Spots for hoodie and event are counted on the server (SPOTS).
     categories: [
       { value: 'partial', label: 'Community Partner', price: '$150', text: 'Your name in front of every student at one meeting.', plans: ['partial'], icon: 'users' },
       { value: 'meeting', label: 'Meeting Partner', price: '$250', text: 'Your logo on our posters and on screen at one meeting.', plans: ['meeting'], icon: 'megaphone' },
       { value: 'hoodie', label: 'Hoodie Sponsor', price: '$333', text: 'Your logo on the back of 60 club hoodies, worn all year.', plans: ['hoodie'], icon: 'award', spots: true, badge: 'Best value' },
-      { value: 'event', label: 'Event Sponsor', short: 'Event Sponsor', price: 'From $750', text: 'Your name on our biggest night of the year.', plans: ['event'], icon: 'trophy', spots: true }
+      { value: 'exclusive', label: 'Event Sponsor', price: '$750', text: 'Your logo on the hoodies, plus a whole meeting presented by you.', plans: ['exclusive'], icon: 'crown' },
+      { value: 'event', label: 'Finale Sponsor', short: 'Finale Sponsor', price: 'From $750', text: 'Your name on our biggest night of the year.', plans: ['event'], icon: 'trophy', spots: true }
     ],
     inkindNote: 'Want to sponsor with food or gift cards instead? Email us at ridgetank.club@gmail.com.',
     levels: [
@@ -92,14 +93,14 @@ window.RT_CONFIG = {
       { value: 'meeting', cat: 'meeting', label: 'Meeting Partner', price: '$250 once', per: 'about $4.17 per student', text: 'Your logo on our posters and on screen at one meeting.',
         pay: 'Pay $250 once by card.', cents: 25000, plus: 'Everything in Community Partner, plus',
         gets: ['Your logo on meeting posters around campus', 'On-screen shoutout: “This meeting is powered by you”', 'Instagram feed post about your business', 'The snack table is named after you'] },
-      { value: 'exclusive', cat: 'meeting', label: 'Title Partner (legacy)', price: '$333 once', per: 'about $5.55 per student', text: 'One meeting, all yours.', legacy: true,
-        pay: 'Pay $333 once by card.', cents: 33300, plus: 'Everything in Meeting Partner, plus',
-        gets: ['Exclusive: the only sponsor at your meeting', 'Meeting named “presented by [your business]”', 'A 60-second intro to students, live or by video', 'Shoutout to the whole school on the morning announcements'] },
       { value: 'hoodie', cat: 'hoodie', label: 'Hoodie Sponsor', price: '$333 once', per: 'about $5.55 per hoodie, worn all year', text: 'Your logo on the back of 60 club hoodies, worn all year.',
         pay: 'Pay $333 once by card.', cents: 33300, plus: 'Everything in Meeting Partner, plus',
         gets: ['Your logo on the back of 60 club hoodies', 'Shoutout to the whole school on the morning announcements', 'Featured on our website homepage all school year', 'Photo of our members wearing your hoodie'] },
-      { value: 'event', cat: 'event', label: 'Event Sponsor', price: '$750 once', big: '$750+', per: 'one spot only', text: 'Your name on our biggest night of the year.',
-        pay: 'Pay $750 by card. Want a bigger package? Email us.', cents: 75000, plus: 'Everything in Hoodie Sponsor, plus',
+      { value: 'exclusive', cat: 'exclusive', label: 'Event Sponsor', price: '$750 once', per: 'about $12.50 per hoodie, plus your own meeting', text: 'Your logo on the hoodies, plus a whole meeting presented by you.',
+        pay: 'Pay $750 once by card.', cents: 75000, plus: 'Everything in Hoodie Sponsor, plus',
+        gets: ['Exclusive: the only sponsor at your meeting', 'Meeting named “presented by [your business]”', 'A 60-second intro to students, live or by video', 'Your logo on the back of 60 club hoodies'] },
+      { value: 'event', cat: 'event', label: 'Finale Sponsor', price: '$750 once', big: '$750+', per: 'one spot only', text: 'Your name on our biggest night of the year.',
+        pay: 'Pay $750 by card. Want a bigger package? Email us.', cents: 75000, plus: 'Everything in Event Sponsor, plus',
         gets: ['“Ridge Tank Finale, presented by [your business]”', 'Your logo on the Finale stage screen and posters', 'A booth at the Finale in front of students and families', 'Name an award and present it on stage', 'Only one spot'] },
       // Older plans, kept so existing sponsors still see the right thing on their dashboard. Not offered to new sponsors.
       { value: 'basic', cat: 'partial', label: 'Normal (legacy)', price: '$10 / month', big: '33¢', unit: '/ day', per: '$10 billed monthly', text: 'Monthly shoutout.',

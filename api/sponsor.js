@@ -17,7 +17,7 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LOGO = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
 const LEVELS = new Set(['partial', 'meeting', 'exclusive', 'inkind', 'basic', 'full', 'hoodie', 'event']);
 // The 5 tiers sponsors can pick (Nov 23, 2026). basic/full (monthly) are legacy: kept for old accounts, no longer offered.
-const PICKABLE = new Set(['partial', 'meeting', 'hoodie', 'event']); // in-kind is set up by email, not picked on the site
+const PICKABLE = new Set(['partial', 'meeting', 'exclusive', 'hoodie', 'event']); // in-kind is set up by email, not picked on the site
 // Limited spots. "reserved" = businesses that said yes by email, matched by their email's domain. Their spot is
 // counted as taken right away, and not counted a second time when they pay on the site.
 export const SPOTS = { hoodie: { total: 5, reserved: ['ramseyautocenter.com', 'nestinthedesert.com'] }, event: { total: 1, reserved: [] } };
@@ -30,7 +30,7 @@ const ok = data => ({ data, error: null });
 const STRIPE = () => String(process.env.STRIPE_API_BASE || 'https://api.stripe.com');
 const stripeKey = () => process.env.STRIPE_SECRET_KEY || '';
 const MONTHLY = { basic: 1000, full: 7999 };
-const ONCE = { partial: 15000, meeting: 25000, exclusive: 33300, hoodie: 33300, event: 75000 };
+const ONCE = { partial: 15000, meeting: 25000, exclusive: 75000, hoodie: 33300, event: 75000 };
 // Businesses that said yes by email at an older price keep that price (matched by email, then by email domain).
 const PRICE_LOCK = {
   'lihnlawgroup.com': { hoodie: 33300 },
@@ -44,8 +44,8 @@ function priceFor(a, kind) {
 const NAMES = {
   deposit: 'Meeting partner: first half', balance: 'Meeting partner: final half',
   partial: 'Ridge Tank Community Partner (one meeting)', meeting: 'Ridge Tank Meeting Partner (one meeting)',
-  exclusive: 'Ridge Tank Title Partner (exclusive meeting sponsor)', hoodie: 'Ridge Tank Hoodie Sponsor (logo on 60 hoodies)',
-  event: 'Ridge Tank Event Sponsor',
+  exclusive: 'Ridge Tank Event Sponsor (exclusive meeting + logo on 60 hoodies)', hoodie: 'Ridge Tank Hoodie Sponsor (logo on 60 hoodies)',
+  event: 'Ridge Tank Finale Sponsor',
   monthly: { basic: 'Ridge Tank Normal sponsor (monthly)', full: 'Ridge Tank Full package sponsor (monthly)' }
 };
 

@@ -522,7 +522,7 @@
     }
 
     const money = c => '$' + (c / 100).toFixed(c % 100 ? 2 : 0);
-    const KIND = { deposit: 'First half', balance: 'Final half', monthly: 'Monthly payment', partial: 'Community Partner', meeting: 'Meeting Partner', exclusive: 'Title Partner', hoodie: 'Hoodie Sponsor', event: 'Event Sponsor' };
+    const KIND = { deposit: 'First half', balance: 'Final half', monthly: 'Monthly payment', partial: 'Community Partner', meeting: 'Meeting Partner', exclusive: 'Event Sponsor', hoodie: 'Hoodie Sponsor', event: 'Finale Sponsor' };
     function paymentsPane(pane) {
       const pay = acct.pay || { configured: false, payments: [], options: [] };
       const cat = catOf(acct.level);
