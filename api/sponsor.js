@@ -30,7 +30,7 @@ const ok = data => ({ data, error: null });
 const STRIPE = () => String(process.env.STRIPE_API_BASE || 'https://api.stripe.com');
 const stripeKey = () => process.env.STRIPE_SECRET_KEY || '';
 const MONTHLY = { basic: 1000, full: 7999 };
-const ONCE = { partial: 15000, meeting: 25000, exclusive: 33300, hoodie: 75000, event: 75000 };
+const ONCE = { partial: 15000, meeting: 25000, exclusive: 33300, hoodie: 33300, event: 75000 };
 // Businesses that said yes by email at an older price keep that price (matched by email, then by email domain).
 const PRICE_LOCK = {
   'lihnlawgroup.com': { hoodie: 33300 },
@@ -44,8 +44,8 @@ function priceFor(a, kind) {
 const NAMES = {
   deposit: 'Meeting partner: first half', balance: 'Meeting partner: final half',
   partial: 'Ridge Tank Community Partner (one meeting)', meeting: 'Ridge Tank Meeting Partner (one meeting)',
-  exclusive: 'Ridge Tank Title Partner (exclusive meeting sponsor)', hoodie: 'Ridge Tank Apparel Partner (logo on 60 hoodies)',
-  event: 'Ridge Tank Finale Presenting Partner',
+  exclusive: 'Ridge Tank Title Partner (exclusive meeting sponsor)', hoodie: 'Ridge Tank Hoodie Sponsor (logo on 60 hoodies)',
+  event: 'Ridge Tank Event Sponsor',
   monthly: { basic: 'Ridge Tank Normal sponsor (monthly)', full: 'Ridge Tank Full package sponsor (monthly)' }
 };
 
